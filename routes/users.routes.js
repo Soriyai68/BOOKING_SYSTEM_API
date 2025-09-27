@@ -6,13 +6,6 @@ const UserController = require('../controllers/user.controller');
 
 const router = express.Router();
 
-/**
- * USER CRUD ROUTES - Comprehensive user management
- * All routes include authentication and appropriate authorization
- */
-
-// === UTILITY ROUTES (Should come first to avoid conflicts) ===
-
 // GET /api/users/stats - Get user statistics (Admin/SuperAdmin only)
 router.get('/stats',
   middlewares.authenticate,
