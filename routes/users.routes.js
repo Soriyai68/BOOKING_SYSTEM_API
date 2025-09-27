@@ -29,16 +29,6 @@ router.post('/search',
   UserController.search
 );
 
-// POST /api/users/batch-delete - Delete multiple users (Admin/SuperAdmin only)
-router.post('/batch-delete',
-  middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
-  middlewares.validator(userSchema.batchDeleteSchema),
-  UserController.listDelete
-);
-
-// === PARAMETER-BASED ROUTES ===
-
 // GET /api/users/role/:role - Get users by role (Admin/SuperAdmin only)
 router.get('/role/:role',
   middlewares.authenticate,
@@ -72,14 +62,12 @@ router.put('/:id/last-login',
 );
 
 // DELETE /api/users/:id/force - Permanently delete user (SuperAdmin only)
-router.delete('/:id/force',
+router.delete('/:id/force-delete',
   middlewares.authenticate,
   middlewares.authorize(Role.SUPERADMIN),
   middlewares.validator(userSchema.userIdParamSchema, 'params'),
   UserController.forceDelete
 );
-
-// === CORE CRUD ROUTES ===
 
 // 1. GET ALL USERS - Get all users with pagination and filtering (Admin/SuperAdmin only)
 router.get('/',

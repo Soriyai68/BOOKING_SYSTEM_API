@@ -19,7 +19,7 @@ class UserController {
   // Helper method to build search query
   static buildSearchQuery(search) {
     if (!search) return {};
-    
+
     return {
       $or: [
         { name: { $regex: search, $options: 'i' } },
@@ -31,27 +31,27 @@ class UserController {
   // Helper method to build filter query
   static buildFilterQuery(filters) {
     const query = {};
-    
+
     // Handle role filter
     if (filters.role && Object.values(Role).includes(filters.role)) {
       query.role = filters.role;
     }
-    
+
     // Handle provider filter
     if (filters.provider && Object.values(Providers).includes(filters.provider)) {
       query.provider = filters.provider;
     }
-    
+
     // Handle status filter
     if (filters.status !== undefined) {
       query.isActive = filters.status === 'true' || filters.status === true;
     }
-    
+
     // Handle verification status filter
     if (filters.isVerified !== undefined) {
       query.isVerified = filters.isVerified === 'true' || filters.isVerified === true;
     }
-    
+
     // Handle date range filters
     if (filters.dateFrom || filters.dateTo) {
       query.createdAt = {};
@@ -62,7 +62,7 @@ class UserController {
         query.createdAt.$lte = new Date(filters.dateTo);
       }
     }
-    
+
     return query;
   }
 
@@ -86,15 +86,15 @@ class UserController {
 
       // Build query
       let query = {};
-      
+
       // Handle search
       if (search) {
         query = { ...query, ...UserController.buildSearchQuery(search) };
       }
-      
+
       // Handle filters
       query = { ...query, ...UserController.buildFilterQuery(filters) };
-      
+
       // Handle soft deleted records
       if (!includeDeleted || includeDeleted === 'false') {
         query.deletedAt = null; // Only get non-deleted users
@@ -152,7 +152,7 @@ class UserController {
     try {
       const { id } = req.params;
       const { includePassword = false } = req.query;
-      
+
       if (!id) {
         return res.status(400).json({
           success: false,
@@ -189,7 +189,7 @@ class UserController {
           message: error.message
         });
       }
-      
+
       logger.error('Get user by ID error:', error);
       res.status(500).json({
         success: false,
@@ -300,7 +300,7 @@ class UserController {
       delete updateData._id;
       delete updateData.createdAt;
       delete updateData.updatedAt;
-      
+
       // Add updater info if available
       if (req.user) {
         updateData.updatedBy = req.user.userId;
@@ -317,9 +317,9 @@ class UserController {
         }
 
         // Check if phone is already taken by another user
-        const existingUser = await User.findOne({ 
-          phone: updateData.phone, 
-          _id: { $ne: id } 
+        const existingUser = await User.findOne({
+          phone: updateData.phone,
+          _id: { $ne: id }
         });
         if (existingUser) {
           return res.status(409).json({
@@ -332,8 +332,8 @@ class UserController {
       const user = await User.findByIdAndUpdate(
         id,
         updateData,
-        { 
-          new: true, 
+        {
+          new: true,
           runValidators: true,
           context: 'query'
         }
@@ -433,7 +433,7 @@ class UserController {
       res.status(200).json({
         success: true,
         message: 'User deactivated successfully',
-        data: { 
+        data: {
           user: {
             ...deletedUser.toObject(),
             password: undefined // Ensure password is not returned
@@ -496,7 +496,7 @@ class UserController {
       res.status(200).json({
         success: true,
         message: 'User restored successfully',
-        data: { 
+        data: {
           user: {
             ...restoredUser.toObject(),
             password: undefined // Ensure password is not returned
@@ -543,7 +543,7 @@ class UserController {
 
       // Find the user first
       const user = await User.findById(id);
-      
+
       if (!user) {
         return res.status(404).json({
           success: false,
@@ -615,103 +615,7 @@ class UserController {
     }
   }
 
-  // 8. LIST DELETE - Delete multiple users
-  static async listDelete(req, res) {
-    try {
-      const { ids = [], permanent = false } = req.body;
 
-      if (!Array.isArray(ids) || ids.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Array of user IDs is required'
-        });
-      }
-
-      // Validate all IDs
-      for (const id of ids) {
-        UserController.validateObjectId(id);
-      }
-
-      let result;
-      
-      if (permanent === true) {
-        // Enforce SuperAdmin-only access for permanent deletions
-        if (req.user?.role !== Role.SUPERADMIN) {
-          return res.status(403).json({
-            success: false,
-            message: 'Only SuperAdmin can permanently delete users'
-          });
-        }
-
-        // Check for admin users in the list - NO admin/superadmin can be permanently deleted
-        const adminUsers = await User.find({
-          _id: { $in: ids },
-          role: { $in: [Role.ADMIN, Role.SUPERADMIN] }
-        });
-
-        if (adminUsers.length > 0) {
-          return res.status(403).json({
-            success: false,
-            message: 'Cannot permanently delete admin or superadmin users. This is a safety restriction.',
-            adminUsers: adminUsers.map(u => ({ id: u._id, role: u.role, phone: u.phone }))
-          });
-        }
-
-        // Check if trying to delete own account
-        if (ids.includes(req.user?.userId)) {
-          return res.status(403).json({
-            success: false,
-            message: 'Cannot permanently delete your own account'
-          });
-        }
-
-        // Get user info before deletion for logging
-        const usersToDelete = await User.find({ _id: { $in: ids } }).lean();
-        
-        result = await User.deleteMany({ _id: { $in: ids } });
-        
-        logger.warn(`⚠️  PERMANENT BATCH DELETION: ${result.deletedCount} users permanently deleted by SuperAdmin ${req.user.userId}`, {
-          deletedUsers: usersToDelete.map(u => ({ id: u._id, phone: u.phone, name: u.name, role: u.role })),
-          deletedBy: req.user.userId,
-          deletedAt: new Date().toISOString(),
-          action: 'BATCH_FORCE_DELETE_USERS'
-        });
-      } else {
-        // Soft delete
-        result = await User.updateMany(
-          { _id: { $in: ids } },
-          { 
-            isActive: false,
-            deletedAt: new Date(),
-            deletedBy: req.user?.userId
-          }
-        );
-        logger.info(`Soft deleted ${result.modifiedCount} users`);
-      }
-
-      res.status(200).json({
-        success: true,
-        message: `${result.deletedCount || result.modifiedCount} users ${permanent ? 'permanently deleted' : 'deactivated'} successfully`,
-        data: {
-          processedCount: result.deletedCount || result.modifiedCount,
-          requestedCount: ids.length
-        }
-      });
-    } catch (error) {
-      if (error.message === 'Invalid user ID format') {
-        return res.status(400).json({
-          success: false,
-          message: error.message
-        });
-      }
-
-      logger.error('List delete users error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to delete users'
-      });
-    }
-  }
 
   // 9. ADVANCED SEARCH
   static async search(req, res) {
@@ -817,7 +721,7 @@ class UserController {
   }
 
   // Additional utility methods
-  
+
   // Get soft deleted users
   static async getDeleted(req, res) {
     try {
