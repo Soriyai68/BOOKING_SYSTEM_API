@@ -4,15 +4,13 @@ const router = express.Router();
 // Import route modules
 const userRoutes = require('./users.routes');
 // Import Route module
-const seatRoutes = require('./seats.routes');
- 
+
 //import auth
 
 
 // Mount routes
 router.use('/users', userRoutes);
 
-router.use('/seats', seatRoutes);
 
 
 // Health check endpoint

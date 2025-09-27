@@ -740,3 +740,6 @@
 2025-09-22 23:41:50:4150 [31merror[39m: [31mFailed to connect to Redis, Socket closed unexpectedly[39m
 2025-09-22 23:41:50:4150 [31merror[39m: [31mFailed to connect to Redis, Socket closed unexpectedly[39m
 2025-09-22 23:41:50:4150 [31merror[39m: [31mFailed to connect to Redis, Socket closed unexpectedly[39m
+2025-09-27 14:09:19:919 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-27 14:09:19:919 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-27 14:09:19:919 [32minfo[39m: [32mServer running on port 8080[39m
