@@ -17,7 +17,7 @@ const bootstrap = async () => {
     
     // Start server
     app.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT}`);
+      logger.info(`Server running on port http://localhost:${PORT}`);
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
