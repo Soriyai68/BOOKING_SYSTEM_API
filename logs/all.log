@@ -832,3 +832,86 @@
 2025-09-27 15:12:49:1249 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
 2025-09-27 15:12:49:1249 [32minfo[39m: [32mDatabase: movie_booking_system[39m
 2025-09-27 15:12:49:1249 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-27 15:12:52:1252 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-27 15:12:52:1252 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-27 15:12:52:1252 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-27 15:13:44:1344 [33mwarn[39m: [33m⚠️  PERMANENT DELETION: User permanently deleted by SuperAdmin 68c569a97025ba51b02ef989[39m
+2025-09-27 15:15:32:1532 [32minfo[39m: [32mOTP for +85581218849: 478993[39m
+2025-09-27 15:15:32:1532 [32minfo[39m: [32mDevelopment OTP for +85581218849: 478993[39m
+2025-09-27 15:15:32:1532 [32minfo[39m: [32mOTP sent to phone: +85581218849[39m
+2025-09-27 15:15:57:1557 [32minfo[39m: [32mNew user registered: +85581218849[39m
+2025-09-27 15:15:57:1557 [32minfo[39m: [32mUser session stored in Redis: a4827061-7f04-45e4-8c5a-03da5083a61d[39m
+2025-09-27 15:46:28:4628 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-27 15:46:28:4628 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-27 15:46:28:4628 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-27 15:47:22:4722 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-27 15:47:22:4722 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-27 15:47:22:4722 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-27 15:47:28:4728 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-27 15:47:28:4728 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-27 15:47:28:4728 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-27 15:47:48:4748 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-27 15:47:48:4748 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-27 15:47:48:4748 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-27 16:05:48:548 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-27 16:05:48:548 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-27 16:05:49:549 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-27 16:08:24:824 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-27 16:08:24:824 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-27 16:08:24:824 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-27 16:09:57:957 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-27 16:09:57:957 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-27 16:09:57:957 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-27 16:14:59:1459 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-27 16:14:59:1459 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-27 16:14:59:1459 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-27 16:17:06:176 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-27 16:17:06:176 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-27 16:17:06:176 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-27 16:24:03:243 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-27 16:24:03:243 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-27 16:24:03:243 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-27 16:42:12:4212 [32minfo[39m: [32mAdmin session stored in Redis: 2e497b11-0b10-499d-b05d-561a00fbc7c2[39m
+2025-09-27 16:42:12:4212 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-27 16:42:41:4241 [32minfo[39m: [32mRetrieved 8 users[39m
+2025-09-27 16:43:48:4348 [32minfo[39m: [32mSoft deleted user: 68d156c869aec66ba6b6c197 (85581218845)[39m
+2025-09-27 16:44:22:4422 [32minfo[39m: [32mRetrieved 1 deleted users[39m
+2025-09-27 16:44:37:4437 [32minfo[39m: [32mRetrieved 7 users[39m
+2025-09-27 16:44:54:4454 [32minfo[39m: [32mRetrieved 1 deleted users[39m
+2025-09-27 16:45:05:455 [32minfo[39m: [32mRetrieved 7 users[39m
+2025-09-27 16:45:31:4531 [32minfo[39m: [32mRestored user: 68d156c869aec66ba6b6c197 (85581218845)[39m
+2025-09-27 16:45:39:4539 [32minfo[39m: [32mRetrieved 8 users[39m
+2025-09-27 16:45:53:4553 [33mwarn[39m: [33m⚠️  PERMANENT DELETION: User permanently deleted by SuperAdmin 68c569a97025ba51b02ef989[39m
+2025-09-27 16:46:03:463 [32minfo[39m: [32mRetrieved 0 deleted users[39m
+2025-09-27 16:48:03:483 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-27 16:48:03:483 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-27 16:48:03:483 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-27 16:54:11:5411 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-27 16:54:11:5411 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-27 16:54:11:5411 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-27 16:54:40:5440 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-27 16:54:40:5440 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-27 16:54:40:5440 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-27 16:55:03:553 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-27 16:55:03:553 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-27 16:55:03:553 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-28 09:28:29:2829 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 09:28:29:2829 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 09:28:29:2829 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-28 09:28:50:2850 [32minfo[39m: [32mAdmin session stored in Redis: 28313d56-97dc-4a2a-910e-b4c4ff093f21[39m
+2025-09-28 09:28:50:2850 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-28 09:34:35:3435 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 09:34:35:3435 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 09:34:35:3435 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-28 09:35:01:351 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 09:35:01:351 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 09:35:01:351 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-28 09:36:14:3614 [32minfo[39m: [32mCreated new seat: 68d89f1e58cd2f25409c11c7 (A112)[39m
+2025-09-28 09:36:37:3637 [32minfo[39m: [32mRetrieved 1 seats[39m
+2025-09-28 09:40:12:4012 [32minfo[39m: [32mSoft deleted seat: 68d89f1e58cd2f25409c11c7 (A112)[39m
+2025-09-28 09:43:22:4322 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-09-28 09:43:49:4349 [32minfo[39m: [32mRetrieved 1 deleted seats[39m
+2025-09-28 09:46:17:4617 [32minfo[39m: [32mRestored seat: 68d89f1e58cd2f25409c11c7 (A112)[39m
+2025-09-28 09:46:21:4621 [32minfo[39m: [32mRetrieved 1 seats[39m
+2025-09-28 09:46:25:4625 [32minfo[39m: [32mSoft deleted seat: 68d89f1e58cd2f25409c11c7 (A112)[39m
+2025-09-28 09:46:34:4634 [32minfo[39m: [32mRetrieved 1 deleted seats[39m
