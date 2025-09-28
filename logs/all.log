@@ -915,3 +915,87 @@
 2025-09-28 09:46:21:4621 [32minfo[39m: [32mRetrieved 1 seats[39m
 2025-09-28 09:46:25:4625 [32minfo[39m: [32mSoft deleted seat: 68d89f1e58cd2f25409c11c7 (A112)[39m
 2025-09-28 09:46:34:4634 [32minfo[39m: [32mRetrieved 1 deleted seats[39m
+2025-09-28 15:35:34:3534 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 15:35:34:3534 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 15:35:34:3534 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-28 15:45:45:4545 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 15:45:45:4545 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 15:45:45:4545 [32minfo[39m: [32mServer running on port 8080[39m
+2025-09-28 15:45:54:4554 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 15:45:54:4554 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 15:45:54:4554 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 15:46:04:464 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 15:46:04:464 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 15:46:04:464 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 15:48:11:4811 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 15:48:11:4811 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 15:48:11:4811 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 15:48:15:4815 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 15:48:15:4815 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 15:48:15:4815 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 15:48:58:4858 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 15:48:58:4858 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 15:48:58:4858 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 15:52:13:5213 [33mwarn[39m: [33m404 - Route not found: GET /[39m
+2025-09-28 15:52:13:5213 [33mwarn[39m: [33m404 - Route not found: GET /favicon.ico[39m
+2025-09-28 16:02:50:250 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 16:02:50:250 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 16:02:50:250 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 16:03:25:325 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 16:03:25:325 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 16:03:25:325 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 16:04:22:422 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 16:04:22:422 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 16:04:22:422 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 16:04:37:437 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 16:04:37:437 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 16:04:37:437 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 16:06:51:651 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 16:06:51:651 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 16:06:51:651 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 16:07:22:722 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 16:07:22:722 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 16:07:22:722 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 16:07:55:755 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 16:07:55:755 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 16:07:55:755 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 16:08:29:829 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 16:08:29:829 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 16:08:29:829 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 16:08:40:840 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 16:08:40:840 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 16:08:40:840 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 16:09:39:939 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 16:09:39:939 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 16:09:39:939 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 16:09:46:946 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 16:09:46:946 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 16:09:46:946 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 16:09:56:956 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 16:09:56:956 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 16:09:56:956 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 16:18:00:180 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 16:18:00:180 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 16:18:00:180 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 16:30:57:3057 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 16:30:57:3057 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 16:30:57:3057 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 16:32:06:326 [33mwarn[39m: [33m404 - Route not found: POST /api/users/admin-login[39m
+2025-09-28 16:32:35:3235 [31merror[39m: [31mValidation error:[39m
+2025-09-28 16:33:56:3356 [31merror[39m: [31mValidation error:[39m
+2025-09-28 16:34:17:3417 [32minfo[39m: [32mAdmin session stored in Redis: 479f999a-8b64-4166-91f1-13639abe8584[39m
+2025-09-28 16:34:17:3417 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-28 16:34:39:3439 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-09-28 16:35:28:3528 [31merror[39m: [31mValidation error:[39m
+2025-09-28 16:35:46:3546 [32minfo[39m: [32mCreated new seat: 68d9017231fd6f8d1d07394a (A312)[39m
+2025-09-28 16:35:56:3556 [32minfo[39m: [32mRetrieved 1 seats[39m
+2025-09-28 16:37:05:375 [32minfo[39m: [32mRetrieved 1 deleted seats[39m
+2025-09-28 16:40:50:4050 [32minfo[39m: [32mOTP for +85512345678: 745137[39m
+2025-09-28 16:40:50:4050 [32minfo[39m: [32mDevelopment OTP for +85512345678: 745137[39m
+2025-09-28 16:40:50:4050 [32minfo[39m: [32mOTP sent to phone: +85512345678[39m
+2025-09-28 16:41:01:411 [32minfo[39m: [32mNew user registered: +85512345678[39m
+2025-09-28 16:41:01:411 [32minfo[39m: [32mUser session stored in Redis: b5446619-2c0a-4e28-93c4-b870c07b2a6d[39m
+2025-09-28 16:41:48:4148 [31merror[39m: [31mValidation error:[39m
+2025-09-28 16:41:54:4154 [31merror[39m: [31mValidation error:[39m
+2025-09-28 16:42:03:423 [31merror[39m: [31mValidation error:[39m
+2025-09-28 16:42:37:4237 [31merror[39m: [31mValidation error:[39m

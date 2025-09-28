@@ -18,6 +18,7 @@ const apiRoutes = require('./routes');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/users.routes');
 const seatRoutes = require('./routes/seats.routes');
+const locationRoutes = require('./routes/locations.routes');
 
 const app = express();
 
@@ -72,6 +73,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 // seats
 app.use('/api/seats', seatRoutes);
+// locations
+app.use('/api/locations', locationRoutes);
 
 // 404 handler for undefined routes
 app.use((req, res) => {

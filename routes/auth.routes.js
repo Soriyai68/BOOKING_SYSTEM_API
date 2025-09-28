@@ -2,13 +2,13 @@ const express = require('express');
 const AuthController = require('../controllers/auth.controller');
 const validator = require('../middlewares/validator.middleware');
 const authenticate = require('../middlewares/auth.middleware');
-const { 
-  sendOTPSchema, 
-  verifyOTPSchema, 
+const {
+  sendOTPSchema,
+  verifyOTPSchema,
   adminLoginSchema,
   changePasswordSchema,
   sendResetOTPSchema,
-  resetPasswordSchema 
+  resetPasswordSchema
 } = require('../schemas/authSchema');
 
 const router = express.Router();

@@ -4,11 +4,13 @@ const router = express.Router();
 // Import route modules
 const userRoutes = require('./users.routes');
 const seatRoutes = require('./seats.routes');
+const locationRoutes = require('./locations.routes');
 // Import Route module
 
 // Mount routes
 router.use('/users', userRoutes);
 router.use('/seats', seatRoutes);
+router.use('/locations', locationRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {
@@ -28,6 +30,7 @@ router.get('/', (req, res) => {
     endpoints: {
       users: '/api/users',
       seats: '/api/seats',
+      locations: '/api/locations',
       health: '/api/health'
     }
   });
