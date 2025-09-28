@@ -23,6 +23,7 @@
     "mongoose": "^8.18.1",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
+    "multer-storage-cloudinary": "^4.0.0",
     "otp-generator": "^4.0.1",
     "path": "^0.12.7",
     "plasgate": "^1.1.3",
