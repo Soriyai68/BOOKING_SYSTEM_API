@@ -329,6 +329,35 @@ class UserController {
         }
       }
 
+      // Handle password update separately if provided
+      if (updateData.password) {
+        // Find the user first to use the pre-save hook for password hashing
+        const user = await User.findById(id);
+        if (!user) {
+          return res.status(404).json({
+            success: false,
+            message: 'User not found'
+          });
+        }
+
+        // Update user fields including password
+        Object.assign(user, updateData);
+        user.passwordChangedAt = new Date();
+        await user.save();
+
+        // Remove password from response
+        const userResponse = user.toObject();
+        delete userResponse.password;
+
+        logger.info(`Updated user with password: ${id}`);
+
+        return res.status(200).json({
+          success: true,
+          message: 'User updated successfully',
+          data: { user: userResponse }
+        });
+      }
+
       const user = await User.findByIdAndUpdate(
         id,
         updateData,
@@ -614,8 +643,6 @@ class UserController {
       });
     }
   }
-
-
 
   // 9. ADVANCED SEARCH
   static async search(req, res) {

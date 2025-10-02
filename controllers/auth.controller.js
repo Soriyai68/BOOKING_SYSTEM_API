@@ -167,6 +167,14 @@ class AuthController {
       let isNewUser = false;
       
       if (user) {
+        // Check if user is active
+        if (!user.isActive) {
+          return res.status(403).json({
+            success: false,
+            message: 'Your account has been deactivated. Please contact support.'
+          });
+        }
+        
         // Login existing user
         user.lastLogin = new Date();
         user.isVerified = true;
@@ -429,6 +437,14 @@ class AuthController {
         });
       }
   
+      // Check if user is active
+      if (!user.isActive) {
+        return res.status(403).json({
+          success: false,
+          message: 'Your account has been deactivated. Please contact support.'
+        });
+      }
+      
       // Check if user is admin or superadmin
       if (!user.requiresPassword()) {
         return res.status(403).json({

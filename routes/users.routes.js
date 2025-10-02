@@ -95,8 +95,9 @@ router.get('/:id',
 // 4. UPDATE USER - Update user by ID
 router.put('/:id',
   middlewares.authenticate,
-  middlewares.validator(userSchema.userIdParamSchema, 'params'),
+  // middlewares.validator(userSchema.userIdParamSchema, 'params'),
   middlewares.validator(userSchema.updateUserSchema),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
   UserController.update
 );
 

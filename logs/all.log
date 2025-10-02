@@ -999,3 +999,1263 @@
 2025-09-28 16:41:54:4154 [31merror[39m: [31mValidation error:[39m
 2025-09-28 16:42:03:423 [31merror[39m: [31mValidation error:[39m
 2025-09-28 16:42:37:4237 [31merror[39m: [31mValidation error:[39m
+2025-09-28 16:42:43:4243 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 16:42:43:4243 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 16:42:43:4243 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 16:42:45:4245 [31merror[39m: [31mValidation error:[39m
+2025-09-28 16:43:00:430 [32minfo[39m: [32mOTP for +85512345678: 606739[39m
+2025-09-28 16:43:00:430 [32minfo[39m: [32mDevelopment OTP for +85512345678: 606739[39m
+2025-09-28 16:43:00:430 [32minfo[39m: [32mOTP sent to phone: +85512345678[39m
+2025-09-28 16:43:50:4350 [32minfo[39m: [32mOTP for +85512345676: 172921[39m
+2025-09-28 16:43:50:4350 [32minfo[39m: [32mDevelopment OTP for +85512345676: 172921[39m
+2025-09-28 16:43:50:4350 [32minfo[39m: [32mOTP sent to phone: +85512345676[39m
+2025-09-28 16:45:13:4513 [32minfo[39m: [32mNew user registered: +85512345676[39m
+2025-09-28 16:45:13:4513 [32minfo[39m: [32mUser session stored in Redis: ace592ec-3819-4b94-a91e-ff83e7816f9d[39m
+2025-09-28 16:45:46:4546 [32minfo[39m: [32mRetrieved 9 users[39m
+2025-09-28 16:46:36:4636 [32minfo[39m: [32mRetrieved 1 deleted seats[39m
+2025-09-28 17:12:04:124 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 17:12:04:124 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 17:12:04:124 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 17:13:10:1310 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 17:13:10:1310 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 17:13:10:1310 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 17:14:48:1448 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 17:14:48:1448 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 17:14:48:1448 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 17:20:12:2012 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 17:20:12:2012 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 17:20:12:2012 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 17:20:52:2052 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 17:20:52:2052 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 17:20:52:2052 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 17:27:05:275 [32minfo[39m: [32mRetrieved 1 seats[39m
+2025-09-28 17:27:15:2715 [32minfo[39m: [32mCreated new seat: 68d90d83e194c3b3c0e9bac4 (A412)[39m
+2025-09-28 17:27:22:2722 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-09-28 17:27:32:2732 [32minfo[39m: [32mRetrieved 1 deleted seats[39m
+2025-09-28 17:28:33:2833 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 17:28:33:2833 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 17:28:34:2834 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 17:28:45:2845 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 17:28:45:2845 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 17:28:45:2845 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 17:28:54:2854 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 17:28:54:2854 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 17:28:54:2854 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 17:29:39:2939 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 17:29:39:2939 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 17:29:39:2939 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 17:29:50:2950 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 17:29:50:2950 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 17:29:50:2950 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-28 17:30:39:3039 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-28 17:30:39:3039 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-28 17:30:39:3039 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 20:30:04:304 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 20:30:04:304 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 20:30:04:304 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 20:30:20:3020 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 20:30:20:3020 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 20:30:20:3020 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 20:39:42:3942 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:39:42:3942 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:39:42:3942 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:39:42:3942 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:39:44:3944 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:39:44:3944 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:39:53:3953 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 20:39:53:3953 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 20:39:53:3953 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 20:39:59:3959 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:39:59:3959 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:39:59:3959 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:39:59:3959 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:39:59:3959 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:39:59:3959 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:40:06:406 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:40:06:406 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:40:35:4035 [33mwarn[39m: [33m404 - Route not found: POST /api/v1/auth/login[39m
+2025-09-29 20:40:39:4039 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:40:39:4039 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:41:15:4115 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:41:15:4115 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:41:15:4115 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:41:15:4115 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:41:31:4131 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:41:32:4132 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:41:32:4132 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:41:32:4132 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:41:52:4152 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:41:53:4153 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:41:53:4153 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:41:53:4153 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:41:55:4155 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:41:55:4155 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:41:56:4156 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:41:56:4156 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:42:01:421 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:42:01:421 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:42:05:425 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:42:05:425 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:42:05:425 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:42:05:425 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:42:06:426 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:42:06:426 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:42:33:4233 [32minfo[39m: [32mAdmin session stored in Redis: 69d5945b-d16b-4344-a5c7-e7fd6f4b85e6[39m
+2025-09-29 20:42:33:4233 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:43:02:432 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:43:02:432 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:43:47:4347 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:43:47:4347 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:43:48:4348 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:43:48:4348 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:43:48:4348 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:43:48:4348 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:43:48:4348 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:43:48:4348 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:43:48:4348 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:43:48:4348 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:43:54:4354 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:43:54:4354 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:10:4410 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:10:4410 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:10:4410 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:10:4410 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:11:4411 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:11:4411 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:18:4418 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:18:4418 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:18:4418 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:23:4423 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:24:4424 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:24:4424 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:44:4444 [33mwarn[39m: [33m404 - Route not found: POST /api/v1/auth/admin-login[39m
+2025-09-29 20:44:49:4449 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:49:4449 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/auth/profile[39m
+2025-09-29 20:44:49:4449 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:49:4449 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/auth/profile[39m
+2025-09-29 20:44:50:4450 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:50:4450 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:58:4458 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:44:58:4458 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:45:11:4511 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:45:11:4511 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/health[39m
+2025-09-29 20:45:57:4557 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 20:45:57:4557 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 20:45:57:4557 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 20:46:18:4618 [33mwarn[39m: [33m404 - Route not found: POST /api/v1/auth/admin-login[39m
+2025-09-29 20:46:20:4620 [33mwarn[39m: [33m404 - Route not found: POST /api/v1/auth/admin-login[39m
+2025-09-29 20:46:21:4621 [33mwarn[39m: [33m404 - Route not found: POST /api/v1/auth/admin-login[39m
+2025-09-29 20:46:30:4630 [33mwarn[39m: [33m404 - Route not found: POST /api/v1/auth/admin-login[39m
+2025-09-29 20:47:18:4718 [33mwarn[39m: [33m404 - Route not found: POST /api/v1/auth/admin-login[39m
+2025-09-29 20:48:01:481 [33mwarn[39m: [33m404 - Route not found: POST /api/v1/auth/login[39m
+2025-09-29 20:49:08:498 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/v1/health[39m
+2025-09-29 20:49:08:498 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/v1/health[39m
+2025-09-29 20:49:08:498 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/v1/health[39m
+2025-09-29 20:49:08:498 [33mwarn[39m: [33m404 - Route not found: GET /api/v1/v1/health[39m
+2025-09-29 20:49:15:4915 [33mwarn[39m: [33m404 - Route not found: GET /api//v1/health[39m
+2025-09-29 20:49:15:4915 [33mwarn[39m: [33m404 - Route not found: GET /api//v1/health[39m
+2025-09-29 20:49:28:4928 [33mwarn[39m: [33m404 - Route not found: POST /api/v1/auth/l[39m
+2025-09-29 20:49:42:4942 [32minfo[39m: [32mAdmin session stored in Redis: 88922c43-4a41-490a-8ea3-f44bb0daf13b[39m
+2025-09-29 20:49:42:4942 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:49:48:4948 [33mwarn[39m: [33m404 - Route not found: POST /api/v1/auth/admin-login[39m
+2025-09-29 20:50:20:5020 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 20:50:20:5020 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 20:50:20:5020 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 20:50:26:5026 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 20:50:26:5026 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 20:50:26:5026 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 20:50:29:5029 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 20:50:29:5029 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 20:50:29:5029 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 20:50:32:5032 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 20:50:32:5032 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 20:50:32:5032 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 20:50:35:5035 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 20:50:35:5035 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 20:50:35:5035 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 20:50:40:5040 [33mwarn[39m: [33m404 - Route not found: POST /api/v1/auth/l[39m
+2025-09-29 20:51:12:5112 [32minfo[39m: [32mAdmin session stored in Redis: 08a4ba85-2a4c-4ab0-b84d-17da94a0a042[39m
+2025-09-29 20:51:12:5112 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:51:16:5116 [32minfo[39m: [32mAdmin session stored in Redis: a1cfd5a3-ca88-41c5-bf87-807c5308a2c7[39m
+2025-09-29 20:51:16:5116 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:51:44:5144 [32minfo[39m: [32mAdmin session stored in Redis: dbfad377-7c1a-4fa6-ad25-e7ed8334d0f2[39m
+2025-09-29 20:51:44:5144 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:53:09:539 [32minfo[39m: [32mAdmin session stored in Redis: dab27d1c-c6e1-4aaa-912a-69f1c00873f6[39m
+2025-09-29 20:53:09:539 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:54:37:5437 [32minfo[39m: [32mAdmin session stored in Redis: 6fb14ada-cb2a-4e4e-a5d8-10e86b898b11[39m
+2025-09-29 20:54:37:5437 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:54:53:5453 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 20:54:53:5453 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 20:54:53:5453 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 20:55:22:5522 [32minfo[39m: [32mAdmin session stored in Redis: ed25a00c-9861-4150-98be-19a33ff7a0ef[39m
+2025-09-29 20:55:22:5522 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:55:39:5539 [32minfo[39m: [32mAdmin session stored in Redis: a0b5fb6f-ed4b-43a0-8a87-4ff156b05812[39m
+2025-09-29 20:55:39:5539 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:56:16:5616 [32minfo[39m: [32mAdmin session stored in Redis: e0fd63ab-968f-4cf1-bc3a-0429d6f2e0c9[39m
+2025-09-29 20:56:16:5616 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:56:17:5617 [32minfo[39m: [32mAdmin session stored in Redis: f40d6b11-826c-4beb-aecf-a15109d68a19[39m
+2025-09-29 20:56:17:5617 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:56:18:5618 [32minfo[39m: [32mAdmin session stored in Redis: 779a98e1-cf71-4136-9c4f-c83b35195c83[39m
+2025-09-29 20:56:18:5618 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:56:18:5618 [32minfo[39m: [32mAdmin session stored in Redis: c0517904-54df-4f7b-848d-72b3fcf11952[39m
+2025-09-29 20:56:18:5618 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:56:19:5619 [32minfo[39m: [32mAdmin session stored in Redis: dcff75c3-df74-4c9a-8398-9643429e3589[39m
+2025-09-29 20:56:19:5619 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:56:20:5620 [32minfo[39m: [32mAdmin session stored in Redis: ea982d83-7e0f-409f-8a18-6139a690cff4[39m
+2025-09-29 20:56:20:5620 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:56:20:5620 [32minfo[39m: [32mAdmin session stored in Redis: 9b1f74f3-515a-4d46-afd4-678ed5e1d6d5[39m
+2025-09-29 20:56:20:5620 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:56:20:5620 [32minfo[39m: [32mAdmin session stored in Redis: 989333b4-62fa-4bd7-acfa-9c77ba7da434[39m
+2025-09-29 20:56:20:5620 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:56:22:5622 [32minfo[39m: [32mAdmin session stored in Redis: a65dfa56-fd97-478c-9fe6-3fc78c0bb588[39m
+2025-09-29 20:56:22:5622 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:56:23:5623 [32minfo[39m: [32mAdmin session stored in Redis: c4259a88-262f-4a91-b294-a9fc28887a4b[39m
+2025-09-29 20:56:23:5623 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:56:23:5623 [32minfo[39m: [32mAdmin session stored in Redis: 7ea09b94-fd16-4fde-adbb-34bafad0a0e7[39m
+2025-09-29 20:56:23:5623 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:56:32:5632 [32minfo[39m: [32mAdmin session stored in Redis: 6cf31456-e2d5-493d-a56d-e0a7b3c3ab10[39m
+2025-09-29 20:56:32:5632 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:56:33:5633 [32minfo[39m: [32mAdmin session stored in Redis: 93154437-6e79-4f94-9c1b-b5cd98139fb5[39m
+2025-09-29 20:56:33:5633 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:56:45:5645 [32minfo[39m: [32mAdmin session stored in Redis: ea4c3074-d9fb-4c0d-81c5-e17b2c6ac572[39m
+2025-09-29 20:56:45:5645 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:57:14:5714 [32minfo[39m: [32mAdmin session stored in Redis: aa97f7f2-39f5-4e82-8dad-563b90fa2ae8[39m
+2025-09-29 20:57:14:5714 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:57:29:5729 [32minfo[39m: [32mAdmin session stored in Redis: f6df0ac5-ab90-44e8-9e00-c81dffaf6dec[39m
+2025-09-29 20:57:29:5729 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:57:41:5741 [32minfo[39m: [32mAdmin session stored in Redis: a4a2fe65-9347-4d4c-85ed-2c38b51fccca[39m
+2025-09-29 20:57:41:5741 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:57:42:5742 [32minfo[39m: [32mAdmin session stored in Redis: 0823b831-7a57-4e15-8952-d55619f2c371[39m
+2025-09-29 20:57:42:5742 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:57:43:5743 [32minfo[39m: [32mAdmin session stored in Redis: 9da1a6b2-a661-4a92-a2f5-4d40e1dd215c[39m
+2025-09-29 20:57:43:5743 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:57:51:5751 [32minfo[39m: [32mAdmin session stored in Redis: b2cec713-1568-4438-a44d-8de962945473[39m
+2025-09-29 20:57:51:5751 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:57:52:5752 [32minfo[39m: [32mAdmin session stored in Redis: 17ac25b8-a7aa-4587-b2cf-b3166e75e7c0[39m
+2025-09-29 20:57:52:5752 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:58:15:5815 [32minfo[39m: [32mAdmin session stored in Redis: 209065dd-8ef2-4985-8252-bac6eb311d52[39m
+2025-09-29 20:58:15:5815 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 20:58:29:5829 [32minfo[39m: [32mAdmin session stored in Redis: 0e6c227d-a61f-4913-b125-058221a42301[39m
+2025-09-29 20:58:29:5829 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:00:18:018 [32minfo[39m: [32mAdmin session stored in Redis: deb0eaa1-3e75-4756-87e4-0f4fab0bb29f[39m
+2025-09-29 21:00:18:018 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:00:30:030 [32minfo[39m: [32mAdmin session stored in Redis: 1aa421f0-33e5-44f5-a201-083f4fc1b94a[39m
+2025-09-29 21:00:30:030 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:00:32:032 [32minfo[39m: [32mAdmin session stored in Redis: a2fa4bd7-6a32-4fab-baff-35fb4e4d86a5[39m
+2025-09-29 21:00:32:032 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:00:49:049 [32minfo[39m: [32mAdmin session stored in Redis: 83914352-1c78-436d-ab43-68cba56e3b2d[39m
+2025-09-29 21:00:49:049 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:01:16:116 [32minfo[39m: [32mAdmin session stored in Redis: d8e4a902-4ba6-4279-905c-484b487c8ac7[39m
+2025-09-29 21:01:16:116 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:01:17:117 [32minfo[39m: [32mAdmin session stored in Redis: 74f67022-a021-43de-8f17-2775ec25dd76[39m
+2025-09-29 21:01:17:117 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:01:18:118 [32minfo[39m: [32mAdmin session stored in Redis: eaaa0016-a83d-4468-a710-c6df270e7cf1[39m
+2025-09-29 21:01:18:118 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:01:32:132 [32minfo[39m: [32mAdmin session stored in Redis: 84d52f61-2831-4df5-a13f-c05287d8c89e[39m
+2025-09-29 21:01:32:132 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:01:35:135 [32minfo[39m: [32mAdmin session stored in Redis: 9639d567-5681-46c4-a038-cc251cf9290a[39m
+2025-09-29 21:01:35:135 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:01:58:158 [32minfo[39m: [32mAdmin session stored in Redis: 168a5ff3-b60d-4c62-ac51-f0c04c695708[39m
+2025-09-29 21:01:58:158 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:02:38:238 [32minfo[39m: [32mAdmin session stored in Redis: cc7ef4fb-249b-4c86-a400-1d1beddc92f6[39m
+2025-09-29 21:02:38:238 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:02:46:246 [32minfo[39m: [32mAdmin session stored in Redis: a97a8527-c117-4fc4-95be-63e2160afbb9[39m
+2025-09-29 21:02:46:246 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:03:27:327 [32minfo[39m: [32mAdmin session stored in Redis: 355a1b1a-7786-449b-a148-e74654055db3[39m
+2025-09-29 21:03:27:327 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:03:34:334 [32minfo[39m: [32mAdmin session stored in Redis: bd9876b3-eea4-47c1-816e-cea7c74600c8[39m
+2025-09-29 21:03:34:334 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:04:53:453 [32minfo[39m: [32mAdmin session stored in Redis: f5ca4d4a-55ad-4f43-ab82-71c8a587ec82[39m
+2025-09-29 21:04:53:453 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:05:05:55 [33mwarn[39m: [33m404 - Route not found: POST /api/v1/auth/login[39m
+2025-09-29 21:05:17:517 [32minfo[39m: [32mAdmin session stored in Redis: a3c4ddfc-d628-4e53-9e7a-25a5099048ff[39m
+2025-09-29 21:05:17:517 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:08:55:855 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 21:08:55:855 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 21:08:55:855 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 21:08:59:859 [32minfo[39m: [32mAdmin session stored in Redis: 366cde40-cf20-47ff-8425-3895cbc337cf[39m
+2025-09-29 21:08:59:859 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:10:17:1017 [32minfo[39m: [32mAdmin session stored in Redis: c0fa7f49-5f23-4949-ac07-9f0b3686582a[39m
+2025-09-29 21:10:17:1017 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:10:38:1038 [32minfo[39m: [32mAdmin session stored in Redis: 81dba857-b6e2-48a6-a870-8442826c472d[39m
+2025-09-29 21:10:38:1038 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:10:44:1044 [32minfo[39m: [32mAdmin session stored in Redis: b6c0e156-1ad0-4f68-865b-7a1c7ccd460f[39m
+2025-09-29 21:10:44:1044 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:20:00:200 [32minfo[39m: [32mAdmin session stored in Redis: 74e24325-6f50-4af3-83aa-2020497c4484[39m
+2025-09-29 21:20:00:200 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:20:04:204 [32minfo[39m: [32mAdmin session stored in Redis: 1798aafc-0f66-47cf-b27c-420f069e57d9[39m
+2025-09-29 21:20:04:204 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:20:50:2050 [32minfo[39m: [32mAdmin session stored in Redis: 60f95841-cd72-4990-94c4-d40fa9d48114[39m
+2025-09-29 21:20:50:2050 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:20:52:2052 [32minfo[39m: [32mAdmin session stored in Redis: 09668802-9111-40e8-8965-f3030b12c093[39m
+2025-09-29 21:20:52:2052 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:20:57:2057 [32minfo[39m: [32mAdmin session stored in Redis: 25cc08b4-d73e-41b4-b9ed-331a6a4b73df[39m
+2025-09-29 21:20:57:2057 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:30:06:306 [32minfo[39m: [32mAdmin session stored in Redis: bfba1aee-c706-4c79-b709-ac08ec3f1f46[39m
+2025-09-29 21:30:06:306 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:32:05:325 [32minfo[39m: [32mAdmin session stored in Redis: 10af7e1b-9c96-44b4-bffe-55bde45de4a8[39m
+2025-09-29 21:32:05:325 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:32:59:3259 [32minfo[39m: [32mAdmin session stored in Redis: 29b91738-d8d7-4c26-b978-bce556fdd916[39m
+2025-09-29 21:32:59:3259 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:33:02:332 [32minfo[39m: [32mAdmin session stored in Redis: 1a32fcff-474c-46b4-8594-72944a819582[39m
+2025-09-29 21:33:02:332 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:33:25:3325 [32minfo[39m: [32mAdmin session stored in Redis: 478daba3-9f49-43db-8745-5cb21dc8d886[39m
+2025-09-29 21:33:25:3325 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:34:07:347 [32minfo[39m: [32mAdmin session stored in Redis: c9bcd986-539d-4fa1-8f23-8004b59579d0[39m
+2025-09-29 21:34:07:347 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:34:20:3420 [32minfo[39m: [32mAdmin session stored in Redis: 4453cd85-20c8-4273-aac3-3ee52105d856[39m
+2025-09-29 21:34:20:3420 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:34:21:3421 [32minfo[39m: [32mAdmin session stored in Redis: 10eac4a0-5315-478b-8c56-d15e81c71229[39m
+2025-09-29 21:34:21:3421 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:35:33:3533 [32minfo[39m: [32mAdmin session stored in Redis: 8a9a6d7d-6b36-46cd-8a5f-b485ab490070[39m
+2025-09-29 21:35:33:3533 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:35:52:3552 [32minfo[39m: [32mAdmin session stored in Redis: 43726f7d-9552-465f-96ef-0052b07b5da7[39m
+2025-09-29 21:35:52:3552 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:36:26:3626 [32minfo[39m: [32mAdmin session stored in Redis: 16bd843b-4088-45f4-917d-b89a94e287bd[39m
+2025-09-29 21:36:26:3626 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:37:34:3734 [32minfo[39m: [32mAdmin session stored in Redis: 31539b83-344d-43c9-9757-8e6acc51340a[39m
+2025-09-29 21:37:34:3734 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:39:16:3916 [32minfo[39m: [32mAdmin session stored in Redis: c2f98559-d6db-4be5-932f-793f41192fd6[39m
+2025-09-29 21:39:16:3916 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:39:57:3957 [32minfo[39m: [32mAdmin session stored in Redis: 3baa66c2-829d-4160-a003-935c7b909f3e[39m
+2025-09-29 21:39:57:3957 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:40:41:4041 [32minfo[39m: [32mAdmin session stored in Redis: ceb44280-ed81-4e7f-ac8b-6c78ecfa1d8f[39m
+2025-09-29 21:40:41:4041 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:40:56:4056 [32minfo[39m: [32mAdmin session stored in Redis: 39e962f9-03d3-47a4-b053-ffa4e1a4a055[39m
+2025-09-29 21:40:56:4056 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:41:07:417 [32minfo[39m: [32mAdmin session stored in Redis: 17b94a6e-7d6b-4aa2-9376-e02f85a73338[39m
+2025-09-29 21:41:07:417 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:43:01:431 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:43:01:431 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:43:01:431 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:43:15:4315 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:43:15:4315 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:43:30:4330 [32minfo[39m: [32mAdmin session stored in Redis: 7dea91ce-7397-41c1-8c53-850e7f297160[39m
+2025-09-29 21:43:30:4330 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:43:48:4348 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:43:48:4348 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:44:51:4451 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 21:44:51:4451 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 21:44:51:4451 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 21:45:39:4539 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 21:45:39:4539 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 21:46:32:4632 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:46:32:4632 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:47:28:4728 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 21:47:28:4728 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 21:47:28:4728 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 21:47:42:4742 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 21:47:42:4742 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 21:47:48:4748 [32minfo[39m: [32mAdmin session stored in Redis: ff5d8ee9-f9df-4a5e-8d97-77d214eda96d[39m
+2025-09-29 21:47:48:4748 [32minfo[39m: [32mAdmin logged in: +85545678912 (admin)[39m
+2025-09-29 21:48:03:483 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:48:03:483 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:48:03:483 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:48:15:4815 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:48:15:4815 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:48:15:4815 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:48:15:4815 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:48:15:4815 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:48:39:4839 [32minfo[39m: [32mAdmin session stored in Redis: 12a2b2e9-ccae-4f8d-81e1-da66c6a6512d[39m
+2025-09-29 21:48:39:4839 [32minfo[39m: [32mAdmin logged in: +85545678912 (admin)[39m
+2025-09-29 21:50:17:5017 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:50:17:5017 [31merror[39m: [31mAuthentication error: jwt malformed[39m
+2025-09-29 21:50:28:5028 [32minfo[39m: [32mAdmin session stored in Redis: 288accc1-1b53-43a1-99c7-4fc615122f5d[39m
+2025-09-29 21:50:28:5028 [32minfo[39m: [32mAdmin logged in: +85545678912 (admin)[39m
+2025-09-29 21:50:50:5050 [32minfo[39m: [32mAdmin session stored in Redis: 15e4279a-0844-484f-8e7f-ce6c8b33783e[39m
+2025-09-29 21:50:50:5050 [32minfo[39m: [32mAdmin logged in: +85545678912 (admin)[39m
+2025-09-29 21:54:46:5446 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 21:54:46:5446 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 21:54:46:5446 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 21:54:49:5449 [32minfo[39m: [32mAdmin session stored in Redis: 9a361010-756b-4403-89c7-861d14e06697[39m
+2025-09-29 21:54:49:5449 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:55:17:5517 [32minfo[39m: [32mAdmin session stored in Redis: 97878224-2a3d-42c3-82b7-25d0e46cb96c[39m
+2025-09-29 21:55:17:5517 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:55:36:5536 [32minfo[39m: [32mAdmin session stored in Redis: e344f30d-a322-45c4-b979-8822bd623ea0[39m
+2025-09-29 21:55:36:5536 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:55:52:5552 [32minfo[39m: [32mAdmin session stored in Redis: a5128297-0477-45aa-90c1-93a7b74ec640[39m
+2025-09-29 21:55:52:5552 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:56:37:5637 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 21:56:37:5637 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 21:56:37:5637 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 21:56:49:5649 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 21:56:49:5649 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 21:56:49:5649 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 21:56:59:5659 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 21:56:59:5659 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 21:57:15:5715 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 21:57:15:5715 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 21:57:15:5715 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 21:57:50:5750 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 21:57:50:5750 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 21:57:50:5750 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 21:57:58:5758 [32minfo[39m: [32mAdmin session stored in Redis: 1178840a-a256-4c01-84c4-805f6191a751[39m
+2025-09-29 21:57:58:5758 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:58:28:5828 [32minfo[39m: [32mAdmin session stored in Redis: f670632f-efd4-4837-a3c0-0b32ff491245[39m
+2025-09-29 21:58:28:5828 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:58:40:5840 [32minfo[39m: [32mAdmin session stored in Redis: ab3383d9-0921-4930-8aa8-96a664b3f576[39m
+2025-09-29 21:58:40:5840 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 21:59:18:5918 [32minfo[39m: [32mAdmin session stored in Redis: ce946b4f-1f27-4212-a11b-34f67f673272[39m
+2025-09-29 21:59:18:5918 [32minfo[39m: [32mAdmin logged in: +85545678912 (admin)[39m
+2025-09-29 21:59:36:5936 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbb5[39m
+2025-09-29 21:59:46:5946 [32minfo[39m: [32mAdmin session stored in Redis: f2a51b41-a972-4c0e-ad8e-c3fae6aef27d[39m
+2025-09-29 21:59:46:5946 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:00:43:043 [32minfo[39m: [32mAdmin session stored in Redis: 216a6373-fd19-4906-aa57-a04ddf8059eb[39m
+2025-09-29 22:00:43:043 [32minfo[39m: [32mAdmin logged in: +855123456789 (admin)[39m
+2025-09-29 22:01:15:115 [32minfo[39m: [32mAll sessions logged out for user: 68da9e3be5e3189f00932973[39m
+2025-09-29 22:01:22:122 [32minfo[39m: [32mAdmin session stored in Redis: 2f975c1f-0fd4-4c82-ba52-bf7581fb92d0[39m
+2025-09-29 22:01:22:122 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:02:25:225 [32minfo[39m: [32mAdmin session stored in Redis: 1d2a25ca-65cc-478d-b2d7-35cd7ff80482[39m
+2025-09-29 22:02:25:225 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:02:44:244 [32minfo[39m: [32mAdmin session stored in Redis: a55e2236-725e-40f0-b614-2ea068146df4[39m
+2025-09-29 22:02:44:244 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:04:20:420 [32minfo[39m: [32mAdmin session stored in Redis: 003ae8cf-3228-4621-83e5-b573af5b6ebb[39m
+2025-09-29 22:04:20:420 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:04:54:454 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:08:55:855 [32minfo[39m: [32mAdmin session stored in Redis: 7f731c9a-eb01-4180-a527-aa5e4903ec76[39m
+2025-09-29 22:08:55:855 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:08:59:859 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:09:06:96 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:09:10:910 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:09:15:915 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:09:18:918 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:09:26:926 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:09:30:930 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:09:32:932 [32minfo[39m: [32mRetrieved 0 users[39m
+2025-09-29 22:09:34:934 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:10:04:104 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:10:06:106 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:10:33:1033 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:10:34:1034 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:10:49:1049 [32minfo[39m: [32mAdmin session stored in Redis: d5fd10d7-5630-4248-a021-064500de769d[39m
+2025-09-29 22:10:49:1049 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:10:49:1049 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:10:54:1054 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:10:59:1059 [32minfo[39m: [32mSoft deleted user: 68da9c0ee247b7384f38cbb5 (+85545678912)[39m
+2025-09-29 22:10:59:1059 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-09-29 22:11:09:119 [32minfo[39m: [32mAdmin session stored in Redis: 2fbc653b-55f4-4a4d-905d-38390c264dc5[39m
+2025-09-29 22:11:09:119 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:11:09:119 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-09-29 22:11:50:1150 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-09-29 22:12:10:1210 [32minfo[39m: [32mAdmin session stored in Redis: 4b63b130-b719-42f3-8209-fed7c53af033[39m
+2025-09-29 22:12:10:1210 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:12:10:1210 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-09-29 22:12:49:1249 [32minfo[39m: [32mAdmin session stored in Redis: 1c2b5635-b5bd-4a3b-a7f8-b957d57e257b[39m
+2025-09-29 22:12:49:1249 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:12:49:1249 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-09-29 22:13:16:1316 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-09-29 22:13:41:1341 [32minfo[39m: [32mAdmin session stored in Redis: fe04f403-1a90-4596-8d02-d3a6d4cf17dc[39m
+2025-09-29 22:13:41:1341 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:13:42:1342 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-09-29 22:13:59:1359 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-09-29 22:14:02:142 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-09-29 22:14:22:1422 [32minfo[39m: [32mAdmin session stored in Redis: 0f557586-470b-48d8-ad36-0dd06b3afc17[39m
+2025-09-29 22:14:22:1422 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:14:22:1422 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-09-29 22:15:09:159 [32minfo[39m: [32mCreated new user: 68daa27cdfcc278cbd11460d[39m
+2025-09-29 22:15:09:159 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:15:29:1529 [32minfo[39m: [32mAdmin session stored in Redis: 07054d7a-99c8-4320-aa35-0a2a56148563[39m
+2025-09-29 22:15:29:1529 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:15:29:1529 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:15:48:1548 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:15:53:1553 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:16:28:1628 [32minfo[39m: [32mAdmin session stored in Redis: 7f5d92ce-de9e-4871-9857-7ce0dc176fa7[39m
+2025-09-29 22:16:28:1628 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:16:33:1633 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:16:35:1635 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:18:51:1851 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:18:54:1854 [32minfo[39m: [32mRetrieved user by ID: 68daa27cdfcc278cbd11460d[39m
+2025-09-29 22:19:11:1911 [32minfo[39m: [32mAdmin session stored in Redis: 576c67da-9e9d-4932-bc1a-9300ec08e6d1[39m
+2025-09-29 22:19:11:1911 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:19:12:1912 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:19:14:1914 [32minfo[39m: [32mRetrieved user by ID: 68daa27cdfcc278cbd11460d[39m
+2025-09-29 22:19:36:1936 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:19:43:1943 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:21:05:215 [32minfo[39m: [32mAdmin session stored in Redis: 7f70aa4a-5476-4b61-becc-fd6c2e67c136[39m
+2025-09-29 22:21:05:215 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:21:05:215 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:24:57:2457 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 22:25:21:2521 [31merror[39m: [31mValidation error:[39m
+2025-09-29 22:25:36:2536 [31merror[39m: [31mValidation error:[39m
+2025-09-29 22:25:41:2541 [31merror[39m: [31mValidation error:[39m
+2025-09-29 22:26:06:266 [32minfo[39m: [32mCreated new user: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:26:06:266 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:27:56:2756 [32minfo[39m: [32mAdmin session stored in Redis: 2d89f3a0-a764-4dbb-a644-52b1ba668753[39m
+2025-09-29 22:27:56:2756 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:28:39:2839 [32minfo[39m: [32mAdmin session stored in Redis: 7966a61a-0470-4f2c-a778-26c812ab2a99[39m
+2025-09-29 22:28:39:2839 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:29:56:2956 [32minfo[39m: [32mAdmin session stored in Redis: 1d4a5cf3-e3ab-48ee-b362-ce172079d834[39m
+2025-09-29 22:29:56:2956 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:30:14:3014 [32minfo[39m: [32mAdmin session stored in Redis: 105685c1-9e27-48ab-af86-86e4dba98281[39m
+2025-09-29 22:30:14:3014 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:30:26:3026 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:31:00:310 [32minfo[39m: [32mAdmin session stored in Redis: 64c5afcd-06e1-4835-be3a-bfb9e60a7faf[39m
+2025-09-29 22:31:00:310 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:31:47:3147 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:31:49:3149 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:31:49:3149 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:31:55:3155 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:31:57:3157 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:32:00:320 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:32:05:325 [31merror[39m: [31mValidation error:[39m
+2025-09-29 22:32:15:3215 [31merror[39m: [31mValidation error:[39m
+2025-09-29 22:32:30:3230 [31merror[39m: [31mValidation error:[39m
+2025-09-29 22:32:53:3253 [32minfo[39m: [32mAdmin session stored in Redis: b118c197-5f09-4f78-ad84-c1e9e05b5800[39m
+2025-09-29 22:32:53:3253 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:32:53:3253 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:32:56:3256 [31merror[39m: [31mValidation error:[39m
+2025-09-29 22:32:56:3256 [31merror[39m: [31mValidation error:[39m
+2025-09-29 22:33:02:332 [31merror[39m: [31mValidation error:[39m
+2025-09-29 22:33:51:3351 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:33:56:3356 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:33:58:3358 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:34:05:345 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:34:10:3410 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:35:12:3512 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:36:37:3637 [32minfo[39m: [32mAdmin session stored in Redis: 10f0830f-dadb-44c7-b105-05cada03b7d9[39m
+2025-09-29 22:36:37:3637 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:36:52:3652 [32minfo[39m: [32mAdmin session stored in Redis: b867c8d6-238c-4842-80a3-01be5ce30998[39m
+2025-09-29 22:36:52:3652 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:37:15:3715 [32minfo[39m: [32mAdmin session stored in Redis: 5f22883a-9f00-484e-b790-6fa6205d81b7[39m
+2025-09-29 22:37:15:3715 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:38:10:3810 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:38:11:3811 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:38:11:3811 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:38:12:3812 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:38:13:3813 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:38:15:3815 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:38:16:3816 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:38:21:3821 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:38:23:3823 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:38:45:3845 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:39:19:3919 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:39:49:3949 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:39:52:3952 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:39:55:3955 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:39:56:3956 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:39:57:3957 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:40:10:4010 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:40:31:4031 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:40:38:4038 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:40:41:4041 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:40:43:4043 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:40:47:4047 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:40:49:4049 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:40:51:4051 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:40:53:4053 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:40:55:4055 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:40:57:4057 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:41:07:417 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:41:09:419 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:41:19:4119 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:41:20:4120 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:41:21:4121 [32minfo[39m: [32mRetrieved user by ID: 68daa50edfcc278cbd114684[39m
+2025-09-29 22:41:41:4141 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:41:48:4148 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:41:52:4152 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:41:56:4156 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 22:42:02:422 [32minfo[39m: [32mAdmin session stored in Redis: 65749040-c273-4efe-b64d-e32b58bb1549[39m
+2025-09-29 22:42:02:422 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:42:45:4245 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 22:46:15:4615 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:46:20:4620 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:46:23:4623 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:46:23:4623 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:46:24:4624 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:46:25:4625 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:46:26:4626 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:46:28:4628 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:46:29:4629 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:46:31:4631 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:46:32:4632 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:46:33:4633 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:46:37:4637 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:46:40:4640 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:46:44:4644 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:46:55:4655 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:46:57:4657 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:47:01:471 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:47:48:4748 [32minfo[39m: [32mAdmin session stored in Redis: 32ec143a-5b40-434a-80a7-8d3f52ed6382[39m
+2025-09-29 22:47:48:4748 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 22:57:10:5710 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:57:33:5733 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:57:38:5738 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:57:39:5739 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:57:39:5739 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:57:40:5740 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:57:42:5742 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:57:54:5754 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 22:58:01:581 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:01:21:121 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:02:12:212 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:02:29:229 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:02:30:230 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:02:39:239 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:02:43:243 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:03:29:329 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:03:31:331 [32minfo[39m: [32mRetrieved 0 users[39m
+2025-09-29 23:03:33:333 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:03:37:337 [32minfo[39m: [32mRetrieved 1 users[39m
+2025-09-29 23:03:39:339 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:05:22:522 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:05:28:528 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:05:34:534 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:05:45:545 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:05:57:557 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:06:59:659 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:08:01:81 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:08:35:835 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:09:08:98 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:11:12:1112 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:11:16:1116 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:11:22:1122 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:11:57:1157 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:12:51:1251 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:13:03:133 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:13:06:136 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:13:28:1328 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:14:13:1413 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:14:16:1416 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:14:38:1438 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:14:41:1441 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:14:44:1444 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:14:51:1451 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:14:57:1457 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:15:07:157 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:15:53:1553 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:16:13:1613 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:16:15:1615 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:16:16:1616 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:16:20:1620 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:16:20:1620 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:16:21:1621 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:16:21:1621 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:16:21:1621 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:16:21:1621 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:16:39:1639 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:16:41:1641 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:17:51:1751 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:17:52:1752 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:19:08:198 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:19:29:1929 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:19:37:1937 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:19:43:1943 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:19:46:1946 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:19:55:1955 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:20:00:200 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:20:28:2028 [32minfo[39m: [32mCreated new user: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:20:29:2029 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:20:39:2039 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:20:42:2042 [32minfo[39m: [32mRetrieved user by ID: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:20:44:2044 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:21:12:2112 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:22:49:2249 [32minfo[39m: [32mAdmin session stored in Redis: 34b68c91-9ad9-432c-a12a-a14a7094d625[39m
+2025-09-29 23:22:49:2249 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 23:22:53:2253 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:22:55:2255 [32minfo[39m: [32mAdmin session stored in Redis: 35341735-9ab1-42e9-9d26-9109a40ad83b[39m
+2025-09-29 23:22:55:2255 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 23:23:06:236 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:23:25:2325 [32minfo[39m: [32mAdmin session stored in Redis: 1483c236-22b2-44ba-92b9-cef4ead60ca4[39m
+2025-09-29 23:23:25:2325 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 23:23:34:2334 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:24:12:2412 [32minfo[39m: [32mAdmin session stored in Redis: 2dfa9591-e3dd-47a3-a0ed-40ce9248777a[39m
+2025-09-29 23:24:12:2412 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 23:24:31:2431 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:24:33:2433 [32minfo[39m: [32mAdmin session stored in Redis: d8de1a65-c839-4515-b1dc-baf06f3ea40f[39m
+2025-09-29 23:24:33:2433 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 23:24:37:2437 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:24:39:2439 [32minfo[39m: [32mAdmin session stored in Redis: cc8f92e4-c7d6-4ea3-988d-8675a7dc40bc[39m
+2025-09-29 23:24:39:2439 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 23:26:10:2610 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:27:32:2732 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:27:42:2742 [32minfo[39m: [32mRetrieved user by ID: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:27:45:2745 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:27:46:2746 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:28:23:2823 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:28:25:2825 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:28:29:2829 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:28:45:2845 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:30:52:3052 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:30:52:3052 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:30:52:3052 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:30:54:3054 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:30:56:3056 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:31:33:3133 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:31:33:3133 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:31:33:3133 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:31:36:3136 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:31:37:3137 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:31:39:3139 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:31:43:3143 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:31:48:3148 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:32:28:3228 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:32:28:3228 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:32:28:3228 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:32:31:3231 [32minfo[39m: [32mRetrieved user by ID: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:32:32:3232 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:32:39:3239 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:32:39:3239 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:32:39:3239 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:32:48:3248 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:32:48:3248 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:32:49:3249 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:32:53:3253 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:32:53:3253 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:32:53:3253 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:33:19:3319 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:33:19:3319 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:33:20:3320 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:33:48:3348 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:33:48:3348 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:33:48:3348 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:33:54:3354 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:33:54:3354 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:33:54:3354 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:33:57:3357 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:33:57:3357 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:33:57:3357 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:34:00:340 [32minfo[39m: [32mUpdated user: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:34:00:340 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:34:03:343 [32minfo[39m: [32mRetrieved user by ID: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:34:06:346 [32minfo[39m: [32mUpdated user: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:34:06:346 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:34:08:348 [32minfo[39m: [32mRetrieved user by ID: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:34:10:3410 [32minfo[39m: [32mUpdated user: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:34:11:3411 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:34:13:3413 [32minfo[39m: [32mRetrieved user by ID: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:34:17:3417 [32minfo[39m: [32mUpdated user: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:34:17:3417 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:34:20:3420 [32minfo[39m: [32mRetrieved user by ID: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:34:37:3437 [32minfo[39m: [32mUpdated user with password: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:34:37:3437 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:35:01:351 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:35:12:3512 [32minfo[39m: [32mAdmin session stored in Redis: 9865afa7-662f-4110-96a2-cc4cca1030ce[39m
+2025-09-29 23:35:12:3512 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 23:35:18:3518 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:35:21:3521 [32minfo[39m: [32mRetrieved user by ID: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:35:26:3526 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:35:39:3539 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:35:54:3554 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:35:54:3554 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:35:54:3554 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:35:55:3555 [32minfo[39m: [32mRetrieved user by ID: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:35:57:3557 [32minfo[39m: [32mUpdated user: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:35:57:3557 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:35:59:3559 [32minfo[39m: [32mRetrieved user by ID: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:36:02:362 [32minfo[39m: [32mUpdated user: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:36:02:362 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:36:04:364 [32minfo[39m: [32mRetrieved user by ID: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:36:06:366 [32minfo[39m: [32mUpdated user: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:36:06:366 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:36:24:3624 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:36:24:3624 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:36:24:3624 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:36:53:3653 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:36:53:3653 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:36:53:3653 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:36:58:3658 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:36:58:3658 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:36:58:3658 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:36:58:3658 [32minfo[39m: [32mRetrieved user by ID: 68dab1ccdfcc278cbd114cfe[39m
+2025-09-29 23:37:00:370 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:37:05:375 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:37:05:375 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:37:05:375 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:37:08:378 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:37:08:378 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:37:08:378 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:37:27:3727 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:37:27:3727 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:37:27:3727 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:37:32:3732 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:37:32:3732 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:37:32:3732 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:37:39:3739 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:37:39:3739 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:37:39:3739 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:37:41:3741 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:38:18:3818 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:38:18:3818 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:38:18:3818 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:41:35:4135 [32minfo[39m: [32mRetrieved 5 users[39m
+2025-09-29 23:41:38:4138 [32minfo[39m: [32mSoft deleted user: 68dab1ccdfcc278cbd114cfe (+85509876543)[39m
+2025-09-29 23:41:38:4138 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:41:40:4140 [32minfo[39m: [32mSoft deleted user: 68daa50edfcc278cbd114684 (+855123456551)[39m
+2025-09-29 23:41:40:4140 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:44:14:4414 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:44:17:4417 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:44:18:4418 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:44:19:4419 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:44:26:4426 [31merror[39m: [31mFailed to connect to Redis, Socket closed unexpectedly[39m
+2025-09-29 23:44:26:4426 [31merror[39m: [31mFailed to connect to Redis, Socket closed unexpectedly[39m
+2025-09-29 23:44:26:4426 [31merror[39m: [31mFailed to connect to Redis, Socket closed unexpectedly[39m
+2025-09-29 23:44:26:4426 [31merror[39m: [31mFailed to connect to Redis, Socket closed unexpectedly[39m
+2025-09-29 23:44:26:4426 [31merror[39m: [31mFailed to connect to Redis, Socket closed unexpectedly[39m
+2025-09-29 23:44:26:4426 [31merror[39m: [31mFailed to connect to Redis, Socket closed unexpectedly[39m
+2025-09-29 23:44:26:4426 [31merror[39m: [31mFailed to connect to Redis, Socket closed unexpectedly[39m
+2025-09-29 23:44:26:4426 [31merror[39m: [31mFailed to connect to Redis, Socket closed unexpectedly[39m
+2025-09-29 23:44:26:4426 [31merror[39m: [31mFailed to connect to Redis, Socket closed unexpectedly[39m
+2025-09-29 23:44:30:4430 [31merror[39m: [31mFailed to connect to Redis, Socket closed unexpectedly[39m
+2025-09-29 23:44:30:4430 [31merror[39m: [31mFailed to connect to Redis, Socket closed unexpectedly[39m
+2025-09-29 23:44:30:4430 [31merror[39m: [31mFailed to connect to Redis, [39m
+2025-09-29 23:44:31:4431 [31merror[39m: [31mFailed to connect to Redis, [39m
+2025-09-29 23:44:31:4431 [31merror[39m: [31mFailed to connect to Redis, [39m
+2025-09-29 23:44:31:4431 [31merror[39m: [31mFailed to connect to Redis, [39m
+2025-09-29 23:44:32:4432 [31merror[39m: [31mFailed to connect to Redis, [39m
+2025-09-29 23:44:32:4432 [31merror[39m: [31mFailed to connect to Redis, [39m
+2025-09-29 23:44:33:4433 [31merror[39m: [31mFailed to connect to Redis, [39m
+2025-09-29 23:44:33:4433 [31merror[39m: [31mFailed to connect to Redis, [39m
+2025-09-29 23:44:34:4434 [31merror[39m: [31mFailed to connect to Redis, Socket closed unexpectedly[39m
+2025-09-29 23:44:34:4434 [33mwarn[39m: [33mRedis not available for blacklist check:[39m
+2025-09-29 23:44:34:4434 [31merror[39m: [31mFailed to connect to Redis, Socket closed unexpectedly[39m
+2025-09-29 23:44:34:4434 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:45:16:4516 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:45:16:4516 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:45:16:4516 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:47:21:4721 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:47:27:4727 [32minfo[39m: [32mCreated new user: 68dab81fdfa366f1fe22c388[39m
+2025-09-29 23:47:27:4727 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-29 23:47:40:4740 [32minfo[39m: [32mSoft deleted user: 68dab81fdfa366f1fe22c388 (+85512345678)[39m
+2025-09-29 23:47:40:4740 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:47:49:4749 [32minfo[39m: [32mSoft deleted user: 68daa27cdfcc278cbd11460d (+855123456780)[39m
+2025-09-29 23:47:49:4749 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-09-29 23:48:27:4827 [32minfo[39m: [32mCreated new user: 68dab85bdfa366f1fe22c3a1[39m
+2025-09-29 23:48:27:4827 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:48:32:4832 [32minfo[39m: [32mRetrieved user by ID: 68dab85bdfa366f1fe22c3a1[39m
+2025-09-29 23:48:35:4835 [32minfo[39m: [32mUpdated user: 68dab85bdfa366f1fe22c3a1[39m
+2025-09-29 23:48:35:4835 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:48:44:4844 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:49:09:499 [32minfo[39m: [32mAdmin session stored in Redis: d00ce9a8-3e20-4bb0-a4ae-afa51fd9c673[39m
+2025-09-29 23:49:09:499 [32minfo[39m: [32mAdmin logged in: +855123456781 (admin)[39m
+2025-09-29 23:49:34:4934 [32minfo[39m: [32mAdmin session stored in Redis: 7a495f85-48e1-4299-b287-1b7a4b025aef[39m
+2025-09-29 23:49:34:4934 [32minfo[39m: [32mAdmin logged in: +855123456781 (admin)[39m
+2025-09-29 23:50:37:5037 [32minfo[39m: [32mAdmin session stored in Redis: 9254ea23-676c-429c-ac58-f4f43bad5ed9[39m
+2025-09-29 23:50:37:5037 [32minfo[39m: [32mAdmin logged in: +855123456781 (admin)[39m
+2025-09-29 23:50:54:5054 [32minfo[39m: [32mAdmin session stored in Redis: 95cb5a78-06d6-4fe5-aa61-41340965313b[39m
+2025-09-29 23:50:54:5054 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 23:50:54:5054 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:50:58:5058 [32minfo[39m: [32mRetrieved user by ID: 68dab85bdfa366f1fe22c3a1[39m
+2025-09-29 23:51:04:514 [32minfo[39m: [32mUpdated user: 68dab85bdfa366f1fe22c3a1[39m
+2025-09-29 23:51:04:514 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:51:09:519 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:51:19:5119 [32minfo[39m: [32mAdmin session stored in Redis: cf3f7469-eca2-40ad-955e-66bbbdc7a66e[39m
+2025-09-29 23:51:19:5119 [32minfo[39m: [32mAdmin logged in: +855123456781 (admin)[39m
+2025-09-29 23:51:29:5129 [32minfo[39m: [32mAdmin session stored in Redis: 8ecbf353-cb4e-4337-89bd-67da5b447a7c[39m
+2025-09-29 23:51:29:5129 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 23:51:39:5139 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:51:39:5139 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:51:39:5139 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:51:41:5141 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:51:47:5147 [32minfo[39m: [32mAdmin session stored in Redis: e2c61b2e-ea99-416f-8e67-15f00f63e13f[39m
+2025-09-29 23:51:47:5147 [32minfo[39m: [32mAdmin logged in: +855123456781 (admin)[39m
+2025-09-29 23:52:04:524 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-29 23:52:04:524 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-29 23:52:04:524 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-29 23:52:09:529 [32minfo[39m: [32mAdmin session stored in Redis: d19b3a26-2b17-44e0-9eb3-679ecc398f44[39m
+2025-09-29 23:52:09:529 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 23:52:12:5212 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:52:15:5215 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:52:39:5239 [32minfo[39m: [32mAdmin session stored in Redis: fcd2ed22-c6c4-4a01-8faa-39fea7698521[39m
+2025-09-29 23:52:39:5239 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 23:52:54:5254 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:53:00:530 [32minfo[39m: [32mAdmin session stored in Redis: 9fa285f5-e3de-4d00-aca6-c297cb440c4e[39m
+2025-09-29 23:53:00:530 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 23:53:04:534 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:53:10:5310 [32minfo[39m: [32mAdmin session stored in Redis: 22e62946-df16-4088-a863-dccc19c1f278[39m
+2025-09-29 23:53:10:5310 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 23:53:13:5313 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:53:15:5315 [32minfo[39m: [32mRetrieved user by ID: 68dab85bdfa366f1fe22c3a1[39m
+2025-09-29 23:53:18:5318 [32minfo[39m: [32mUpdated user: 68dab85bdfa366f1fe22c3a1[39m
+2025-09-29 23:53:18:5318 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:53:26:5326 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:53:51:5351 [32minfo[39m: [32mAdmin session stored in Redis: b0b9aa9b-8b60-43c0-907e-edbb4e78aafd[39m
+2025-09-29 23:53:51:5351 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-29 23:53:53:5353 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:53:55:5355 [32minfo[39m: [32mRetrieved user by ID: 68dab85bdfa366f1fe22c3a1[39m
+2025-09-29 23:53:59:5359 [32minfo[39m: [32mUpdated user: 68dab85bdfa366f1fe22c3a1[39m
+2025-09-29 23:53:59:5359 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:54:04:544 [32minfo[39m: [32mAll sessions logged out for user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:54:18:5418 [32minfo[39m: [32mAdmin session stored in Redis: 157801d8-ecac-4c28-8ef2-934c13692059[39m
+2025-09-29 23:54:18:5418 [32minfo[39m: [32mAdmin logged in: +855123456781 (admin)[39m
+2025-09-29 23:54:20:5420 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:54:21:5421 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:54:25:5425 [32minfo[39m: [32mRetrieved user by ID: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:54:29:5429 [32minfo[39m: [32mUpdated user: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:54:29:5429 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:54:31:5431 [32minfo[39m: [32mRetrieved user by ID: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:54:44:5444 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:55:43:5543 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:55:46:5546 [32minfo[39m: [32mRetrieved user by ID: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:55:47:5547 [31merror[39m: [31mValidation error:[39m
+2025-09-29 23:55:50:5550 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:55:55:5555 [32minfo[39m: [32mRetrieved user by ID: 68da9c0ee247b7384f38cbbc[39m
+2025-09-29 23:55:59:5559 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:56:00:560 [32minfo[39m: [32mRetrieved user by ID: 68da9e3be5e3189f00932973[39m
+2025-09-29 23:56:03:563 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-29 23:56:06:566 [32minfo[39m: [32mRetrieved user by ID: 68da9c0ee247b7384f38cbbc[39m
+2025-09-30 11:33:02:332 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 11:33:02:332 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 11:33:02:332 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-30 11:34:04:344 [32minfo[39m: [32mOTP for +85581218840: 351454[39m
+2025-09-30 11:34:05:345 [31merror[39m: [31mSMS sending failed: Parameter 'sid' is not valid.[39m
+2025-09-30 11:34:05:345 [32minfo[39m: [32mDevelopment OTP for +85581218840: 351454[39m
+2025-09-30 11:34:44:3444 [32minfo[39m: [32mOTP for +85581218840: 729781[39m
+2025-09-30 11:34:44:3444 [31merror[39m: [31mSMS sending failed: Parameter 'sid' is not valid.[39m
+2025-09-30 11:34:44:3444 [32minfo[39m: [32mDevelopment OTP for +85581218840: 729781[39m
+2025-09-30 11:36:26:3626 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 11:36:26:3626 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 11:36:26:3626 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-30 11:36:28:3628 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 11:36:28:3628 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 11:36:29:3629 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-30 11:36:38:3638 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 11:36:38:3638 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 11:36:39:3639 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-30 11:36:43:3643 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 11:36:43:3643 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 11:36:43:3643 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-30 11:36:52:3652 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 11:36:52:3652 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 11:36:52:3652 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-30 11:39:48:3948 [32minfo[39m: [32mOTP for +85581218840: 801294[39m
+2025-09-30 11:39:49:3949 [31merror[39m: [31mSMS sending failed: Authenticate[39m
+2025-09-30 11:39:49:3949 [32minfo[39m: [32mDevelopment OTP for +85581218840: 801294[39m
+2025-09-30 11:40:09:409 [32minfo[39m: [32mOTP for +85581218841: 259358[39m
+2025-09-30 11:40:10:4010 [31merror[39m: [31mSMS sending failed: Authenticate[39m
+2025-09-30 11:40:10:4010 [32minfo[39m: [32mDevelopment OTP for +85581218841: 259358[39m
+2025-09-30 11:40:28:4028 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 11:40:28:4028 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 11:40:28:4028 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-30 11:40:44:4044 [32minfo[39m: [32mOTP for +85581218841: 748335[39m
+2025-09-30 11:40:44:4044 [32minfo[39m: [32mDevelopment OTP for +85581218841: 748335[39m
+2025-09-30 11:40:44:4044 [32minfo[39m: [32mOTP sent to phone: +85581218841[39m
+2025-09-30 11:41:10:4110 [33mwarn[39m: [33m404 - Route not found: POST /api/auth/verify-otp[39m
+2025-09-30 11:41:16:4116 [32minfo[39m: [32mNew user registered: +85581218841[39m
+2025-09-30 11:41:16:4116 [32minfo[39m: [32mUser session stored in Redis: 2826548e-4dbf-4b54-829c-179fbde6e587[39m
+2025-09-30 11:49:26:4926 [32minfo[39m: [32mOTP for +85567228790: 760672[39m
+2025-09-30 11:49:26:4926 [32minfo[39m: [32mDevelopment OTP for +85567228790: 760672[39m
+2025-09-30 11:49:26:4926 [32minfo[39m: [32mOTP sent to phone: +85567228790[39m
+2025-09-30 11:50:43:5043 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 11:50:43:5043 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 11:50:43:5043 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-30 11:51:38:5138 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 11:51:38:5138 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 11:51:39:5139 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-30 11:54:25:5425 [32minfo[39m: [32mOTP for +855969192938: 511094[39m
+2025-09-30 11:54:29:5429 [31merror[39m: [31mSMS sending failed: The phone number is unverified. Trial accounts cannot send messages to unverified numbers; verify it at twilio.com/user/account/phone-numbers/verified[39m
+2025-09-30 11:54:29:5429 [32minfo[39m: [32mDevelopment OTP for +855969192938: 511094[39m
+2025-09-30 11:54:30:5430 [32minfo[39m: [32mOTP for +855969192938: 973144[39m
+2025-09-30 11:54:30:5430 [31merror[39m: [31mSMS sending failed: The phone number is unverified. Trial accounts cannot send messages to unverified numbers; verify it at twilio.com/user/account/phone-numbers/verified[39m
+2025-09-30 11:54:30:5430 [32minfo[39m: [32mDevelopment OTP for +855969192938: 973144[39m
+2025-09-30 11:54:56:5456 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 11:54:56:5456 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 11:54:56:5456 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-30 11:54:58:5458 [32minfo[39m: [32mOTP for +855969192938: 615751[39m
+2025-09-30 11:54:59:5459 [31merror[39m: [31mSMS sending failed: The phone number is unverified. Trial accounts cannot send messages to unverified numbers; verify it at twilio.com/user/account/phone-numbers/verified[39m
+2025-09-30 11:54:59:5459 [32minfo[39m: [32mDevelopment OTP for +855969192938: 615751[39m
+2025-09-30 11:55:42:5542 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 11:55:42:5542 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 11:55:43:5543 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-30 11:56:01:561 [32minfo[39m: [32mOTP for +85567228790: 680426[39m
+2025-09-30 11:56:02:562 [32minfo[39m: [32mVerification sent successfully. SID: VE6a4fa882d770e0aad51c02db810b82b0[39m
+2025-09-30 11:56:02:562 [32minfo[39m: [32mDevelopment OTP for +85567228790: 680426[39m
+2025-09-30 11:56:02:562 [32minfo[39m: [32mOTP sent to phone: +85567228790[39m
+2025-09-30 12:05:58:558 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 12:05:58:558 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 12:05:58:558 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-30 12:06:01:61 [32minfo[39m: [32mOTP for +85567228790: 557397[39m
+2025-09-30 12:06:02:62 [32minfo[39m: [32mVerification sent successfully. SID: VE078263d95c8261e623f6f43d6a380f2b[39m
+2025-09-30 12:06:02:62 [32minfo[39m: [32mDevelopment OTP for +85567228790: 557397[39m
+2025-09-30 12:06:02:62 [32minfo[39m: [32mOTP sent to phone: +85567228790[39m
+2025-09-30 12:14:28:1428 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-30 12:14:30:1430 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-30 12:14:31:1431 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-30 12:14:32:1432 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-30 12:14:41:1441 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-30 12:14:45:1445 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-30 12:14:47:1447 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-30 12:14:47:1447 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-30 12:14:48:1448 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-30 12:14:49:1449 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-30 12:14:55:1455 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-30 12:14:55:1455 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-30 12:14:59:1459 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-30 12:15:04:154 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-30 12:15:05:155 [32minfo[39m: [32mRetrieved user by ID: 68db5f6c1b0429c001bf1caf[39m
+2025-09-30 12:15:09:159 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-30 12:15:13:1513 [32minfo[39m: [32mRetrieved 4 users[39m
+2025-09-30 12:15:16:1516 [32minfo[39m: [32mAll sessions logged out for user: 68dab85bdfa366f1fe22c3a1[39m
+2025-09-30 12:17:28:1728 [33mwarn[39m: [33mMongoDB disconnected[39m
+2025-09-30 12:18:06:186 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 12:18:06:186 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 12:18:06:186 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-09-30 12:19:12:1912 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 12:19:12:1912 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 12:19:16:1916 [32minfo[39m: [32mAdmin session stored in Redis: 4e4465db-c8e2-4f9c-8651-19ef6da8f1ec[39m
+2025-09-30 12:19:16:1916 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-30 13:19:35:1935 [32minfo[39m: [32mAdmin session stored in Redis: 6acbf399-e259-4f5e-8e90-0ee92276bc26[39m
+2025-09-30 13:19:35:1935 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-30 13:19:39:1939 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:19:44:1944 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:35:29:3529 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:35:44:3544 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:36:10:3610 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:36:13:3613 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:36:38:3638 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:37:18:3718 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:39:26:3926 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:39:49:3949 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:40:40:4040 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:45:23:4523 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:45:25:4525 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:45:27:4527 [32minfo[39m: [32mRetrieved user by ID: 68db68519cf93cd9887f22d6[39m
+2025-09-30 13:45:30:4530 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:45:33:4533 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:45:37:4537 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:45:38:4538 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:45:38:4538 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:51:13:5113 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:51:16:5116 [32minfo[39m: [32mRetrieved user by ID: 68db68519cf93cd9887f22d6[39m
+2025-09-30 13:51:18:5118 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:51:20:5120 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:51:21:5121 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:51:22:5122 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:51:22:5122 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:51:22:5122 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:51:22:5122 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:51:22:5122 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:51:23:5123 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:51:23:5123 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:51:35:5135 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:51:46:5146 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:51:49:5149 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:55:13:5513 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:58:23:5823 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:58:34:5834 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:58:36:5836 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-09-30 13:58:38:5838 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-09-30 13:58:41:5841 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-09-30 13:58:53:5853 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-09-30 13:58:54:5854 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-09-30 14:01:13:113 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-09-30 14:01:16:116 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-09-30 14:01:39:139 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-09-30 14:01:46:146 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-09-30 14:03:08:38 [32minfo[39m: [32mAdmin session stored in Redis: d4184693-d57b-49c8-8f3e-b27283a2a2df[39m
+2025-09-30 14:03:08:38 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-09-30 14:03:21:321 [33mwarn[39m: [33m404 - Route not found: POST /api/seats/[39m
+2025-09-30 14:05:01:51 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-09-30 14:07:40:740 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 14:07:40:740 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 14:08:01:81 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 14:08:01:81 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 14:08:07:87 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 14:08:07:87 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 14:08:10:810 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 14:08:10:810 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 14:08:34:834 [33mwarn[39m: [33mMongoDB disconnected[39m
+2025-09-30 14:08:44:844 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 14:08:44:844 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 14:09:14:914 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:09:14:914 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:09:45:945 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 14:09:45:945 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 14:10:15:1015 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:10:15:1015 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:12:49:1249 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 14:12:49:1249 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 14:13:05:135 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 14:13:05:135 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 14:13:35:1335 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:13:35:1335 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:14:00:140 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 14:14:00:140 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 14:14:30:1430 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:14:30:1430 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:15:00:150 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:15:00:150 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:15:30:1530 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:15:30:1530 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:15:59:1559 [33mwarn[39m: [33mMongoDB disconnected[39m
+2025-09-30 14:23:19:2319 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 14:23:19:2319 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 14:23:49:2349 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:23:49:2349 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:24:19:2419 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:24:19:2419 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:24:49:2449 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:24:49:2449 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:25:19:2519 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:25:19:2519 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:25:49:2549 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:25:49:2549 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:26:19:2619 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:26:19:2619 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:26:49:2649 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:26:49:2649 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:27:20:2720 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:27:20:2720 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:27:50:2750 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:27:50:2750 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:28:21:2821 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:28:21:2821 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:28:51:2851 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:28:51:2851 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:29:22:2922 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:29:22:2922 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:29:52:2952 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:29:52:2952 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:30:23:3023 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:30:23:3023 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:30:53:3053 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:30:53:3053 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:31:24:3124 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:31:24:3124 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:31:31:3131 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 14:31:31:3131 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 14:32:01:321 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:32:01:321 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:32:31:3231 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:32:31:3231 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:33:01:331 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:33:01:331 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:33:17:3317 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 14:33:17:3317 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 14:33:47:3347 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:33:47:3347 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:34:17:3417 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:34:17:3417 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:34:25:3425 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 14:34:25:3425 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 14:34:41:3441 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 14:34:41:3441 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 14:35:05:355 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 14:35:05:355 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 14:35:35:3535 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:35:35:3535 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:36:05:365 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:36:05:365 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:36:35:3635 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:36:35:3635 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:37:05:375 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:37:05:375 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:37:36:3736 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:37:36:3736 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:38:06:386 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:38:06:386 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:38:36:3836 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:38:36:3836 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:39:06:396 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:39:06:396 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:39:37:3937 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:39:37:3937 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:40:07:407 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:40:07:407 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:40:38:4038 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:40:38:4038 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:41:08:418 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:41:08:418 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:41:39:4139 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:41:39:4139 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:42:09:429 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:42:09:429 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:42:40:4240 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:42:40:4240 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:43:10:4310 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:43:10:4310 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:43:41:4341 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:43:41:4341 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:45:05:455 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 14:45:05:455 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 14:45:27:4527 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-09-30 14:45:27:4527 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-09-30 14:45:35:4535 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:45:35:4535 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:46:06:466 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:46:06:466 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:46:36:4636 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:46:36:4636 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:47:06:476 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-09-30 14:47:06:476 [31merror[39m: [31mFailed to connect to Redis, read ECONNRESET[39m
+2025-10-01 10:50:33:5033 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-01 10:50:33:5033 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-01 10:50:33:5033 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-01 10:51:00:510 [32minfo[39m: [32mAdmin session stored in Redis: de68df8e-3442-48ba-ade5-2f6658e63c48[39m
+2025-10-01 10:51:00:510 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-10-01 10:51:02:512 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-01 10:51:14:5114 [31merror[39m: [31mValidation error:[39m
+2025-10-01 10:51:14:5114 [31merror[39m: [31mValidation error:[39m
+2025-10-01 10:51:15:5115 [31merror[39m: [31mValidation error:[39m
+2025-10-01 10:51:15:5115 [31merror[39m: [31mValidation error:[39m
+2025-10-01 10:51:15:5115 [31merror[39m: [31mValidation error:[39m
+2025-10-01 10:51:15:5115 [31merror[39m: [31mValidation error:[39m
+2025-10-01 10:51:16:5116 [31merror[39m: [31mValidation error:[39m
+2025-10-01 10:51:16:5116 [31merror[39m: [31mValidation error:[39m
+2025-10-01 10:51:16:5116 [31merror[39m: [31mValidation error:[39m
+2025-10-01 10:51:16:5116 [31merror[39m: [31mValidation error:[39m
+2025-10-01 10:59:46:5946 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-10-01 11:00:42:042 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-10-01 11:06:33:633 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-10-01 11:07:15:715 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-10-01 11:07:19:719 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-10-02 14:17:44:1744 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-02 14:17:44:1744 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-02 14:17:44:1744 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-02 14:18:41:1841 [32minfo[39m: [32mAdmin session stored in Redis: 4f67b53f-530b-470b-a482-1b77b6afb16e[39m
+2025-10-02 14:18:41:1841 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-10-02 14:18:45:1845 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-10-02 14:18:48:1848 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-10-02 14:18:49:1849 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-10-02 14:18:51:1851 [32minfo[39m: [32mRetrieved user by ID: 68db68519cf93cd9887f22d6[39m
+2025-10-02 14:25:17:2517 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-10-02 14:25:35:2535 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-02 14:26:09:269 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-02 14:26:09:269 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-02 14:26:09:269 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-02 14:28:09:289 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-02 14:28:09:289 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-02 14:28:09:289 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-02 14:28:11:2811 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-02 14:28:11:2811 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-02 14:28:11:2811 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-02 14:28:15:2815 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-02 14:28:20:2820 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-10-02 14:28:23:2823 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-10-02 14:28:25:2825 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-10-02 14:28:31:2831 [32minfo[39m: [32mRetrieved 3 users[39m
+2025-10-02 14:29:21:2921 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-02 14:29:21:2921 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-02 14:29:21:2921 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-02 14:29:30:2930 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-02 14:29:30:2930 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-02 14:29:30:2930 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-02 14:29:32:2932 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-02 14:29:32:2932 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-02 14:29:32:2932 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-02 14:29:44:2944 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-02 14:29:44:2944 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-02 14:29:44:2944 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-02 14:29:47:2947 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-02 14:29:47:2947 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-02 14:29:47:2947 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-02 14:30:03:303 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-02 14:30:03:303 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-02 14:30:03:303 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-02 14:30:10:3010 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-02 14:30:10:3010 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-02 14:30:10:3010 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-02 14:30:13:3013 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-02 14:30:13:3013 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-02 14:30:13:3013 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-02 14:30:16:3016 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-02 14:30:16:3016 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-02 14:30:16:3016 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-02 14:30:18:3018 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-02 14:30:18:3018 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-02 14:30:18:3018 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-02 14:30:25:3025 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-02 14:30:25:3025 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-02 14:30:25:3025 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-02 14:30:42:3042 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-02 14:30:42:3042 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-02 14:30:42:3042 [32minfo[39m: [32mServer running on port http://localhost:8080[39m

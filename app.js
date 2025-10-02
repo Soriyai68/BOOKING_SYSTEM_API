@@ -1,5 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
@@ -17,8 +20,8 @@ const { logger } = require('./utils');
 const apiRoutes = require('./routes');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/users.routes');
-const seatRoutes = require('./routes/seats.routes');
-const locationRoutes = require('./routes/locations.routes');
+// const seatRoutes = require('./routes/seats.routes');
+
 
 const app = express();
 
@@ -32,8 +35,27 @@ if (!fs.existsSync(logsDir)) {
 // Global Middlewares (Order is important!)
 app.use(morgan); // HTTP request logging
 app.use(cors(envConfig.cors)); // CORS configuration
+app.use(cookieParser()); // Cookie parser
 app.use(express.json({ limit: '10mb' })); // JSON parser
 app.use(express.urlencoded({ extended: true, limit: '10mb' })); // URL encoded parser
+
+// Session configuration
+app.use(session({
+  secret: envConfig.jwt?.secret || 'your-secret-key-here',
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: envConfig.database?.uri || process.env.MONGODB_URI,
+    touchAfter: 24 * 3600 // lazy session update
+  }),
+  cookie: {
+    secure: envConfig.env === 'production', // true if HTTPS
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    sameSite: envConfig.env === 'production' ? 'strict' : 'lax'
+  }
+}));
+
 app.use(sanitize); // Request sanitization
 
 // Health check endpoint
@@ -66,15 +88,14 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
-app.use('/api', apiRoutes);
+app.use('/api/v1', apiRoutes);
 // auth
-app.use('/api/auth', authRoutes);
+app.use('/api/v1/auth', authRoutes);
 // users
-app.use('/api/users', userRoutes);
+app.use('/api/v1/users', userRoutes);
 // seats
-app.use('/api/seats', seatRoutes);
-// locations
-app.use('/api/locations', locationRoutes);
+// app.use('/api/v1/seats', seatRoutes);
+// locations  
 
 // 404 handler for undefined routes
 app.use((req, res) => {

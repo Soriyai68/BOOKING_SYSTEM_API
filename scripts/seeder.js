@@ -7,7 +7,16 @@ const connectDB = require('../config/db');
 
 const adminUsers = [
   {
-    phone: '+1234567891',
+    phone: '+855123456789',
+    name: 'Demo Admin',
+    password: 'password123',
+    role: Role.ADMIN,
+    provider: Providers.PHONE,
+    isVerified: true,
+    isActive: true
+  },
+  {
+    phone: '+85545678912',
     name: 'Admin User',
     password: 'admin123',
     role: Role.ADMIN,
@@ -47,8 +56,9 @@ async function createAdminUsers() {
     
     console.log('\nAdmin users created successfully!');
     console.log('\nAdmin Login Credentials:');
-    console.log('Admin: +1234567891 / admin123');
-    console.log('Super Admin: +1234567892 / superadmin123');
+    console.log('Demo Admin: +855123456789 / password123');
+    console.log('Admin: +85545678912 / admin123');
+    console.log('Super Admin: +85581218840 / superadmin123');
     
   } catch (error) {
     console.error('Error creating admin users:', error);

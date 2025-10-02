@@ -15,6 +15,7 @@ Welcome to the comprehensive documentation for the Movie Booking System API. Thi
 - [Users API](./api/users.md)
 - [Seats API](./api/seats.md)
 - [Locations API](./api/locations.md)
+- [Theaters API](./api/theaters.md)
 - [Error Handling](./api/errors.md)
 - [Rate Limiting](./api/rate-limiting.md)
 
@@ -69,6 +70,13 @@ The Movie Booking System API is a RESTful service built with:
 - Business hours management
 - Contact information
 - Amenities tracking
+
+### Theater Management
+- Movie theater configuration
+- Location-theater relationships
+- Screen management and capacity tracking
+- Amenities and features (IMAX, Dolby Atmos, etc.)
+- Operating hours and contact information
 
 ## 🔐 Security Features
 
