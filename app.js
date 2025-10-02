@@ -20,7 +20,7 @@ const { logger } = require('./utils');
 const apiRoutes = require('./routes');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/users.routes');
-// const seatRoutes = require('./routes/seats.routes');
+const seatRoutes = require('./routes/seats.routes');
 
 
 const app = express();
@@ -94,8 +94,7 @@ app.use('/api/v1/auth', authRoutes);
 // users
 app.use('/api/v1/users', userRoutes);
 // seats
-// app.use('/api/v1/seats', seatRoutes);
-// locations  
+app.use('/api/v1/seats', seatRoutes);
 
 // 404 handler for undefined routes
 app.use((req, res) => {

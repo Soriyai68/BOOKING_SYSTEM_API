@@ -3,14 +3,11 @@ const router = express.Router();
 
 // Import route modules
 const userRoutes = require('./users.routes');
-// const seatRoutes = require('./seats.routes');
-// const locationRoutes = require('./locations.routes');
-// const theaterRoutes = require('./theaters.routes');
-// Import Route module
+const seatRoutes = require('./seats.routes');
 
 // Mount routes
 router.use('/users', userRoutes);
-// router.use('/seats', seatRoutes);
+router.use('/seats', seatRoutes);
 
 
 // Health check endpoint
@@ -30,9 +27,7 @@ router.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       users: '/api/users',
-      // seats: '/api/seats',
-      // locations: '/api/locations',
-      // theaters: '/api/theaters',
+      seats: '/api/seats',
       health: '/api/health'
     }
   });
