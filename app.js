@@ -45,7 +45,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
-    mongoUrl: envConfig.database?.uri || process.env.MONGODB_URI,
+    mongoUrl: envConfig.mongo?.uri || process.env.MONGODB_URI,
     touchAfter: 24 * 3600 // lazy session update
   }),
   cookie: {
