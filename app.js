@@ -21,6 +21,8 @@ const apiRoutes = require('./routes');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/users.routes');
 const seatRoutes = require('./routes/seats.routes');
+const screenRoutes = require('./routes/screens.routes');
+const theaterRoutes = require('./routes/theaters.routes');
 
 
 const app = express();
@@ -83,7 +85,7 @@ app.get('/health', (req, res) => {
       redis: redisStatus
     }
   };
-  
+
   res.status(200).json(healthCheck);
 });
 
@@ -95,6 +97,10 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 // seats
 app.use('/api/v1/seats', seatRoutes);
+// screens
+app.use('/api/v1/screens', screenRoutes);
+// theaters
+app.use('/api/v1/theaters', theaterRoutes);
 
 // 404 handler for undefined routes
 app.use((req, res) => {

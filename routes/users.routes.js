@@ -24,7 +24,7 @@ router.get('/deleted',
 // POST /api/users/search - Advanced user search (Admin/SuperAdmin only)
 router.post('/search',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  // middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
   middlewares.validator(userSchema.advancedSearchSchema),
   UserController.search
 );
@@ -72,7 +72,7 @@ router.delete('/:id/force-delete',
 // 1. GET ALL USERS - Get all users with pagination and filtering (Admin/SuperAdmin only)
 router.get('/',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.USER),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.USER ),
   middlewares.validator(userSchema.getAllUsersQuerySchema, 'query'),
   UserController.getAll
 );
