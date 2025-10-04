@@ -30,8 +30,39 @@ const seatSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["active", "maintenance", "out_of_order", "reserved"],
+      enum: ["active", "maintenance", "out_of_order", "reserved", "closed"],
       default: "active",
+    },
+    // Soft delete fields
+    deletedAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+    deletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    restoredAt: {
+      type: Date,
+      default: null,
+    },
+    restoredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    // Audit fields
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
   },
   {
@@ -49,7 +80,26 @@ seatSchema.methods.toggleAvailability = function () {
   this.is_available = !this.is_available;
   return this.save();
 };
-
+// Instance method to soft delete seat
+seatSchema.methods.softDelete = function (deletedBy = null) {
+  this.deletedAt = new Date();
+  this.deletedBy = deletedBy;
+  this.status = "closed";
+  return this.save();
+};
+// Instance method to soft restore seat
+seatSchema.methods.restore = function (restoredBy = null) {
+  this.deletedAt = null;
+  this.deletedBy = null;
+  this.restoredAt = new Date();
+  this.restoredBy = restoredBy;
+  this.status = "active";
+  return this.save();
+};
+// Instance method to check if deleted
+seatSchema.methods.isDeleted = function () {
+  return this.deletedAt !== null;
+};
 // Static method to find seats by type
 seatSchema.statics.findByType = function (seatType) {
   return this.find({ seat_type: seatType });
@@ -73,6 +123,24 @@ seatSchema.virtual("display_name").get(function () {
   return `Seat ${this.row}${this.seat_number} (${this.seat_type})`;
 });
 
+// Instance method to update status
+seatSchema.methods.updateStatus = function (newStatus, updatedBy = null) {
+  const validStatuses = [
+    "active",
+    "maintenance",
+    "out_of_order",
+    "reserved",
+    "closed",
+  ];
+  if (!validStatuses.includes(newStatus)) {
+    throw new Error("Invalid status provided");
+  }
+
+  this.status = newStatus;
+  this.updatedBy = updatedBy;
+
+  return this.save();
+};
 // Pre-save middleware to ensure uppercase
 seatSchema.pre("save", function (next) {
   if (this.seat_number) {

@@ -37,7 +37,7 @@ class SeatController {
     if (filters.seat_type) {
       query.seat_type = filters.seat_type;
     }
-
+    
     // Handle status filter
     if (filters.status) {
       query.status = filters.status;
