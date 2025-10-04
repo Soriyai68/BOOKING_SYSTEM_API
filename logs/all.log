@@ -2350,3 +2350,408 @@
 2025-10-02 15:03:42:342 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
 2025-10-02 15:03:42:342 [32minfo[39m: [32mDatabase: movie_booking_system[39m
 2025-10-02 15:03:42:342 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 15:45:08:458 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 15:45:08:458 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 15:45:08:458 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 15:45:41:4541 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 15:45:41:4541 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 15:45:41:4541 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 15:47:35:4735 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 15:52:54:5254 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 15:59:58:5958 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:00:00 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:03:03 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:05:05 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:05:05 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:09:09 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:11:011 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:00:12:012 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:17:017 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:19:019 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:20:020 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:20:020 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:20:020 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:21:021 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:21:021 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:21:021 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:21:021 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:25:025 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:28:028 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:30:030 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:39:039 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:39:039 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:40:040 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:00:41:041 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:42:042 [32minfo[39m: [32mRetrieved 1 seats[39m
+2025-10-04 16:00:42:042 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:47:047 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:48:048 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:49:049 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:49:049 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:49:049 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:52:052 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:54:054 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:00:55:055 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:02:15:215 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:02:16:216 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:02:25:225 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:02:26:226 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:02:27:227 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:02:29:229 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:02:30:230 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:02:31:231 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:02:32:232 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:02:34:234 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:02:35:235 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:02:37:237 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:02:39:239 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:02:41:241 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:03:12:312 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:03:14:314 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:03:16:316 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:03:18:318 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:03:21:321 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:03:32:332 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:03:34:334 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:03:36:336 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:03:36:336 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:03:40:340 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:03:41:341 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:03:41:341 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:03:44:344 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:03:45:345 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:03:46:346 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:04:56:456 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:04:58:458 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:04:58:458 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:05:00:50 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:06:58:658 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 16:06:58:658 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 16:06:58:658 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 16:09:27:927 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:04:104 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:13:1013 [32minfo[39m: [32mRetrieved 1 seats[39m
+2025-10-04 16:10:18:1018 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:21:1021 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:21:1021 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:21:1021 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:31:1031 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:32:1032 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:32:1032 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:32:1032 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:32:1032 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:32:1032 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:33:1033 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:53:1053 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:53:1053 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:54:1054 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:54:1054 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:54:1054 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:10:54:1054 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:11:00:110 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:11:04:114 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:11:04:114 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:11:06:116 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:11:08:118 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:11:09:119 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:11:12:1112 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:11:14:1114 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:11:15:1115 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:11:16:1116 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:13:29:1329 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:14:19:1419 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:14:30:1430 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:14:30:1430 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:14:31:1431 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:14:31:1431 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:14:37:1437 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:14:37:1437 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:14:41:1441 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:14:41:1441 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:14:43:1443 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:14:43:1443 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:14:44:1444 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:14:44:1444 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:15:28:1528 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:15:28:1528 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:15:29:1529 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:15:29:1529 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:15:31:1531 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:15:31:1531 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:15:33:1533 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:15:33:1533 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:16:52:1652 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:17:45:1745 [32minfo[39m: [32mRetrieved seat by ID: 68df8128474335b16842dc89[39m
+2025-10-04 16:17:51:1751 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:35:47:3547 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:39:43:3943 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:39:43:3943 [32minfo[39m: [32mRetrieved 0 seats[39m
+2025-10-04 16:39:44:3944 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:39:44:3944 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:39:46:3946 [32minfo[39m: [32mRetrieved seat by ID: 68df8128474335b16842dc89[39m
+2025-10-04 16:44:25:4425 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:44:26:4426 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:44:37:4437 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:44:40:4440 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:44:46:4446 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:44:48:4448 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:44:58:4458 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:45:01:451 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:45:10:4510 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:45:13:4513 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:45:21:4521 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:45:30:4530 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:45:33:4533 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:45:40:4540 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:46:57:4657 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:47:10:4710 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:47:15:4715 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:47:24:4724 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:47:28:4728 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:47:31:4731 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:47:34:4734 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:48:25:4825 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:48:39:4839 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:48:51:4851 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:48:52:4852 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:49:12:4912 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:49:22:4922 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:49:39:4939 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:49:51:4951 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:49:52:4952 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:49:59:4959 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:50:51:5051 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:50:54:5054 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:51:03:513 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:53:45:5345 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:54:04:544 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:54:08:548 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:54:17:5417 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-10-04 16:54:32:5432 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-10-04 16:55:00:550 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-10-04 16:55:15:5515 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:57:06:576 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:57:11:5711 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:57:27:5727 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:57:28:5728 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:57:32:5732 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:57:36:5736 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:57:42:5742 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:57:45:5745 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:57:47:5747 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:57:53:5753 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:57:58:5758 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:58:00:580 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:58:02:582 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:59:10:5910 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:59:16:5916 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 16:59:19:5919 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:59:34:5934 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:59:41:5941 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:59:46:5946 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 16:59:50:5950 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:00:20:020 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 17:00:26:026 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:01:00:10 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-10-04 17:01:28:128 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-10-04 17:01:31:131 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-10-04 17:01:33:133 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-10-04 17:01:37:137 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-10-04 17:01:54:154 [32minfo[39m: [32mRetrieved user by ID: 68c66e95d35f44fa313aaaab[39m
+2025-10-04 17:02:01:21 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-10-04 17:10:41:1041 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:22:28:2228 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-10-04 17:22:52:2252 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:23:06:236 [32minfo[39m: [32mRetrieved 0 screens[39m
+2025-10-04 17:23:32:2332 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:23:40:2340 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:24:19:2419 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:24:26:2426 [31merror[39m: [31mDelete seat error: seat.isDeleted is not a function[39m
+2025-10-04 17:25:52:2552 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:25:54:2554 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:26:01:261 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:26:03:263 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:27:30:2730 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:28:25:2825 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:28:40:2840 [32minfo[39m: [32mRetrieved 2 users[39m
+2025-10-04 17:36:55:3655 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:36:55:3655 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:36:55:3655 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:37:00:370 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:37:00:370 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:37:00:370 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:37:26:3726 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:37:26:3726 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:37:26:3726 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:38:32:3832 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:38:32:3832 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:38:32:3832 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:38:33:3833 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:38:33:3833 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:38:33:3833 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:38:37:3837 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:38:37:3837 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:38:37:3837 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:39:12:3912 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:39:12:3912 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:39:12:3912 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:40:33:4033 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:40:33:4033 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:40:33:4033 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:40:37:4037 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:40:37:4037 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:40:37:4037 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:40:45:4045 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:40:45:4045 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:40:45:4045 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:40:47:4047 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:40:47:4047 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:40:47:4047 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:42:09:429 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:42:09:429 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:42:09:429 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:42:13:4213 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:42:13:4213 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:42:13:4213 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:42:25:4225 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:42:25:4225 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:42:25:4225 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:42:35:4235 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:42:35:4235 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:42:36:4236 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:42:41:4241 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:42:41:4241 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:42:41:4241 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:42:45:4245 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:42:45:4245 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:42:45:4245 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:43:02:432 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:43:02:432 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:43:02:432 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:43:13:4313 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:43:13:4313 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:43:13:4313 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:43:26:4326 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:43:26:4326 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:43:26:4326 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:43:31:4331 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:43:31:4331 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:43:31:4331 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:43:33:4333 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:43:33:4333 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:43:33:4333 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:43:41:4341 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:43:41:4341 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:43:41:4341 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:43:44:4344 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:43:44:4344 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:43:44:4344 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:44:02:442 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:44:02:442 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:44:02:442 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:44:05:445 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:44:05:445 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:44:05:445 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:44:11:4411 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:44:11:4411 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:44:11:4411 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:44:16:4416 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:44:16:4416 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:44:16:4416 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:44:17:4417 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:44:17:4417 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:44:17:4417 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:44:18:4418 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:44:18:4418 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:44:18:4418 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:44:28:4428 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:44:28:4428 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:44:28:4428 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:44:36:4436 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:44:36:4436 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:44:36:4436 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:44:37:4437 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:44:37:4437 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:44:37:4437 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:44:53:4453 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:44:53:4453 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:44:53:4453 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:44:57:4457 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:44:57:4457 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:44:57:4457 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:45:00:450 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:45:00:450 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:45:00:450 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:45:05:455 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:45:05:455 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:45:05:455 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:45:12:4512 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:45:12:4512 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:45:12:4512 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:45:24:4524 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:45:24:4524 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:45:24:4524 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:45:33:4533 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:45:33:4533 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:45:33:4533 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:48:24:4824 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:48:24:4824 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:48:24:4824 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:49:34:4934 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:49:34:4934 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:49:34:4934 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:49:38:4938 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:49:38:4938 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:49:38:4938 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:49:41:4941 [32minfo[39m: [32mAdmin session stored in Redis: 0a44ead9-53db-4861-8d37-9b6f9f3a1c68[39m
+2025-10-04 17:49:41:4941 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-10-04 17:49:44:4944 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:49:47:4947 [32minfo[39m: [32mRetrieved seat by ID: 68df81e04e42623500a1c1b4[39m
+2025-10-04 17:49:48:4948 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:50:10:5010 [31merror[39m: [31mDelete seat error: seat.softDelete is not a function[39m
+2025-10-04 17:52:45:5245 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:52:45:5245 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:52:45:5245 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:53:07:537 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:53:54:5354 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:53:54:5354 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:53:54:5354 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:54:00:540 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:54:00:540 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:54:00:540 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:54:06:546 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:54:06:546 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:54:06:546 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:54:09:549 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:54:09:549 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:54:09:549 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:54:17:5417 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:54:17:5417 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:54:17:5417 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:54:24:5424 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:54:28:5428 [31merror[39m: [31mDelete seat error: seat.softDelete is not a function[39m
+2025-10-04 17:54:52:5452 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:54:52:5452 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:54:52:5452 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:54:54:5454 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:54:54:5454 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:54:54:5454 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:55:29:5529 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:55:29:5529 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:55:29:5529 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:55:53:5553 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 17:55:53:5553 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 17:55:53:5553 [32minfo[39m: [32mServer running on port http://localhost:8080[39m
+2025-10-04 17:55:55:5555 [32minfo[39m: [32mAdmin session stored in Redis: e3393f6e-0c46-4b89-bd7c-90139233fafb[39m
+2025-10-04 17:55:55:5555 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-10-04 17:55:55:5555 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:55:57:5557 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 17:56:01:561 [32minfo[39m: [32mSoft deleted seat: 68df81e04e42623500a1c1b4 (B10)[39m
+2025-10-04 17:56:01:561 [32minfo[39m: [32mRetrieved 1 seats[39m
+2025-10-04 17:56:38:5638 [32minfo[39m: [32mAdmin session stored in Redis: a85b7952-9d33-422a-860d-4cf3841c6fbd[39m
+2025-10-04 17:56:38:5638 [32minfo[39m: [32mAdmin logged in: +85581218840 (superadmin)[39m
+2025-10-04 17:56:55:5655 [32minfo[39m: [32mCreated new seat: 68e0fd7716ff21869c825c6f (BB10)[39m
+2025-10-04 17:56:58:5658 [32minfo[39m: [32mRetrieved 2 seats[39m
+2025-10-04 18:02:32:232 [32minfo[39m: [32mMongoDB Connected: localhost Soriya Ninja Team[39m
+2025-10-04 18:02:32:232 [32minfo[39m: [32mDatabase: movie_booking_system[39m
+2025-10-04 18:02:32:232 [32minfo[39m: [32mServer running on port http://localhost:8080[39m

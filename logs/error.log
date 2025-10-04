@@ -252,3 +252,6 @@
 2025-10-01 10:51:16:5116 [31merror[39m: [31mValidation error:[39m
 2025-10-01 10:51:16:5116 [31merror[39m: [31mValidation error:[39m
 2025-10-01 10:51:16:5116 [31merror[39m: [31mValidation error:[39m
+2025-10-04 17:24:26:2426 [31merror[39m: [31mDelete seat error: seat.isDeleted is not a function[39m
+2025-10-04 17:50:10:5010 [31merror[39m: [31mDelete seat error: seat.softDelete is not a function[39m
+2025-10-04 17:54:28:5428 [31merror[39m: [31mDelete seat error: seat.softDelete is not a function[39m
