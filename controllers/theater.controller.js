@@ -524,7 +524,7 @@ class TheaterController {
       if (associatedScreens.length > 0) {
         return res.status(409).json({
           success: false,
-          message: `Cannot delete theater. It has ${associatedScreens.length} associated screen(s). Please delete or reassign the screens first.`,
+          // message: `Cannot delete theater. It has ${associatedScreens.length} associated screen(s). Please delete or reassign the screens first.`,
           data: {
             associatedScreensCount: associatedScreens.length,
             screenNames: associatedScreens.map(screen => screen.screen_name)
@@ -661,7 +661,7 @@ class TheaterController {
         
         return res.status(409).json({
           success: false,
-          message: `Cannot permanently delete theater. It has ${associatedScreens.length} associated screen(s) (${activeScreens.length} active, ${deletedScreens.length} deleted). Please permanently delete all screens first.`,
+          // message: `Cannot permanently delete theater. It has ${associatedScreens.length} associated screen(s) (${activeScreens.length} active, ${deletedScreens.length} deleted). Please permanently delete all screens first.`,
           data: {
             totalScreens: associatedScreens.length,
             activeScreens: activeScreens.length,
@@ -689,7 +689,7 @@ class TheaterController {
       // Perform permanent deletion
       await Theater.findByIdAndDelete(id);
 
-      console.warn(`⚠️  PERMANENT DELETION: Theater permanently deleted by ${req.user.role} ${req.user.userId}`, {
+      console.warn(`  PERMANENT DELETION: Theater permanently deleted by ${req.user.role} ${req.user.userId}`, {
         deletedTheater: theaterInfo,
         deletedBy: req.user.userId,
         deletedAt: new Date().toISOString(),

@@ -480,7 +480,7 @@ class ScreenController {
       if (associatedSeats.length > 0) {
         return res.status(409).json({
           success: false,
-          message: `Cannot delete screen. It has ${associatedSeats.length} associated seat(s). Please delete or reassign the seats first.`,
+          // message: `Cannot delete screen. It has ${associatedSeats.length} associated seat(s). Please delete or reassign the seats first.`,
           data: {
             associatedSeatsCount: associatedSeats.length,
             seatIdentifiers: associatedSeats.map(seat => seat.seat_identifier || `${seat.row}${seat.seat_number}`)
