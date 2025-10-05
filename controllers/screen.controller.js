@@ -470,6 +470,24 @@ class ScreenController {
         });
       }
 
+      // Check if screen has associated seats
+      const Seat = require('../models/seat.model');
+      const associatedSeats = await Seat.find({
+        screen_id: id,
+        deletedAt: null // Only count active seats
+      });
+
+      if (associatedSeats.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: `Cannot delete screen. It has ${associatedSeats.length} associated seat(s). Please delete or reassign the seats first.`,
+          data: {
+            associatedSeatsCount: associatedSeats.length,
+            seatIdentifiers: associatedSeats.map(seat => seat.seat_identifier || `${seat.row}${seat.seat_number}`)
+          }
+        });
+      }
+
       // Soft delete using model method
       const deletedScreen = await screen.softDelete(req.user?.userId);
 
@@ -613,6 +631,32 @@ class ScreenController {
         return res.status(404).json({
           success: false,
           message: 'Screen not found'
+        });
+      }
+
+      // Check if screen has associated seats (even soft deleted ones)
+      const Seat = require('../models/seat.model');
+      const associatedSeats = await Seat.find({
+        screen_id: id
+        // Note: We check all seats (including soft deleted) for force delete
+      });
+
+      if (associatedSeats.length > 0) {
+        const activeSeats = associatedSeats.filter(seat => !seat.deletedAt);
+        const deletedSeats = associatedSeats.filter(seat => seat.deletedAt);
+        
+        return res.status(409).json({
+          success: false,
+          message: `Cannot permanently delete screen. It has ${associatedSeats.length} associated seat(s) (${activeSeats.length} active, ${deletedSeats.length} deleted). Please permanently delete all seats first.`,
+          data: {
+            totalSeats: associatedSeats.length,
+            activeSeats: activeSeats.length,
+            deletedSeats: deletedSeats.length,
+            seatIdentifiers: associatedSeats.map(seat => ({
+              identifier: seat.seat_identifier || `${seat.row}${seat.seat_number}`,
+              status: seat.deletedAt ? 'deleted' : 'active'
+            }))
+          }
         });
       }
 

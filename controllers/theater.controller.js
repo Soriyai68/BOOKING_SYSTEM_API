@@ -514,6 +514,24 @@ class TheaterController {
         });
       }
 
+      // Check if theater has associated screens
+      const Screen = require('../models/screen.model');
+      const associatedScreens = await Screen.find({
+        theater_id: id,
+        deletedAt: null // Only count active screens
+      });
+
+      if (associatedScreens.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: `Cannot delete theater. It has ${associatedScreens.length} associated screen(s). Please delete or reassign the screens first.`,
+          data: {
+            associatedScreensCount: associatedScreens.length,
+            screenNames: associatedScreens.map(screen => screen.screen_name)
+          }
+        });
+      }
+
       // Soft delete using model method
       const deletedTheater = await theater.softDelete(req.user?.userId);
 
@@ -627,6 +645,32 @@ class TheaterController {
         return res.status(404).json({
           success: false,
           message: 'Theater not found'
+        });
+      }
+
+      // Check if theater has associated screens (even soft deleted ones)
+      const Screen = require('../models/screen.model');
+      const associatedScreens = await Screen.find({
+        theater_id: id
+        // Note: We check all screens (including soft deleted) for force delete
+      });
+
+      if (associatedScreens.length > 0) {
+        const activeScreens = associatedScreens.filter(screen => !screen.deletedAt);
+        const deletedScreens = associatedScreens.filter(screen => screen.deletedAt);
+        
+        return res.status(409).json({
+          success: false,
+          message: `Cannot permanently delete theater. It has ${associatedScreens.length} associated screen(s) (${activeScreens.length} active, ${deletedScreens.length} deleted). Please permanently delete all screens first.`,
+          data: {
+            totalScreens: associatedScreens.length,
+            activeScreens: activeScreens.length,
+            deletedScreens: deletedScreens.length,
+            screenNames: associatedScreens.map(screen => ({
+              name: screen.screen_name,
+              status: screen.deletedAt ? 'deleted' : 'active'
+            }))
+          }
         });
       }
 
