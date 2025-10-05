@@ -33,6 +33,29 @@ const seatSchema = new mongoose.Schema(
       enum: ["active", "maintenance", "out_of_order", "reserved", "closed"],
       default: "active",
     },
+    theater_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Theater",
+      default: null,
+      index: true,
+    },
+    screen_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Screen",
+      default: null,
+      index: true,
+    },
+    price: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    notes: {
+      type: String,
+      maxlength: 500,
+      trim: true,
+      default: "",
+    },
     // Soft delete fields
     deletedAt: {
       type: Date,

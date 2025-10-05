@@ -233,6 +233,26 @@ theaterSchema.methods.removeScreen = function (screenId) {
   return this.save();
 };
 
+// Instance method to calculate total capacity from screens
+theaterSchema.methods.calculateTotalCapacity = async function () {
+  const Screen = mongoose.model('Screen');
+  
+  // Get all active screens for this theater
+  const screens = await Screen.find({
+    _id: { $in: this.screens_id },
+    deletedAt: null
+  }).select('total_seats');
+  
+  // Sum up all screen capacities
+  const totalCapacity = screens.reduce((sum, screen) => sum + (screen.total_seats || 0), 0);
+  
+  // Update the theater's total capacity
+  this.total_capacity = totalCapacity;
+  this.total_screens = screens.length;
+  
+  return this.save();
+};
+
 // Instance method to update location
 theaterSchema.methods.updateLocation = function (longitude, latitude) {
   if (typeof longitude === 'number' && typeof latitude === 'number') {

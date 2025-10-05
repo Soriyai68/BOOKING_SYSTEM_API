@@ -252,3 +252,10 @@
 2025-10-01 10:51:16:5116 [31merror[39m: [31mValidation error:[39m
 2025-10-01 10:51:16:5116 [31merror[39m: [31mValidation error:[39m
 2025-10-01 10:51:16:5116 [31merror[39m: [31mValidation error:[39m
+2025-10-04 22:15:13:1513 [31merror[39m: [31mValidation error in body:[39m
+2025-10-04 22:15:32:1532 [31merror[39m: [31mValidation error in body:[39m
+2025-10-04 22:56:16:5616 [31merror[39m: [31mValidation error in body:[39m
+2025-10-04 22:56:18:5618 [31merror[39m: [31mValidation error in body:[39m
+2025-10-04 23:15:57:1557 [31merror[39m: [31mDelete screen error: Screen validation failed: total_seats: Path `total_seats` (0) is less than minimum allowed value (1).[39m
+2025-10-04 23:16:02:162 [31merror[39m: [31mDelete screen error: Screen validation failed: total_seats: Path `total_seats` (0) is less than minimum allowed value (1).[39m
+2025-10-05 10:10:29:1029 [31merror[39m: [31mValidation error in body:[39m

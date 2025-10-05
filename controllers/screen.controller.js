@@ -260,6 +260,21 @@ class ScreenController {
       const screen = new Screen(screenToCreate);
       await screen.save();
 
+      // Update theater's screens_id array
+      if (screen.theater_id) {
+        const Theater = require('../models/theater.model');
+        try {
+          const theater = await Theater.findById(screen.theater_id);
+          if (theater) {
+            await theater.addScreen(screen._id);
+            logger.info(`Added screen ${screen._id} to theater ${theater._id}`);
+          }
+        } catch (theaterError) {
+          logger.error(`Failed to add screen to theater: ${theaterError.message}`);
+          // Don't fail the screen creation, just log the error
+        }
+      }
+
       logger.info(`Created new screen: ${screen._id} (${screen.screen_name})`);
 
       res.status(201).json({
@@ -320,16 +335,17 @@ class ScreenController {
         updateData.updatedBy = req.user.userId;
       }
 
+      // Get current screen to check for theater changes
+      const currentScreen = await Screen.findById(id);
+      if (!currentScreen) {
+        return res.status(404).json({
+          success: false,
+          message: 'Screen not found'
+        });
+      }
+
       // Validate unique constraint if screen_name is being updated
       if (updateData.screen_name) {
-        const currentScreen = await Screen.findById(id);
-        if (!currentScreen) {
-          return res.status(404).json({
-            success: false,
-            message: 'Screen not found'
-          });
-        }
-
         const checkQuery = {
           screen_name: updateData.screen_name.trim(),
           theater_id: updateData.theater_id || currentScreen.theater_id,
@@ -354,6 +370,35 @@ class ScreenController {
           context: 'query'
         }
       );
+
+      // Handle theater change
+      if (updateData.theater_id && currentScreen.theater_id) {
+        const oldTheaterId = currentScreen.theater_id.toString();
+        const newTheaterId = updateData.theater_id.toString();
+        
+        if (oldTheaterId !== newTheaterId) {
+          const Theater = require('../models/theater.model');
+          
+          try {
+            // Remove from old theater
+            const oldTheater = await Theater.findById(oldTheaterId);
+            if (oldTheater) {
+              await oldTheater.removeScreen(id);
+              logger.info(`Removed screen ${id} from old theater ${oldTheaterId}`);
+            }
+            
+            // Add to new theater
+            const newTheater = await Theater.findById(newTheaterId);
+            if (newTheater) {
+              await newTheater.addScreen(id);
+              logger.info(`Added screen ${id} to new theater ${newTheaterId}`);
+            }
+          } catch (theaterError) {
+            logger.error(`Failed to update theater associations: ${theaterError.message}`);
+            // Don't fail the screen update, just log the error
+          }
+        }
+      }
 
       if (!screen) {
         return res.status(404).json({
@@ -428,6 +473,21 @@ class ScreenController {
       // Soft delete using model method
       const deletedScreen = await screen.softDelete(req.user?.userId);
 
+      // Remove screen from theater's screens_id array
+      if (deletedScreen.theater_id) {
+        const Theater = require('../models/theater.model');
+        try {
+          const theater = await Theater.findById(deletedScreen.theater_id);
+          if (theater) {
+            await theater.removeScreen(deletedScreen._id);
+            logger.info(`Removed screen ${deletedScreen._id} from theater ${theater._id}`);
+          }
+        } catch (theaterError) {
+          logger.error(`Failed to remove screen from theater: ${theaterError.message}`);
+          // Don't fail the screen deletion, just log the error
+        }
+      }
+
       logger.info(`Soft deleted screen: ${id} (${deletedScreen.screen_name})`);
 
       res.status(200).json({
@@ -485,6 +545,21 @@ class ScreenController {
 
       // Restore using model method
       const restoredScreen = await screen.restore(req.user?.userId);
+
+      // Re-add screen to theater's screens_id array
+      if (restoredScreen.theater_id) {
+        const Theater = require('../models/theater.model');
+        try {
+          const theater = await Theater.findById(restoredScreen.theater_id);
+          if (theater) {
+            await theater.addScreen(restoredScreen._id);
+            logger.info(`Re-added screen ${restoredScreen._id} to theater ${theater._id}`);
+          }
+        } catch (theaterError) {
+          logger.error(`Failed to re-add screen to theater: ${theaterError.message}`);
+          // Don't fail the screen restoration, just log the error
+        }
+      }
 
       logger.info(`Restored screen: ${id} (${restoredScreen.screen_name})`);
 
@@ -550,6 +625,21 @@ class ScreenController {
         total_seats: screen.total_seats,
         wasDeleted: screen.isDeleted()
       };
+
+      // Remove screen from theater's screens_id array before deletion
+      if (screenInfo.theater_id) {
+        const Theater = require('../models/theater.model');
+        try {
+          const theater = await Theater.findById(screenInfo.theater_id);
+          if (theater) {
+            await theater.removeScreen(id);
+            logger.info(`Removed screen ${id} from theater ${theater._id} (permanent deletion)`);
+          }
+        } catch (theaterError) {
+          logger.error(`Failed to remove screen from theater during force delete: ${theaterError.message}`);
+          // Don't fail the deletion, just log the error
+        }
+      }
 
       // Perform permanent deletion
       await Screen.findByIdAndDelete(id);

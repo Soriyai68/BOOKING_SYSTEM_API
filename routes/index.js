@@ -6,12 +6,16 @@ const userRoutes = require('./users.routes');
 const seatRoutes = require('./seats.routes');
 const screenRoutes = require('./screens.routes');
 const theaterRoutes = require('./theaters.routes');
+const movieRoutes = require('./movies.routes');
+const uploadRoutes = require('./upload.routes');
 
 // Mount routes
 router.use('/users', userRoutes);
 router.use('/seats', seatRoutes);
 router.use('/screens', screenRoutes);
 router.use('/theaters', theaterRoutes);
+router.use('/movies', movieRoutes);
+router.use('/upload', uploadRoutes);
 
 
 // Health check endpoint
@@ -34,6 +38,8 @@ router.get('/', (req, res) => {
       seats: '/api/seats',
       screens: '/api/screens',
       theaters: '/api/theaters',
+      movies: '/api/movies',
+      upload: '/api/upload',
       health: '/api/health'
     }
   });

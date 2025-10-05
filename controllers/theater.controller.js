@@ -145,27 +145,61 @@ class TheaterController {
       const sortObj = {};
       sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
-      // Execute queries
-      const [theaters, totalCount] = await Promise.all([
-        Theater.find(query)
-          .sort(sortObj)
-          .skip(skip)
-          .limit(limitNum)
-          .lean(),
-        Theater.countDocuments(query)
+      // Use aggregation to calculate actual total capacity from screens
+      const theatersAggregation = await Theater.aggregate([
+        { $match: query },
+        { $sort: sortObj },
+        { $skip: skip },
+        { $limit: limitNum },
+        {
+          $lookup: {
+            from: 'screens',
+            localField: 'screens_id',
+            foreignField: '_id',
+            as: 'screens'
+          }
+        },
+        {
+          $addFields: {
+            // Filter out deleted screens
+            active_screens: {
+              $filter: {
+                input: '$screens',
+                as: 'screen',
+                cond: { $eq: ['$$screen.deletedAt', null] }
+              }
+            }
+          }
+        },
+        {
+          $addFields: {
+            // Calculate actual total capacity from active screens
+            calculated_total_capacity: { $sum: '$active_screens.total_seats' },
+            calculated_total_screens: { $size: '$active_screens' }
+          }
+        },
+        {
+          $project: {
+            screens: 0, // Remove screens array from output
+            active_screens: 0 // Remove temp field
+          }
+        }
       ]);
+
+      // Get total count
+      const totalCount = await Theater.countDocuments(query);
 
       // Calculate pagination info
       const totalPages = Math.ceil(totalCount / limitNum);
       const hasNextPage = pageNum < totalPages;
       const hasPrevPage = pageNum > 1;
 
-      console.log(`Retrieved ${theaters.length} theaters`);
+      console.log(`Retrieved ${theatersAggregation.length} theaters with calculated capacity`);
 
       res.status(200).json({
         success: true,
         data: {
-          theaters,
+          theaters: theatersAggregation,
           pagination: {
             currentPage: pageNum,
             totalPages,
@@ -201,16 +235,55 @@ class TheaterController {
 
       TheaterController.validateObjectId(id);
 
-      const theater = await Theater.findById(id).populate('screens_id').lean();
+      // Use aggregation to get theater with calculated capacity
+      const theaterResult = await Theater.aggregate([
+        { $match: { _id: new mongoose.Types.ObjectId(id) } },
+        {
+          $lookup: {
+            from: 'screens',
+            localField: 'screens_id',
+            foreignField: '_id',
+            as: 'screens'
+          }
+        },
+        {
+          $addFields: {
+            // Filter out deleted screens
+            active_screens: {
+              $filter: {
+                input: '$screens',
+                as: 'screen',
+                cond: { $eq: ['$$screen.deletedAt', null] }
+              }
+            }
+          }
+        },
+        {
+          $addFields: {
+            // Calculate actual total capacity from active screens
+            calculated_total_capacity: { $sum: '$active_screens.total_seats' },
+            calculated_total_screens: { $size: '$active_screens' },
+            // Keep screens for display
+            screens_info: '$active_screens'
+          }
+        },
+        {
+          $project: {
+            active_screens: 0 // Remove temp field
+          }
+        }
+      ]);
 
-      if (!theater) {
+      if (!theaterResult || theaterResult.length === 0) {
         return res.status(404).json({
           success: false,
           message: 'Theater not found'
         });
       }
 
-      console.log(`Retrieved theater by ID: ${id}`);
+      const theater = theaterResult[0];
+
+      console.log(`Retrieved theater by ID: ${id} with capacity: ${theater.calculated_total_capacity}`);
 
       res.status(200).json({
         success: true,
