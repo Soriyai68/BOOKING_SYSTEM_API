@@ -146,3 +146,73 @@ Please read our [Contributing Guidelines](./guides/contributing.md) before submi
 
 **Last Updated**: September 28, 2025  
 **Version**: 1.0.0
+
+### Documentation: Movie Poster Upload and Management
+
+This document outlines the process of uploading a movie poster, associating it with a movie, and managing the image through the API. The process involves the `upload.controller.js`, the `movie.model.js`, and likely the `movie.controller.js` (which is not shown but can be inferred).
+
+**Key Models and Controllers:**
+
+*   **`movie.model.js`**: Defines the schema for a movie. The crucial field for image uploads is `poster_url`, which is a `String` that stores the URL of the movie's poster.
+*   **`upload.controller.js`**: Handles the logic for uploading, deleting, and optimizing images with a cloud provider (in this case, Cloudinary).
+
+---
+
+### The Upload Process: A Step-by-Step Guide
+
+The overall workflow for adding or updating a movie with a poster is as follows:
+
+1.  **Client-Side Upload**: The frontend application sends a request to the API to upload an image file. This request is directed to an endpoint that uses the `uploadImage` method in the `UploadController`.
+
+2.  **Image Upload and Processing (`upload.controller.js`)**:
+    *   The `uploadImage` function receives the image file.
+    *   It performs validations to ensure a file was uploaded, checks for allowed file types (`jpeg`, `png`, `gif`, `webp`), and verifies the file size (max 10MB).
+    *   The image is then streamed to Cloudinary. During the upload, several transformations are applied:
+        *   The image is resized to a maximum of 1000x1500 pixels.
+        *   Cloudinary automatically optimizes the image quality and format for web delivery.
+        *   The uploaded image is stored in the `booking_system/movies` folder in Cloudinary for better organization.
+    *   Upon a successful upload, Cloudinary returns a JSON object containing details about the uploaded image, including `secure_url` (the URL of the image) and `public_id` (a unique identifier for the image in Cloudinary).
+    *   The `uploadImage` function then sends this JSON object back to the client in the response.
+
+3.  **Associating the Poster with a Movie**:
+    *   After the client receives the successful upload response (containing the `secure_url`), it then makes another API call to either create a new movie or update an existing one.
+    *   This request is handled by the `movie.controller.js` (not provided, but this is the standard workflow).
+    *   In the body of this request, the client includes the `secure_url` received from the `uploadImage` function as the value for the `poster_url` field.
+
+4.  **Saving the Movie (`movie.model.js`)**:
+    *   The `movie.controller.js` takes the request body, which now includes the `poster_url`.
+    *   It creates or updates a movie document in the database.
+    *   The `poster_url` from Cloudinary is saved in the `poster_url` field of the movie document, effectively linking the movie to its uploaded poster.
+
+### Example Workflow
+
+1.  **POST `/api/upload/image`**: The client sends the movie poster image to this endpoint.
+2.  The `UploadController.uploadImage` method processes the image and returns:
+    ```json
+    {
+      "success": true,
+      "message": "Image uploaded successfully",
+      "data": {
+        "url": "https://res.cloudinary.com/your_cloud/image/upload/v12345/booking_system/movies/some_public_id.jpg",
+        "public_id": "booking_system/movies/some_public_id"
+      }
+    }
+    ```
+3.  **POST `/api/movies`** (to create a movie): The client then sends a request to create a new movie with the following body:
+    ```json
+    {
+      "title": "The Amazing Adventure",
+      "description": "An epic journey.",
+      "duration_minutes": 120,
+      "release_date": "2025-12-01",
+      "poster_url": "https://res.cloudinary.com/your_cloud/image/upload/v12345/booking_system/movies/some_public_id.jpg"
+    }
+    ```
+4.  The `movie.controller.js` creates a new movie document, and the `poster_url` is saved, linking the movie to its poster.
+
+---
+
+### Other Relevant Operations in `upload.controller.js`
+
+*   **`deleteImage`**: This function allows for the deletion of an image from Cloudinary using its `public_id`. This would be used if a movie's poster is changed or if the movie is deleted, to avoid having orphaned images in cloud storage.
+*   **`getOptimizedUrl`**: This utility function can generate different versions of an image on-the-fly by providing a `public_id` and desired transformations (like width, height, and crop type). This is useful for creating thumbnails or different-sized versions of the poster for various parts of the UI without needing to upload multiple files.

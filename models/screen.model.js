@@ -142,6 +142,25 @@ screenSchema.methods.isDeleted = function () {
   return this.deletedAt !== null;
 };
 
+// Instance method to check for associated active seats
+screenSchema.methods.hasActiveSeats = async function () {
+  const Seat = mongoose.model('Seat');
+  const associatedSeats = await Seat.find({
+    screen_id: this._id,
+    deletedAt: null // Only count active seats
+  });
+
+  if (associatedSeats.length > 0) {
+    return {
+      hasSeats: true,
+      count: associatedSeats.length,
+      identifiers: associatedSeats.map(seat => seat.seat_identifier || `${seat.row}${seat.seat_number}`)
+    };
+  }
+
+  return { hasSeats: false };
+};
+
 // Instance method to update status
 screenSchema.methods.updateStatus = function (newStatus, updatedBy = null) {
   const validStatuses = ['active', 'maintenance', 'closed', 'renovation'];

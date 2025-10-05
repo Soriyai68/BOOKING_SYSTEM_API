@@ -471,19 +471,14 @@ class ScreenController {
       }
 
       // Check if screen has associated seats
-      const Seat = require('../models/seat.model');
-      const associatedSeats = await Seat.find({
-        screen_id: id,
-        deletedAt: null // Only count active seats
-      });
-
-      if (associatedSeats.length > 0) {
+      const seatCheck = await screen.hasActiveSeats();
+      if (seatCheck.hasSeats) {
         return res.status(409).json({
           success: false,
-          // message: `Cannot delete screen. It has ${associatedSeats.length} associated seat(s). Please delete or reassign the seats first.`,
+          message: `Cannot delete screen. It has ${seatCheck.count} associated seat(s). Please delete or reassign the seats first.`,
           data: {
-            associatedSeatsCount: associatedSeats.length,
-            seatIdentifiers: associatedSeats.map(seat => seat.seat_identifier || `${seat.row}${seat.seat_number}`)
+            associatedSeatsCount: seatCheck.count,
+            seatIdentifiers: seatCheck.identifiers
           }
         });
       }
