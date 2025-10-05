@@ -209,10 +209,10 @@ class ScreenController {
       const screenData = req.body;
 
       // Validate required fields
-      if (!screenData.screen_name || !screenData.total_seats) {
+      if (!screenData.screen_name) {
         return res.status(400).json({
           success: false,
-          message: 'Screen name and total seats are required'
+          message: 'Screen name is required'
         });
       }
 
@@ -329,6 +329,7 @@ class ScreenController {
       delete updateData.deletedBy;
       delete updateData.restoredAt;
       delete updateData.restoredBy;
+      delete updateData.total_seats; // total_seats is auto-calculated from seats
 
       // Add updater info if available
       if (req.user) {

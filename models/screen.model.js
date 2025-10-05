@@ -11,8 +11,8 @@ const screenSchema = new mongoose.Schema({
   },
   total_seats: {
     type: Number,
-    required: true,
-    min: 1,
+    required: false,
+    min: 0,
     max: 1000,
     default: 0
   },
@@ -284,6 +284,31 @@ screenSchema.statics.getScreensWithSeatCounts = async function (query = {}) {
   ]);
 };
 
+// Static method to update total_seats for a screen based on actual seat count
+screenSchema.statics.updateTotalSeatsForScreen = async function (screenId) {
+  try {
+    const Seat = mongoose.model('Seat');
+    
+    // Count active seats for this screen
+    const seatCount = await Seat.countDocuments({
+      screen_id: screenId,
+      deletedAt: null
+    });
+    
+    // Update the screen's total_seats field
+    await this.findByIdAndUpdate(
+      screenId,
+      { total_seats: seatCount },
+      { new: true, timestamps: false } // Don't update timestamps for auto-calculation
+    );
+    
+    return seatCount;
+  } catch (error) {
+    console.error(`Error updating total_seats for screen ${screenId}:`, error);
+    throw error;
+  }
+};
+
 // Virtual for display name
 screenSchema.virtual('display_name').get(function () {
   return this.theater_id 
@@ -327,9 +352,9 @@ screenSchema.pre('save', function (next) {
     this.status = 'closed';
   }
   
-  // Recalculate total_seats if capacity changed
-  if (this.isModified('capacity')) {
-    this.total_seats = this.calculateTotalCapacity();
+  // For new screens, set total_seats to 0 initially (will be updated when seats are added)
+  if (this.isNew && !this.total_seats) {
+    this.total_seats = 0;
   }
   
   next();

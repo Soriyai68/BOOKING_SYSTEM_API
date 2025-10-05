@@ -34,13 +34,13 @@ const createScreenSchema = Joi.object({
 
   total_seats: Joi.number()
     .integer()
-    .min(1)
+    .min(0)
     .max(1000)
-    .required()
+    // .required()
     .messages({
       'number.base': 'Total seats must be a number',
       'number.integer': 'Total seats must be an integer',
-      'number.min': 'Total seats must be at least 1',
+      'number.min': 'Total seats must be at least 0',
       'number.max': 'Total seats cannot exceed 1000',
       'any.required': 'Total seats is required'
     }),

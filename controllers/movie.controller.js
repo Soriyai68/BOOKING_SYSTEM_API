@@ -500,7 +500,7 @@ class MovieController {
 
       await Movie.findByIdAndDelete(id);
 
-      logger.warn(`⚠️  PERMANENT DELETION: Movie permanently deleted by ${req.user.role} ${req.user.userId}`, {
+      logger.warn(`PERMANENT DELETION: Movie permanently deleted by ${req.user.role} ${req.user.userId}`, {
         deletedMovie: movieInfo,
         deletedBy: req.user.userId,
         deletedAt: new Date().toISOString(),

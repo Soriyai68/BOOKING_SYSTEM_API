@@ -175,4 +175,95 @@ seatSchema.pre("save", function (next) {
   next();
 });
 
+// Post-save middleware to update Screen's total_seats
+seatSchema.post("save", async function (doc) {
+  try {
+    if (doc.screen_id) {
+      const Screen = mongoose.model("Screen");
+      const screen = await Screen.findById(doc.screen_id);
+      if (screen) {
+        // Count active seats for this screen
+        const seatCount = await mongoose.model("Seat").countDocuments({
+          screen_id: doc.screen_id,
+          deletedAt: null
+        });
+        // Update total_seats directly
+        await Screen.findByIdAndUpdate(
+          doc.screen_id,
+          { total_seats: seatCount },
+          { timestamps: false }
+        );
+      }
+    }
+  } catch (error) {
+    console.error("Error updating screen total_seats after seat save:", error);
+  }
+});
+
+// Post-remove middleware to update Screen's total_seats
+seatSchema.post("remove", async function (doc) {
+  try {
+    if (doc.screen_id) {
+      const Screen = mongoose.model("Screen");
+      const screen = await Screen.findById(doc.screen_id);
+      if (screen) {
+        const seatCount = await mongoose.model("Seat").countDocuments({
+          screen_id: doc.screen_id,
+          deletedAt: null
+        });
+        await Screen.findByIdAndUpdate(
+          doc.screen_id,
+          { total_seats: seatCount },
+          { timestamps: false }
+        );
+      }
+    }
+  } catch (error) {
+    console.error("Error updating screen total_seats after seat removal:", error);
+  }
+});
+
+// Post-findOneAndDelete middleware to update Screen's total_seats
+seatSchema.post("findOneAndDelete", async function (doc) {
+  try {
+    if (doc && doc.screen_id) {
+      const Screen = mongoose.model("Screen");
+      const screen = await Screen.findById(doc.screen_id);
+      if (screen) {
+        const seatCount = await mongoose.model("Seat").countDocuments({
+          screen_id: doc.screen_id,
+          deletedAt: null
+        });
+        await Screen.findByIdAndUpdate(
+          doc.screen_id,
+          { total_seats: seatCount },
+          { timestamps: false }
+        );
+      }
+    }
+  } catch (error) {
+    console.error("Error updating screen total_seats after seat deletion:", error);
+  }
+});
+
+// Post-findOneAndUpdate middleware to update Screen's total_seats when seat's screen changes
+seatSchema.post("findOneAndUpdate", async function (doc) {
+  try {
+    if (doc && doc.screen_id) {
+      const Screen = mongoose.model("Screen");
+      const seatCount = await mongoose.model("Seat").countDocuments({
+        screen_id: doc.screen_id,
+        deletedAt: null
+      });
+      await Screen.findByIdAndUpdate(
+        doc.screen_id,
+        { total_seats: seatCount },
+        { timestamps: false }
+      );
+    }
+  } catch (error) {
+    console.error("Error updating screen total_seats after seat update:", error);
+  }
+});
+
 module.exports = mongoose.model("Seat", seatSchema);
