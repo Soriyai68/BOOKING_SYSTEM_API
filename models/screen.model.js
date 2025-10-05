@@ -29,7 +29,7 @@ const screenSchema = new mongoose.Schema({
   },
   screen_type: {
     type: String,
-    enum: ['standard', 'imax', '3d', '4dx', 'vip'],
+    enum: ['standard', 'imax', '2d', '3d', '4dx', 'vip'],
     default: 'standard'
   },
   capacity: {
@@ -167,17 +167,17 @@ screenSchema.methods.updateStatus = function (newStatus, updatedBy = null) {
   if (!validStatuses.includes(newStatus)) {
     throw new Error('Invalid status provided');
   }
-  
+
   this.status = newStatus;
   this.updatedBy = updatedBy;
-  
+
   return this.save();
 };
 
 // Instance method to calculate total capacity
 screenSchema.methods.calculateTotalCapacity = function () {
   if (!this.capacity) return 0;
-  
+
   const { standard = 0, premium = 0, vip = 0, wheelchair = 0, recliner = 0 } = this.capacity;
   return standard + premium + vip + wheelchair + recliner;
 };
@@ -188,10 +188,10 @@ screenSchema.methods.updateCapacity = function (capacityUpdate) {
     ...this.capacity,
     ...capacityUpdate
   };
-  
+
   // Recalculate total seats
   this.total_seats = this.calculateTotalCapacity();
-  
+
   return this.save();
 };
 
@@ -229,7 +229,7 @@ screenSchema.statics.findDeleted = function (query = {}) {
 // Static method to get screens with seat counts
 screenSchema.statics.getScreensWithSeatCounts = async function (query = {}) {
   const Seat = mongoose.model('Seat');
-  
+
   return this.aggregate([
     {
       $match: {
@@ -288,20 +288,20 @@ screenSchema.statics.getScreensWithSeatCounts = async function (query = {}) {
 screenSchema.statics.updateTotalSeatsForScreen = async function (screenId) {
   try {
     const Seat = mongoose.model('Seat');
-    
+
     // Count active seats for this screen
     const seatCount = await Seat.countDocuments({
       screen_id: screenId,
       deletedAt: null
     });
-    
+
     // Update the screen's total_seats field
     await this.findByIdAndUpdate(
       screenId,
       { total_seats: seatCount },
       { new: true, timestamps: false } // Don't update timestamps for auto-calculation
     );
-    
+
     return seatCount;
   } catch (error) {
     console.error(`Error updating total_seats for screen ${screenId}:`, error);
@@ -311,7 +311,7 @@ screenSchema.statics.updateTotalSeatsForScreen = async function (screenId) {
 
 // Virtual for display name
 screenSchema.virtual('display_name').get(function () {
-  return this.theater_id 
+  return this.theater_id
     ? `${this.theater_id} - ${this.screen_name}`
     : this.screen_name;
 });
@@ -341,27 +341,27 @@ screenSchema.pre('save', function (next) {
   if (this.screen_name) {
     this.screen_name = this.screen_name.trim();
   }
-  
+
   // Set updatedBy for updates
   if (this.isModified() && !this.isNew) {
     this.updatedAt = new Date();
   }
-  
+
   // Ensure deleted screens are not active
   if (this.deletedAt && this.status === 'active') {
     this.status = 'closed';
   }
-  
+
   // For new screens, set total_seats to 0 initially (will be updated when seats are added)
   if (this.isNew && !this.total_seats) {
     this.total_seats = 0;
   }
-  
+
   next();
 });
 
 // Pre-aggregate middleware to exclude deleted screens by default
-screenSchema.pre(['find', 'findOne', 'findOneAndUpdate', 'count', 'countDocuments'], function() {
+screenSchema.pre(['find', 'findOne', 'findOneAndUpdate', 'count', 'countDocuments'], function () {
   // Only apply if deletedAt filter is not already specified
   if (!this.getQuery().hasOwnProperty('deletedAt')) {
     this.where({ deletedAt: null });

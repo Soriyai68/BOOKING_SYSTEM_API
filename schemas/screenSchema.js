@@ -1,6 +1,6 @@
 const Joi = require('joi');
 
-const SCREEN_TYPES = ['standard', 'imax', '3d', '4dx', 'vip'];
+const SCREEN_TYPES = ['standard', 'imax', '2d', '3d', '4dx', 'vip'];
 const SCREEN_STATUSES = ['active', 'maintenance', 'closed', 'renovation'];
 const SCREEN_FEATURES = ['dolby_atmos', 'surround_sound', 'premium_seating', 'wheelchair_accessible', 'air_conditioning', 'heating'];
 
@@ -98,7 +98,7 @@ const createScreenSchema = Joi.object({
 const updateScreenSchema = Joi.object({
   screen_name: Joi.string()
     .trim()
-    .min(1)
+    .min(0)
     .max(100)
     .messages({
       'string.min': 'Screen name must be at least 1 character',
