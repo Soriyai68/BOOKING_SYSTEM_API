@@ -55,7 +55,7 @@ const createSeatSchema = Joi.object({
 
   theater_id: Joi.string().trim().allow(null).optional(),
 
-  screen_id: Joi.string().trim().allow(null).optional(),
+  hall_id: Joi.string().trim().allow(null).optional(),
 
   price: Joi.number().min(0).precision(2).default(0).messages({
     "number.min": "Price cannot be negative",
@@ -109,7 +109,7 @@ const updateSeatSchema = Joi.object({
 
   theater_id: Joi.string().trim().allow(null).optional(),
 
-  screen_id: Joi.string().trim().allow(null).optional(),
+  hall_id: Joi.string().trim().allow(null).optional(),
 
   price: Joi.number().min(0).precision(2).messages({
     "number.min": "Price cannot be negative",
@@ -185,7 +185,7 @@ const getAllSeatsQuerySchema = Joi.object({
     .optional(),
   is_available: Joi.string().valid("true", "false").optional(),
   theater_id: Joi.string().trim().optional(),
-  screen_id: Joi.string().trim().optional(),
+  hall_id: Joi.string().trim().optional(),
   includeDeleted: Joi.string().valid("true", "false").default("false"),
   priceMin: Joi.number().min(0).optional(),
   priceMax: Joi.number().min(Joi.ref("priceMin")).optional(),
@@ -256,7 +256,7 @@ const advancedSearchSchema = Joi.object({
     .optional(),
   is_available: Joi.boolean().optional(),
   theater_id: Joi.string().trim().optional(),
-  screen_id: Joi.string().trim().optional(),
+  hall_id: Joi.string().trim().optional(),
   priceMin: Joi.number().min(0).optional(),
   priceMax: Joi.number().min(Joi.ref("priceMin")).optional(),
   dateFrom: Joi.date().iso().optional(),
@@ -301,12 +301,12 @@ const batchUpdateStatusSchema = Joi.object({
     }),
 });
 
-// Theater/Screen query schema
+// Theater/Hall query schema
 const theaterSeatsQuerySchema = Joi.object({
   theater_id: Joi.string().trim().required().messages({
     "any.required": "Theater ID is required",
   }),
-  screen_id: Joi.string().trim().optional(),
+  hall_id: Joi.string().trim().optional(),
   seat_type: Joi.string()
     .valid(...SEAT_TYPES)
     .optional(),

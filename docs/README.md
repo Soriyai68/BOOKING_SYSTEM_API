@@ -74,7 +74,7 @@ The Movie Booking System API is a RESTful service built with:
 ### Theater Management
 - Movie theater configuration
 - Location-theater relationships
-- Screen management and capacity tracking
+- Hall management and capacity tracking
 - Amenities and features (IMAX, Dolby Atmos, etc.)
 - Operating hours and contact information
 

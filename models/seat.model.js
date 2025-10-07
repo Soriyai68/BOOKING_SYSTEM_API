@@ -39,9 +39,9 @@ const seatSchema = new mongoose.Schema(
       default: null,
       index: true,
     },
-    screen_id: {
+    hall_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Screen",
+      ref: "Hall",
       default: null,
       index: true,
     },
@@ -175,94 +175,94 @@ seatSchema.pre("save", function (next) {
   next();
 });
 
-// Post-save middleware to update Screen's total_seats
+// Post-save middleware to update Hall's total_seats
 seatSchema.post("save", async function (doc) {
   try {
-    if (doc.screen_id) {
-      const Screen = mongoose.model("Screen");
-      const screen = await Screen.findById(doc.screen_id);
-      if (screen) {
-        // Count active seats for this screen
+    if (doc.hall_id) {
+      const Hall = mongoose.model("Hall");
+      const hall = await Hall.findById(doc.hall_id);
+      if (hall) {
+        // Count active seats for this hall
         const seatCount = await mongoose.model("Seat").countDocuments({
-          screen_id: doc.screen_id,
+          hall_id: doc.hall_id,
           deletedAt: null
         });
         // Update total_seats directly
-        await Screen.findByIdAndUpdate(
-          doc.screen_id,
+        await Hall.findByIdAndUpdate(
+          doc.hall_id,
           { total_seats: seatCount },
           { timestamps: false }
         );
       }
     }
   } catch (error) {
-    console.error("Error updating screen total_seats after seat save:", error);
+    console.error("Error updating hall total_seats after seat save:", error);
   }
 });
 
-// Post-remove middleware to update Screen's total_seats
+// Post-remove middleware to update Hall's total_seats
 seatSchema.post("remove", async function (doc) {
   try {
-    if (doc.screen_id) {
-      const Screen = mongoose.model("Screen");
-      const screen = await Screen.findById(doc.screen_id);
-      if (screen) {
+    if (doc.hall_id) {
+      const Hall = mongoose.model("Hall");
+      const hall = await Hall.findById(doc.hall_id);
+      if (hall) {
         const seatCount = await mongoose.model("Seat").countDocuments({
-          screen_id: doc.screen_id,
+          hall_id: doc.hall_id,
           deletedAt: null
         });
-        await Screen.findByIdAndUpdate(
-          doc.screen_id,
+        await Hall.findByIdAndUpdate(
+          doc.hall_id,
           { total_seats: seatCount },
           { timestamps: false }
         );
       }
     }
   } catch (error) {
-    console.error("Error updating screen total_seats after seat removal:", error);
+    console.error("Error updating hall total_seats after seat removal:", error);
   }
 });
 
-// Post-findOneAndDelete middleware to update Screen's total_seats
+// Post-findOneAndDelete middleware to update Hall's total_seats
 seatSchema.post("findOneAndDelete", async function (doc) {
   try {
-    if (doc && doc.screen_id) {
-      const Screen = mongoose.model("Screen");
-      const screen = await Screen.findById(doc.screen_id);
-      if (screen) {
+    if (doc && doc.hall_id) {
+      const Hall = mongoose.model("Hall");
+      const hall = await Hall.findById(doc.hall_id);
+      if (hall) {
         const seatCount = await mongoose.model("Seat").countDocuments({
-          screen_id: doc.screen_id,
+          hall_id: doc.hall_id,
           deletedAt: null
         });
-        await Screen.findByIdAndUpdate(
-          doc.screen_id,
+        await Hall.findByIdAndUpdate(
+          doc.hall_id,
           { total_seats: seatCount },
           { timestamps: false }
         );
       }
     }
   } catch (error) {
-    console.error("Error updating screen total_seats after seat deletion:", error);
+    console.error("Error updating hall total_seats after seat deletion:", error);
   }
 });
 
-// Post-findOneAndUpdate middleware to update Screen's total_seats when seat's screen changes
+// Post-findOneAndUpdate middleware to update Hall's total_seats when seat's hall changes
 seatSchema.post("findOneAndUpdate", async function (doc) {
   try {
-    if (doc && doc.screen_id) {
-      const Screen = mongoose.model("Screen");
+    if (doc && doc.hall_id) {
+      const Hall = mongoose.model("Hall");
       const seatCount = await mongoose.model("Seat").countDocuments({
-        screen_id: doc.screen_id,
+        hall_id: doc.hall_id,
         deletedAt: null
       });
-      await Screen.findByIdAndUpdate(
-        doc.screen_id,
+      await Hall.findByIdAndUpdate(
+        doc.hall_id,
         { total_seats: seatCount },
         { timestamps: false }
       );
     }
   } catch (error) {
-    console.error("Error updating screen total_seats after seat update:", error);
+    console.error("Error updating hall total_seats after seat update:", error);
   }
 });
 

@@ -1,17 +1,17 @@
 const mongoose = require('mongoose');
-const Screen = require('../models/screen.model');
+const Hall = require('../models/hall.model');
 const { Role } = require('../data');
 const logger = require('../utils/logger');
 
 /**
- * ScreenController - Comprehensive CRUD operations for screen management
+ * HallController - Comprehensive CRUD operations for hall management
  * Handles: getById, getAll, create, update, delete (soft), restore, forceDelete, listDeleted, updateStatus, updateCapacity
  */
-class ScreenController {
+class HallController {
   // Helper method to validate ObjectId
   static validateObjectId(id) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error('Invalid screen ID format');
+      throw new Error('Invalid hall ID format');
     }
   }
 
@@ -21,7 +21,7 @@ class ScreenController {
 
     return {
       $or: [
-        { screen_name: { $regex: search, $options: 'i' } },
+        { hall_name: { $regex: search, $options: 'i' } },
         { screen_type: { $regex: search, $options: 'i' } },
         { theater_id: { $regex: search, $options: 'i' } },
         { notes: { $regex: search, $options: 'i' } }
@@ -78,13 +78,13 @@ class ScreenController {
     return query;
   }
 
-  // 1. GET ALL SCREENS - with pagination, filtering, and sorting
+  // 1. GET ALL HALLS - with pagination, filtering, and sorting
   static async getAll(req, res) {
     try {
       const {
         page = 1,
         limit = 10,
-        sortBy = 'screen_name',
+        sortBy = 'hall_name',
         sortOrder = 'asc',
         search,
         includeDeleted = false,
@@ -101,15 +101,15 @@ class ScreenController {
 
       // Handle search
       if (search) {
-        query = { ...query, ...ScreenController.buildSearchQuery(search) };
+        query = { ...query, ...HallController.buildSearchQuery(search) };
       }
 
       // Handle filters
-      query = { ...query, ...ScreenController.buildFilterQuery(filters) };
+      query = { ...query, ...HallController.buildFilterQuery(filters) };
 
       // Handle soft deleted records
       if (!includeDeleted || includeDeleted === 'false') {
-        query.deletedAt = null; // Only get non-deleted screens
+        query.deletedAt = null; // Only get non-deleted halls
       }
 
       // Build sort object
@@ -117,13 +117,13 @@ class ScreenController {
       sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
       // Execute queries
-      const [screens, totalCount] = await Promise.all([
-        Screen.find(query)
+      const [halls, totalCount] = await Promise.all([
+        Hall.find(query)
           .sort(sortObj)
           .skip(skip)
           .limit(limitNum)
           .lean(),
-        Screen.countDocuments(query)
+        Hall.countDocuments(query)
       ]);
 
       // Calculate pagination info
@@ -131,12 +131,12 @@ class ScreenController {
       const hasNextPage = pageNum < totalPages;
       const hasPrevPage = pageNum > 1;
 
-      logger.info(`Retrieved ${screens.length} screens`);
+      logger.info(`Retrieved ${halls.length} halls`);
 
       res.status(200).json({
         success: true,
         data: {
-          screens,
+          halls,
           pagination: {
             currentPage: pageNum,
             totalPages,
@@ -150,15 +150,15 @@ class ScreenController {
         }
       });
     } catch (error) {
-      logger.error('Get all screens error:', error);
+      logger.error('Get all halls error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve screens'
+        message: 'Failed to retrieve halls'
       });
     }
   }
 
-  // 2. GET SCREEN BY ID
+  // 2. GET HALL BY ID
   static async getById(req, res) {
     try {
       const { id } = req.params;
@@ -166,87 +166,87 @@ class ScreenController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Screen ID is required'
+          message: 'Hall ID is required'
         });
       }
 
-      ScreenController.validateObjectId(id);
+      HallController.validateObjectId(id);
 
-      const screen = await Screen.findById(id).lean();
+      const hall = await Hall.findById(id).lean();
 
-      if (!screen) {
+      if (!hall) {
         return res.status(404).json({
           success: false,
-          message: 'Screen not found'
+          message: 'Hall not found'
         });
       }
 
-      logger.info(`Retrieved screen by ID: ${id}`);
+      logger.info(`Retrieved hall by ID: ${id}`);
 
       res.status(200).json({
         success: true,
-        data: { screen }
+        data: { hall }
       });
     } catch (error) {
-      if (error.message === 'Invalid screen ID format') {
+      if (error.message === 'Invalid hall ID format') {
         return res.status(400).json({
           success: false,
           message: error.message
         });
       }
 
-      logger.error('Get screen by ID error:', error);
+      logger.error('Get hall by ID error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve screen'
+        message: 'Failed to retrieve hall'
       });
     }
   }
 
-  // 3. CREATE SCREEN
+  // 3. CREATE HALL
   static async create(req, res) {
     try {
-      const screenData = req.body;
+      const hallData = req.body;
 
       // Validate required fields
-      if (!screenData.screen_name) {
+      if (!hallData.hall_name) {
         return res.status(400).json({
           success: false,
-          message: 'Screen name is required'
+          message: 'Hall name is required'
         });
       }
 
-      // Check if screen already exists in the same theater
+      // Check if hall already exists in the same theater
       const existingQuery = {
-        screen_name: screenData.screen_name.trim()
+        hall_name: hallData.hall_name.trim()
       };
 
-      if (screenData.theater_id) {
-        existingQuery.theater_id = screenData.theater_id;
+      if (hallData.theater_id) {
+        existingQuery.theater_id = hallData.theater_id;
       }
 
-      const existingScreen = await Screen.findOne(existingQuery);
-      if (existingScreen) {
+      const existingHall = await Hall.findOne(existingQuery);
+      if (existingHall) {
         return res.status(409).json({
           success: false,
-          message: 'Screen with this name already exists in this theater'
+          message: 'Hall with this name already exists in this theater'
         });
       }
 
       // Set default values
-      const screenToCreate = {
-        ...screenData,
-        screen_type: screenData.screen_type || 'standard',
-        status: screenData.status || 'active',
-        features: screenData.features || [],
-        capacity: screenData.capacity || {
+      const hallToCreate = {
+        ...hallData,
+        screen_type: hallData.screen_type || 'standard',
+        status: hallData.status || 'active',
+        features: hallData.features || [],
+        capacity: hallData.capacity || {
           standard: 0,
           premium: 0,
           vip: 0,
           wheelchair: 0,
           recliner: 0
         },
-        dimensions: screenData.dimensions || {
+        dimensions: hallData.dimensions || {
           width: 10,
           height: 10
         }
@@ -254,33 +254,33 @@ class ScreenController {
 
       // Add creator info if available
       if (req.user) {
-        screenToCreate.createdBy = req.user.userId;
+        hallToCreate.createdBy = req.user.userId;
       }
 
-      const screen = new Screen(screenToCreate);
-      await screen.save();
+      const hall = new Hall(hallToCreate);
+      await hall.save();
 
-      // Update theater's screens_id array
-      if (screen.theater_id) {
+      // Update theater's halls_id array
+      if (hall.theater_id) {
         const Theater = require('../models/theater.model');
         try {
-          const theater = await Theater.findById(screen.theater_id);
+          const theater = await Theater.findById(hall.theater_id);
           if (theater) {
-            await theater.addScreen(screen._id);
-            logger.info(`Added screen ${screen._id} to theater ${theater._id}`);
+            await theater.addHall(hall._id);
+            logger.info(`Added hall ${hall._id} to theater ${theater._id}`);
           }
         } catch (theaterError) {
-          logger.error(`Failed to add screen to theater: ${theaterError.message}`);
-          // Don't fail the screen creation, just log the error
+          logger.error(`Failed to add hall to theater: ${theaterError.message}`);
+          // Don't fail the hall creation, just log the error
         }
       }
 
-      logger.info(`Created new screen: ${screen._id} (${screen.screen_name})`);
+      logger.info(`Created new hall: ${hall._id} (${hall.hall_name})`);
 
       res.status(201).json({
         success: true,
-        message: 'Screen created successfully',
-        data: { screen }
+        message: 'Hall created successfully',
+        data: { hall }
       });
     } catch (error) {
       if (error.name === 'ValidationError') {
@@ -294,19 +294,19 @@ class ScreenController {
       if (error.code === 11000) {
         return res.status(409).json({
           success: false,
-          message: 'Screen with this name already exists in this theater'
+          message: 'Hall with this name already exists in this theater'
         });
       }
 
-      logger.error('Create screen error:', error);
+      logger.error('Create hall error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to create screen'
+        message: 'Failed to create hall'
       });
     }
   }
 
-  // 4. UPDATE SCREEN
+  // 4. UPDATE HALL
   static async update(req, res) {
     try {
       const { id } = req.params;
@@ -315,11 +315,11 @@ class ScreenController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Screen ID is required'
+          message: 'Hall ID is required'
         });
       }
 
-      ScreenController.validateObjectId(id);
+      HallController.validateObjectId(id);
 
       // Remove sensitive fields that shouldn't be updated directly
       delete updateData._id;
@@ -336,33 +336,33 @@ class ScreenController {
         updateData.updatedBy = req.user.userId;
       }
 
-      // Get current screen to check for theater changes
-      const currentScreen = await Screen.findById(id);
-      if (!currentScreen) {
+      // Get current hall to check for theater changes
+      const currentHall = await Hall.findById(id);
+      if (!currentHall) {
         return res.status(404).json({
           success: false,
-          message: 'Screen not found'
+          message: 'Hall not found'
         });
       }
 
-      // Validate unique constraint if screen_name is being updated
-      if (updateData.screen_name) {
+      // Validate unique constraint if hall_name is being updated
+      if (updateData.hall_name) {
         const checkQuery = {
-          screen_name: updateData.screen_name.trim(),
-          theater_id: updateData.theater_id || currentScreen.theater_id,
+          hall_name: updateData.hall_name.trim(),
+          theater_id: updateData.theater_id || currentHall.theater_id,
           _id: { $ne: id }
         };
 
-        const existingScreen = await Screen.findOne(checkQuery);
-        if (existingScreen) {
+        const existingHall = await Hall.findOne(checkQuery);
+        if (existingHall) {
           return res.status(409).json({
             success: false,
-            message: 'Screen with this name already exists in this theater'
+            message: 'Hall with this name already exists in this theater'
           });
         }
       }
 
-      const screen = await Screen.findByIdAndUpdate(
+      const hall = await Hall.findByIdAndUpdate(
         id,
         updateData,
         {
@@ -373,8 +373,8 @@ class ScreenController {
       );
 
       // Handle theater change
-      if (updateData.theater_id && currentScreen.theater_id) {
-        const oldTheaterId = currentScreen.theater_id.toString();
+      if (updateData.theater_id && currentHall.theater_id) {
+        const oldTheaterId = currentHall.theater_id.toString();
         const newTheaterId = updateData.theater_id.toString();
         
         if (oldTheaterId !== newTheaterId) {
@@ -384,39 +384,39 @@ class ScreenController {
             // Remove from old theater
             const oldTheater = await Theater.findById(oldTheaterId);
             if (oldTheater) {
-              await oldTheater.removeScreen(id);
-              logger.info(`Removed screen ${id} from old theater ${oldTheaterId}`);
+              await oldTheater.removeHall(id);
+              logger.info(`Removed hall ${id} from old theater ${oldTheaterId}`);
             }
             
             // Add to new theater
             const newTheater = await Theater.findById(newTheaterId);
             if (newTheater) {
-              await newTheater.addScreen(id);
-              logger.info(`Added screen ${id} to new theater ${newTheaterId}`);
+              await newTheater.addHall(id);
+              logger.info(`Added hall ${id} to new theater ${newTheaterId}`);
             }
           } catch (theaterError) {
             logger.error(`Failed to update theater associations: ${theaterError.message}`);
-            // Don't fail the screen update, just log the error
+            // Don't fail the hall update, just log the error
           }
         }
       }
 
-      if (!screen) {
+      if (!hall) {
         return res.status(404).json({
           success: false,
-          message: 'Screen not found'
+          message: 'Hall not found'
         });
       }
 
-      logger.info(`Updated screen: ${id} (${screen.screen_name})`);
+      logger.info(`Updated hall: ${id} (${hall.hall_name})`);
 
       res.status(200).json({
         success: true,
-        message: 'Screen updated successfully',
-        data: { screen }
+        message: 'Hall updated successfully',
+        data: { hall }
       });
     } catch (error) {
-      if (error.message === 'Invalid screen ID format') {
+      if (error.message === 'Invalid hall ID format') {
         return res.status(400).json({
           success: false,
           message: error.message
@@ -431,15 +431,15 @@ class ScreenController {
         });
       }
 
-      logger.error('Update screen error:', error);
+      logger.error('Update hall error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to update screen'
+        message: 'Failed to update hall'
       });
     }
   }
 
-  // 5. SOFT DELETE SCREEN (Deactivate)
+  // 5. SOFT DELETE HALL (Deactivate)
   static async delete(req, res) {
     try {
       const { id } = req.params;
@@ -447,36 +447,36 @@ class ScreenController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Screen ID is required'
+          message: 'Hall ID is required'
         });
       }
 
-      ScreenController.validateObjectId(id);
+      HallController.validateObjectId(id);
 
-      // Find the screen first
-      const screen = await Screen.findById(id);
+      // Find the hall first
+      const hall = await Hall.findById(id);
 
-      if (!screen) {
+      if (!hall) {
         return res.status(404).json({
           success: false,
-          message: 'Screen not found'
+          message: 'Hall not found'
         });
       }
 
-      // Check if screen is already soft deleted
-      if (screen.isDeleted()) {
+      // Check if hall is already soft deleted
+      if (hall.isDeleted()) {
         return res.status(409).json({
           success: false,
-          message: 'Screen is already deactivated'
+          message: 'Hall is already deactivated'
         });
       }
 
-      // Check if screen has associated seats
-      const seatCheck = await screen.hasActiveSeats();
+      // Check if hall has associated seats
+      const seatCheck = await hall.hasActiveSeats();
       if (seatCheck.hasSeats) {
         return res.status(409).json({
           success: false,
-          message: `Cannot delete screen. It has ${seatCheck.count} associated seat(s). Please delete or reassign the seats first.`,
+          message: `Cannot delete hall. It has ${seatCheck.count} associated seat(s). Please delete or reassign the seats first.`,
           data: {
             associatedSeatsCount: seatCheck.count,
             seatIdentifiers: seatCheck.identifiers
@@ -485,47 +485,47 @@ class ScreenController {
       }
 
       // Soft delete using model method
-      const deletedScreen = await screen.softDelete(req.user?.userId);
+      const deletedHall = await hall.softDelete(req.user?.userId);
 
-      // Remove screen from theater's screens_id array
-      if (deletedScreen.theater_id) {
+      // Remove hall from theater's halls_id array
+      if (deletedHall.theater_id) {
         const Theater = require('../models/theater.model');
         try {
-          const theater = await Theater.findById(deletedScreen.theater_id);
+          const theater = await Theater.findById(deletedHall.theater_id);
           if (theater) {
-            await theater.removeScreen(deletedScreen._id);
-            logger.info(`Removed screen ${deletedScreen._id} from theater ${theater._id}`);
+            await theater.removeHall(deletedHall._id);
+            logger.info(`Removed hall ${deletedHall._id} from theater ${theater._id}`);
           }
         } catch (theaterError) {
-          logger.error(`Failed to remove screen from theater: ${theaterError.message}`);
-          // Don't fail the screen deletion, just log the error
+          logger.error(`Failed to remove hall from theater: ${theaterError.message}`);
+          // Don't fail the hall deletion, just log the error
         }
       }
 
-      logger.info(`Soft deleted screen: ${id} (${deletedScreen.screen_name})`);
+      logger.info(`Soft deleted hall: ${id} (${deletedHall.hall_name})`);
 
       res.status(200).json({
         success: true,
-        message: 'Screen deactivated successfully',
-        data: { screen: deletedScreen }
+        message: 'Hall deactivated successfully',
+        data: { hall: deletedHall }
       });
     } catch (error) {
-      if (error.message === 'Invalid screen ID format') {
+      if (error.message === 'Invalid hall ID format') {
         return res.status(400).json({
           success: false,
           message: error.message
         });
       }
 
-      logger.error('Delete screen error:', error);
+      logger.error('Delete hall error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to deactivate screen'
+        message: 'Failed to deactivate hall'
       });
     }
   }
 
-  // 6. RESTORE SCREEN (Reactivate)
+  // 6. RESTORE HALL (Reactivate)
   static async restore(req, res) {
     try {
       const { id } = req.params;
@@ -533,72 +533,72 @@ class ScreenController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Screen ID is required'
+          message: 'Hall ID is required'
         });
       }
 
-      ScreenController.validateObjectId(id);
+      HallController.validateObjectId(id);
 
-      // Find the screen first
-      const screen = await Screen.findById(id);
+      // Find the hall first
+      const hall = await Hall.findById(id);
 
-      if (!screen) {
+      if (!hall) {
         return res.status(404).json({
           success: false,
-          message: 'Screen not found'
+          message: 'Hall not found'
         });
       }
 
-      // Check if screen is not deleted (already active)
-      if (!screen.isDeleted()) {
+      // Check if hall is not deleted (already active)
+      if (!hall.isDeleted()) {
         return res.status(409).json({
           success: false,
-          message: 'Screen is already active'
+          message: 'Hall is already active'
         });
       }
 
       // Restore using model method
-      const restoredScreen = await screen.restore(req.user?.userId);
+      const restoredHall = await hall.restore(req.user?.userId);
 
-      // Re-add screen to theater's screens_id array
-      if (restoredScreen.theater_id) {
+      // Re-add hall to theater's halls_id array
+      if (restoredHall.theater_id) {
         const Theater = require('../models/theater.model');
         try {
-          const theater = await Theater.findById(restoredScreen.theater_id);
+          const theater = await Theater.findById(restoredHall.theater_id);
           if (theater) {
-            await theater.addScreen(restoredScreen._id);
-            logger.info(`Re-added screen ${restoredScreen._id} to theater ${theater._id}`);
+            await theater.addHall(restoredHall._id);
+            logger.info(`Re-added hall ${restoredHall._id} to theater ${theater._id}`);
           }
         } catch (theaterError) {
-          logger.error(`Failed to re-add screen to theater: ${theaterError.message}`);
-          // Don't fail the screen restoration, just log the error
+          logger.error(`Failed to re-add hall to theater: ${theaterError.message}`);
+          // Don't fail the hall restoration, just log the error
         }
       }
 
-      logger.info(`Restored screen: ${id} (${restoredScreen.screen_name})`);
+      logger.info(`Restored hall: ${id} (${restoredHall.hall_name})`);
 
       res.status(200).json({
         success: true,
-        message: 'Screen restored successfully',
-        data: { screen: restoredScreen }
+        message: 'Hall restored successfully',
+        data: { hall: restoredHall }
       });
     } catch (error) {
-      if (error.message === 'Invalid screen ID format') {
+      if (error.message === 'Invalid hall ID format') {
         return res.status(400).json({
           success: false,
           message: error.message
         });
       }
 
-      logger.error('Restore screen error:', error);
+      logger.error('Restore hall error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to restore screen'
+        message: 'Failed to restore hall'
       });
     }
   }
 
-  // 7. FORCE DELETE SCREEN (Permanent deletion - Admin/SuperAdmin only)
+  // 7. FORCE DELETE HALL (Permanent deletion - Admin/SuperAdmin only)
   static async forceDelete(req, res) {
     try {
       const { id } = req.params;
@@ -606,7 +606,7 @@ class ScreenController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Screen ID is required'
+          message: 'Hall ID is required'
         });
       }
 
@@ -614,26 +614,26 @@ class ScreenController {
       if (req.user?.role !== Role.ADMIN && req.user?.role !== Role.SUPERADMIN) {
         return res.status(403).json({
           success: false,
-          message: 'Only Admin or SuperAdmin can permanently delete screens'
+          message: 'Only Admin or SuperAdmin can permanently delete halls'
         });
       }
 
-      ScreenController.validateObjectId(id);
+      HallController.validateObjectId(id);
 
-      // Find the screen first
-      const screen = await Screen.findById(id);
+      // Find the hall first
+      const hall = await Hall.findById(id);
 
-      if (!screen) {
+      if (!hall) {
         return res.status(404).json({
           success: false,
-          message: 'Screen not found'
+          message: 'Hall not found'
         });
       }
 
-      // Check if screen has associated seats (even soft deleted ones)
+      // Check if hall has associated seats (even soft deleted ones)
       const Seat = require('../models/seat.model');
       const associatedSeats = await Seat.find({
-        screen_id: id
+        hall_id: id
         // Note: We check all seats (including soft deleted) for force delete
       });
 
@@ -643,7 +643,7 @@ class ScreenController {
         
         return res.status(409).json({
           success: false,
-          message: `Cannot permanently delete screen. It has ${associatedSeats.length} associated seat(s) (${activeSeats.length} active, ${deletedSeats.length} deleted). Please permanently delete all seats first.`,
+          message: `Cannot permanently delete hall. It has ${associatedSeats.length} associated seat(s) (${activeSeats.length} active, ${deletedSeats.length} deleted). Please permanently delete all seats first.`,
           data: {
             totalSeats: associatedSeats.length,
             activeSeats: activeSeats.length,
@@ -656,72 +656,72 @@ class ScreenController {
         });
       }
 
-      // Store screen info for logging before deletion
-      const screenInfo = {
-        id: screen._id,
-        screen_name: screen.screen_name,
-        screen_type: screen.screen_type,
-        theater_id: screen.theater_id,
-        total_seats: screen.total_seats,
-        wasDeleted: screen.isDeleted()
+      // Store hall info for logging before deletion
+      const hallInfo = {
+        id: hall._id,
+        hall_name: hall.hall_name,
+        screen_type: hall.screen_type,
+        theater_id: hall.theater_id,
+        total_seats: hall.total_seats,
+        wasDeleted: hall.isDeleted()
       };
 
-      // Remove screen from theater's screens_id array before deletion
-      if (screenInfo.theater_id) {
+      // Remove hall from theater's halls_id array before deletion
+      if (hallInfo.theater_id) {
         const Theater = require('../models/theater.model');
         try {
-          const theater = await Theater.findById(screenInfo.theater_id);
+          const theater = await Theater.findById(hallInfo.theater_id);
           if (theater) {
-            await theater.removeScreen(id);
-            logger.info(`Removed screen ${id} from theater ${theater._id} (permanent deletion)`);
+            await theater.removeHall(id);
+            logger.info(`Removed hall ${id} from theater ${theater._id} (permanent deletion)`);
           }
         } catch (theaterError) {
-          logger.error(`Failed to remove screen from theater during force delete: ${theaterError.message}`);
+          logger.error(`Failed to remove hall from theater during force delete: ${theaterError.message}`);
           // Don't fail the deletion, just log the error
         }
       }
 
       // Perform permanent deletion
-      await Screen.findByIdAndDelete(id);
+      await Hall.findByIdAndDelete(id);
 
-      logger.warn(`⚠️  PERMANENT DELETION: Screen permanently deleted by ${req.user.role} ${req.user.userId}`, {
-        deletedScreen: screenInfo,
+      logger.warn(`⚠️  PERMANENT DELETION: Hall permanently deleted by ${req.user.role} ${req.user.userId}`, {
+        deletedHall: hallInfo,
         deletedBy: req.user.userId,
         deletedAt: new Date().toISOString(),
-        action: 'FORCE_DELETE_SCREEN'
+        action: 'FORCE_DELETE_HALL'
       });
 
       res.status(200).json({
         success: true,
-        message: 'Screen permanently deleted',
+        message: 'Hall permanently deleted',
         data: {
-          deletedScreen: {
-            id: screenInfo.id,
-            screen_name: screenInfo.screen_name,
-            screen_type: screenInfo.screen_type,
-            theater_id: screenInfo.theater_id,
-            total_seats: screenInfo.total_seats
+          deletedHall: {
+            id: hallInfo.id,
+            hall_name: hallInfo.hall_name,
+            screen_type: hallInfo.screen_type,
+            theater_id: hallInfo.theater_id,
+            total_seats: hallInfo.total_seats
           },
           warning: 'This action is irreversible'
         }
       });
     } catch (error) {
-      if (error.message === 'Invalid screen ID format') {
+      if (error.message === 'Invalid hall ID format') {
         return res.status(400).json({
           success: false,
           message: error.message
         });
       }
 
-      logger.error('Force delete screen error:', error);
+      logger.error('Force delete hall error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to permanently delete screen'
+        message: 'Failed to permanently delete hall'
       });
     }
   }
 
-  // 8. LIST DELETED SCREENS
+  // 8. LIST DELETED HALLS
   static async listDeleted(req, res) {
     try {
       const {
@@ -735,42 +735,42 @@ class ScreenController {
       const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
       const skip = (pageNum - 1) * limitNum;
 
-      // Query for soft deleted screens only
+      // Query for soft deleted halls only
       const query = { deletedAt: { $ne: null } };
       const sortObj = {};
       sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
-      const [screens, totalCount] = await Promise.all([
-        Screen.find(query)
+      const [halls, totalCount] = await Promise.all([
+        Hall.find(query)
           .sort(sortObj)
           .skip(skip)
           .limit(limitNum)
           .lean(),
-        Screen.countDocuments(query)
+        Hall.countDocuments(query)
       ]);
 
-      // Add delete info to each screen
-      const screensWithDeleteInfo = screens.map(screen => ({
-        ...screen,
+      // Add delete info to each hall
+      const hallsWithDeleteInfo = halls.map(hall => ({
+        ...hall,
         deleteInfo: {
-          deletedAt: screen.deletedAt,
-          deletedBy: screen.deletedBy,
-          daysSinceDeleted: screen.deletedAt ? Math.floor((Date.now() - new Date(screen.deletedAt)) / (1000 * 60 * 60 * 24)) : null
+          deletedAt: hall.deletedAt,
+          deletedBy: hall.deletedBy,
+          daysSinceDeleted: hall.deletedAt ? Math.floor((Date.now() - new Date(hall.deletedAt)) / (1000 * 60 * 60 * 24)) : null
         },
         restoreInfo: {
-          restoredAt: screen.restoredAt,
-          restoredBy: screen.restoredBy
+          restoredAt: hall.restoredAt,
+          restoredBy: hall.restoredBy
         }
       }));
 
       const totalPages = Math.ceil(totalCount / limitNum);
 
-      logger.info(`Retrieved ${screens.length} deleted screens`);
+      logger.info(`Retrieved ${halls.length} deleted halls`);
 
       res.status(200).json({
         success: true,
         data: {
-          screens: screensWithDeleteInfo,
+          halls: hallsWithDeleteInfo,
           pagination: {
             currentPage: pageNum,
             totalPages,
@@ -782,15 +782,15 @@ class ScreenController {
         }
       });
     } catch (error) {
-      logger.error('Get deleted screens error:', error);
+      logger.error('Get deleted halls error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve deleted screens'
+        message: 'Failed to retrieve deleted halls'
       });
     }
   }
 
-  // 9. UPDATE SCREEN STATUS
+  // 9. UPDATE HALL STATUS
   static async updateStatus(req, res) {
     try {
       const { id } = req.params;
@@ -799,7 +799,7 @@ class ScreenController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Screen ID is required'
+          message: 'Hall ID is required'
         });
       }
 
@@ -810,38 +810,38 @@ class ScreenController {
         });
       }
 
-      ScreenController.validateObjectId(id);
+      HallController.validateObjectId(id);
 
-      // Find the screen first
-      const screen = await Screen.findById(id);
+      // Find the hall first
+      const hall = await Hall.findById(id);
 
-      if (!screen) {
+      if (!hall) {
         return res.status(404).json({
           success: false,
-          message: 'Screen not found'
+          message: 'Hall not found'
         });
       }
 
-      // Check if screen is deleted
-      if (screen.isDeleted()) {
+      // Check if hall is deleted
+      if (hall.isDeleted()) {
         return res.status(409).json({
           success: false,
-          message: 'Cannot update status of deleted screen. Please restore it first.'
+          message: 'Cannot update status of deleted hall. Please restore it first.'
         });
       }
 
       // Update status using model method
-      const updatedScreen = await screen.updateStatus(status, req.user?.userId);
+      const updatedHall = await hall.updateStatus(status, req.user?.userId);
 
-      logger.info(`Updated screen status: ${id} (${screen.screen_name}) to ${status}`);
+      logger.info(`Updated hall status: ${id} (${hall.hall_name}) to ${status}`);
 
       res.status(200).json({
         success: true,
-        message: 'Screen status updated successfully',
-        data: { screen: updatedScreen }
+        message: 'Hall status updated successfully',
+        data: { hall: updatedHall }
       });
     } catch (error) {
-      if (error.message === 'Invalid screen ID format') {
+      if (error.message === 'Invalid hall ID format') {
         return res.status(400).json({
           success: false,
           message: error.message
@@ -855,15 +855,15 @@ class ScreenController {
         });
       }
 
-      logger.error('Update screen status error:', error);
+      logger.error('Update hall status error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to update screen status'
+        message: 'Failed to update hall status'
       });
     }
   }
 
-  // 10. UPDATE SCREEN CAPACITY
+  // 10. UPDATE HALL CAPACITY
   static async updateCapacity(req, res) {
     try {
       const { id } = req.params;
@@ -872,7 +872,7 @@ class ScreenController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Screen ID is required'
+          message: 'Hall ID is required'
         });
       }
 
@@ -883,72 +883,72 @@ class ScreenController {
         });
       }
 
-      ScreenController.validateObjectId(id);
+      HallController.validateObjectId(id);
 
-      // Find the screen first
-      const screen = await Screen.findById(id);
+      // Find the hall first
+      const hall = await Hall.findById(id);
 
-      if (!screen) {
+      if (!hall) {
         return res.status(404).json({
           success: false,
-          message: 'Screen not found'
+          message: 'Hall not found'
         });
       }
 
-      // Check if screen is deleted
-      if (screen.isDeleted()) {
+      // Check if hall is deleted
+      if (hall.isDeleted()) {
         return res.status(409).json({
           success: false,
-          message: 'Cannot update capacity of deleted screen. Please restore it first.'
+          message: 'Cannot update capacity of deleted hall. Please restore it first.'
         });
       }
 
       // Update capacity using model method
-      const updatedScreen = await screen.updateCapacity(capacity);
+      const updatedHall = await hall.updateCapacity(capacity);
 
-      logger.info(`Updated screen capacity: ${id} (${screen.screen_name})`);
+      logger.info(`Updated hall capacity: ${id} (${hall.hall_name})`);
 
       res.status(200).json({
         success: true,
-        message: 'Screen capacity updated successfully',
-        data: { screen: updatedScreen }
+        message: 'Hall capacity updated successfully',
+        data: { hall: updatedHall }
       });
     } catch (error) {
-      if (error.message === 'Invalid screen ID format') {
+      if (error.message === 'Invalid hall ID format') {
         return res.status(400).json({
           success: false,
           message: error.message
         });
       }
 
-      logger.error('Update screen capacity error:', error);
+      logger.error('Update hall capacity error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to update screen capacity'
+        message: 'Failed to update hall capacity'
       });
     }
   }
 
   // Additional utility methods
 
-  // Get screen statistics
+  // Get hall statistics
   static async getStats(req, res) {
     try {
       const stats = await Promise.all([
-        Screen.countDocuments({}), // Total screens
-        Screen.countDocuments({ deletedAt: null }), // Active screens
-        Screen.countDocuments({ deletedAt: { $ne: null } }), // Deleted screens
-        Screen.countDocuments({ status: 'active', deletedAt: null }), // Available screens
-        Screen.countDocuments({ screen_type: 'standard', deletedAt: null }),
-        Screen.countDocuments({ screen_type: 'imax', deletedAt: null }),
-        Screen.countDocuments({ screen_type: '3d', deletedAt: null }),
-        Screen.countDocuments({ screen_type: '4dx', deletedAt: null }),
-        Screen.countDocuments({ screen_type: 'vip', deletedAt: null }),
-        Screen.countDocuments({ status: 'active', deletedAt: null }),
-        Screen.countDocuments({ status: 'maintenance', deletedAt: null }),
-        Screen.countDocuments({ status: 'closed', deletedAt: null }),
-        Screen.countDocuments({ status: 'renovation', deletedAt: null }),
-        Screen.aggregate([
+        Hall.countDocuments({}), // Total halls
+        Hall.countDocuments({ deletedAt: null }), // Active halls
+        Hall.countDocuments({ deletedAt: { $ne: null } }), // Deleted halls
+        Hall.countDocuments({ status: 'active', deletedAt: null }), // Available halls
+        Hall.countDocuments({ screen_type: 'standard', deletedAt: null }),
+        Hall.countDocuments({ screen_type: 'imax', deletedAt: null }),
+        Hall.countDocuments({ screen_type: '3d', deletedAt: null }),
+        Hall.countDocuments({ screen_type: '4dx', deletedAt: null }),
+        Hall.countDocuments({ screen_type: 'vip', deletedAt: null }),
+        Hall.countDocuments({ status: 'active', deletedAt: null }),
+        Hall.countDocuments({ status: 'maintenance', deletedAt: null }),
+        Hall.countDocuments({ status: 'closed', deletedAt: null }),
+        Hall.countDocuments({ status: 'renovation', deletedAt: null }),
+        Hall.aggregate([
           { $match: { deletedAt: null } },
           { $group: { _id: null, totalSeats: { $sum: '$total_seats' }, avgSeats: { $avg: '$total_seats' } } }
         ])
@@ -993,16 +993,16 @@ class ScreenController {
         }
       });
     } catch (error) {
-      logger.error('Get screen stats error:', error);
+      logger.error('Get hall stats error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve screen statistics'
+        message: 'Failed to retrieve hall statistics'
       });
     }
   }
 
-  // Get screens by type
-  static async getScreensByType(req, res) {
+  // Get halls by screen type
+  static async getHallsByScreenType(req, res) {
     try {
       const { type } = req.params;
       const { page = 1, limit = 10, activeOnly = true } = req.query;
@@ -1016,19 +1016,19 @@ class ScreenController {
         query.deletedAt = null;
       }
 
-      const [screens, totalCount] = await Promise.all([
-        Screen.find(query)
-          .sort({ screen_name: 1 })
+      const [halls, totalCount] = await Promise.all([
+        Hall.find(query)
+          .sort({ hall_name: 1 })
           .skip(skip)
           .limit(limitNum)
           .lean(),
-        Screen.countDocuments(query)
+        Hall.countDocuments(query)
       ]);
 
       res.status(200).json({
         success: true,
         data: {
-          screens,
+          halls,
           screenType: type,
           pagination: {
             currentPage: pageNum,
@@ -1039,16 +1039,16 @@ class ScreenController {
         }
       });
     } catch (error) {
-      logger.error('Get screens by type error:', error);
+      logger.error('Get halls by screen type error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve screens by type'
+        message: 'Failed to retrieve halls by screen type'
       });
     }
   }
 
-  // Get screens by theater
-  static async getScreensByTheater(req, res) {
+  // Get halls by theater
+  static async getHallsByTheater(req, res) {
     try {
       const { theaterId } = req.params;
       const { activeOnly = true } = req.query;
@@ -1059,29 +1059,29 @@ class ScreenController {
         query.status = 'active';
       }
 
-      const screens = await Screen.find(query)
-        .sort({ screen_name: 1 })
+      const halls = await Hall.find(query)
+        .sort({ hall_name: 1 })
         .lean();
 
       res.status(200).json({
         success: true,
         data: {
-          screens,
+          halls,
           theater_id: theaterId,
-          count: screens.length
+          count: halls.length
         }
       });
     } catch (error) {
-      logger.error('Get screens by theater error:', error);
+      logger.error('Get halls by theater error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve screens by theater'
+        message: 'Failed to retrieve halls by theater'
       });
     }
   }
 
-  // Get screens with seat counts
-  static async getScreensWithSeatCounts(req, res) {
+  // Get halls with seat counts
+  static async getHallsWithSeatCounts(req, res) {
     try {
       const { theater_id, screen_type, activeOnly = true } = req.query;
 
@@ -1093,13 +1093,13 @@ class ScreenController {
         matchQuery.status = 'active';
       }
 
-      const screens = await Screen.getScreensWithSeatCounts(matchQuery);
+      const halls = await Hall.getHallsWithSeatCounts(matchQuery);
 
       res.status(200).json({
         success: true,
         data: {
-          screens,
-          count: screens.length,
+          halls,
+          count: halls.length,
           filters: {
             theater_id: theater_id || null,
             screen_type: screen_type || null,
@@ -1108,13 +1108,13 @@ class ScreenController {
         }
       });
     } catch (error) {
-      logger.error('Get screens with seat counts error:', error);
+      logger.error('Get halls with seat counts error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve screens with seat counts'
+        message: 'Failed to retrieve halls with seat counts'
       });
     }
   }
 }
 
-module.exports = ScreenController;
+module.exports = HallController;

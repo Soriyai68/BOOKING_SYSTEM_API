@@ -9,9 +9,9 @@ const theaterSchema = new mongoose.Schema({
     maxlength: 100,
     index: true
   },
-  screens_id: [{
+  halls_id: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Screen',
+    ref: 'Hall',
     default: []
   }],
   address: {
@@ -107,7 +107,7 @@ const theaterSchema = new mongoose.Schema({
     enum: ['parking', 'food_court', 'disabled_access', 'air_conditioning', 'wifi', '3d_capable', 'imax', 'vip_lounge', 'arcade'],
     default: []
   },
-  total_screens: {
+  total_halls: {
     type: Number,
     min: 0,
     max: 50,
@@ -175,7 +175,7 @@ const theaterSchema = new mongoose.Schema({
 theaterSchema.index({ name: 1, city: 1 }, { unique: true });
 theaterSchema.index({ city: 1, province: 1 });
 theaterSchema.index({ status: 1 });
-theaterSchema.index({ total_screens: 1 });
+theaterSchema.index({ total_halls: 1 });
 theaterSchema.index({ total_capacity: 1 });
 theaterSchema.index({ deletedAt: 1 });
 theaterSchema.index({ createdAt: 1 });
@@ -217,38 +217,38 @@ theaterSchema.methods.updateStatus = function (newStatus, updatedBy = null) {
   return this.save();
 };
 
-// Instance method to add screen
-theaterSchema.methods.addScreen = function (screenId) {
-  if (!this.screens_id.includes(screenId)) {
-    this.screens_id.push(screenId);
-    this.total_screens = this.screens_id.length;
+// Instance method to add hall
+theaterSchema.methods.addHall = function (hallId) {
+  if (!this.halls_id.includes(hallId)) {
+    this.halls_id.push(hallId);
+    this.total_halls = this.halls_id.length;
   }
   return this.save();
 };
 
-// Instance method to remove screen
-theaterSchema.methods.removeScreen = function (screenId) {
-  this.screens_id = this.screens_id.filter(id => !id.equals(screenId));
-  this.total_screens = this.screens_id.length;
+// Instance method to remove hall
+theaterSchema.methods.removeHall = function (hallId) {
+  this.halls_id = this.halls_id.filter(id => !id.equals(hallId));
+  this.total_halls = this.halls_id.length;
   return this.save();
 };
 
-// Instance method to calculate total capacity from screens
+// Instance method to calculate total capacity from halls
 theaterSchema.methods.calculateTotalCapacity = async function () {
-  const Screen = mongoose.model('Screen');
+  const Hall = mongoose.model('Hall');
   
-  // Get all active screens for this theater
-  const screens = await Screen.find({
-    _id: { $in: this.screens_id },
+  // Get all active halls for this theater
+  const halls = await Hall.find({
+    _id: { $in: this.halls_id },
     deletedAt: null
   }).select('total_seats');
   
-  // Sum up all screen capacities
-  const totalCapacity = screens.reduce((sum, screen) => sum + (screen.total_seats || 0), 0);
+  // Sum up all hall capacities
+  const totalCapacity = halls.reduce((sum, hall) => sum + (hall.total_seats || 0), 0);
   
   // Update the theater's total capacity
   this.total_capacity = totalCapacity;
-  this.total_screens = screens.length;
+  this.total_halls = halls.length;
   
   return this.save();
 };
@@ -334,8 +334,8 @@ theaterSchema.statics.findNearby = function (longitude, latitude, maxDistance = 
   });
 };
 
-// Static method to get theaters with screen counts
-theaterSchema.statics.getTheatersWithScreenCounts = async function (query = {}) {
+// Static method to get theaters with hall counts
+theaterSchema.statics.getTheatersWithHallCounts = async function (query = {}) {
   return this.aggregate([
     {
       $match: {
@@ -345,10 +345,10 @@ theaterSchema.statics.getTheatersWithScreenCounts = async function (query = {}) 
     },
     {
       $lookup: {
-        from: 'screens',
-        localField: 'screens_id',
+        from: 'halls',
+        localField: 'halls_id',
         foreignField: '_id',
-        as: 'screens',
+        as: 'halls',
         pipeline: [
           { $match: { deletedAt: null } }
         ]
@@ -356,8 +356,8 @@ theaterSchema.statics.getTheatersWithScreenCounts = async function (query = {}) 
     },
     {
       $addFields: {
-        actualScreenCount: { $size: '$screens' },
-        totalActualCapacity: { $sum: '$screens.total_seats' }
+        actualHallCount: { $size: '$halls' },
+        totalActualCapacity: { $sum: '$halls.total_seats' }
       }
     }
   ]);
@@ -379,15 +379,15 @@ theaterSchema.statics.getAnalytics = async function (query = {}) {
         activeTheaters: {
           $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] }
         },
-        totalScreens: { $sum: '$total_screens' },
+        totalHalls: { $sum: '$total_halls' },
         totalCapacity: { $sum: '$total_capacity' },
-        averageScreensPerTheater: { $avg: '$total_screens' },
+        averageHallsPerTheater: { $avg: '$total_halls' },
         theatersByProvince: {
           $push: {
             province: '$province',
             city: '$city',
             name: '$name',
-            screens: '$total_screens',
+            halls: '$total_halls',
             capacity: '$total_capacity'
           }
         }
@@ -432,10 +432,10 @@ theaterSchema.virtual('full_address').get(function () {
   return `${this.address}, ${this.city}, ${this.province}`;
 });
 
-// Virtual for screen count display
-theaterSchema.virtual('screen_count_display').get(function () {
-  const count = this.screens_id.length;
-  return `${count} screen${count !== 1 ? 's' : ''}`;
+// Virtual for hall count display
+theaterSchema.virtual('hall_count_display').get(function () {
+  const count = this.halls_id.length;
+  return `${count} hall${count !== 1 ? 's' : ''}`;
 });
 
 // Virtual for capacity display
@@ -471,9 +471,9 @@ theaterSchema.pre('save', function (next) {
     this.status = 'closed';
   }
 
-  // Update total screens count
-  if (this.isModified('screens_id')) {
-    this.total_screens = this.screens_id.length;
+  // Update total halls count
+  if (this.isModified('halls_id')) {
+    this.total_halls = this.halls_id.length;
   }
 
   next();

@@ -1,12 +1,12 @@
 const mongoose = require('mongoose');
 const Theater = require('../models/theater.model');
-const Screen = require('../models/screen.model');
+const Hall = require('../models/hall.model');
 const { Role } = require('../data');
 
 /**
  * TheaterController - Comprehensive CRUD operations for theater management
  * Handles: getById, getAll, create, update, delete (soft), restore, forceDelete, listDeleted, 
- * updateStatus, addScreen, removeScreen, updateLocation, updateOperatingHours, analytics
+ * updateStatus, addHall, removeHall, updateLocation, updateOperatingHours, analytics
  */
 class TheaterController {
   // Helper method to validate ObjectId
@@ -50,14 +50,14 @@ class TheaterController {
       query.province = new RegExp(filters.province, 'i');
     }
 
-    // Handle screen count range filters
-    if (filters.minScreens !== undefined || filters.maxScreens !== undefined) {
-      query.total_screens = {};
-      if (filters.minScreens !== undefined) {
-        query.total_screens.$gte = parseInt(filters.minScreens);
+    // Handle hall count range filters
+    if (filters.minHalls !== undefined || filters.maxHalls !== undefined) {
+      query.total_halls = {};
+      if (filters.minHalls !== undefined) {
+        query.total_halls.$gte = parseInt(filters.minHalls);
       }
-      if (filters.maxScreens !== undefined) {
-        query.total_screens.$lte = parseInt(filters.maxScreens);
+      if (filters.maxHalls !== undefined) {
+        query.total_halls.$lte = parseInt(filters.maxHalls);
       }
     }
 
@@ -145,7 +145,7 @@ class TheaterController {
       const sortObj = {};
       sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
-      // Use aggregation to calculate actual total capacity from screens
+      // Use aggregation to calculate actual total capacity from halls
       const theatersAggregation = await Theater.aggregate([
         { $match: query },
         { $sort: sortObj },
@@ -153,35 +153,35 @@ class TheaterController {
         { $limit: limitNum },
         {
           $lookup: {
-            from: 'screens',
-            localField: 'screens_id',
+            from: 'halls',
+            localField: 'halls_id',
             foreignField: '_id',
-            as: 'screens'
+            as: 'halls'
           }
         },
         {
           $addFields: {
-            // Filter out deleted screens
-            active_screens: {
+            // Filter out deleted halls
+            active_halls: {
               $filter: {
-                input: '$screens',
-                as: 'screen',
-                cond: { $eq: ['$$screen.deletedAt', null] }
+                input: '$halls',
+                as: 'hall',
+                cond: { $eq: ['$$hall.deletedAt', null] }
               }
             }
           }
         },
         {
           $addFields: {
-            // Calculate actual total capacity from active screens
-            calculated_total_capacity: { $sum: '$active_screens.total_seats' },
-            calculated_total_screens: { $size: '$active_screens' }
+            // Calculate actual total capacity from active halls
+            calculated_total_capacity: { $sum: '$active_halls.total_seats' },
+            calculated_total_halls: { $size: '$active_halls' }
           }
         },
         {
           $project: {
-            screens: 0, // Remove screens array from output
-            active_screens: 0 // Remove temp field
+            halls: 0, // Remove halls array from output
+            active_halls: 0 // Remove temp field
           }
         }
       ]);
@@ -240,36 +240,36 @@ class TheaterController {
         { $match: { _id: new mongoose.Types.ObjectId(id) } },
         {
           $lookup: {
-            from: 'screens',
-            localField: 'screens_id',
+            from: 'halls',
+            localField: 'halls_id',
             foreignField: '_id',
-            as: 'screens'
+            as: 'halls'
           }
         },
         {
           $addFields: {
-            // Filter out deleted screens
-            active_screens: {
+            // Filter out deleted halls
+            active_halls: {
               $filter: {
-                input: '$screens',
-                as: 'screen',
-                cond: { $eq: ['$$screen.deletedAt', null] }
+                input: '$halls',
+                as: 'hall',
+                cond: { $eq: ['$$hall.deletedAt', null] }
               }
             }
           }
         },
         {
           $addFields: {
-            // Calculate actual total capacity from active screens
-            calculated_total_capacity: { $sum: '$active_screens.total_seats' },
-            calculated_total_screens: { $size: '$active_screens' },
-            // Keep screens for display
-            screens_info: '$active_screens'
+            // Calculate actual total capacity from active halls
+            calculated_total_capacity: { $sum: '$active_halls.total_seats' },
+            calculated_total_halls: { $size: '$active_halls' },
+            // Keep halls for display
+            halls_info: '$active_halls'
           }
         },
         {
           $project: {
-            active_screens: 0 // Remove temp field
+            active_halls: 0 // Remove temp field
           }
         }
       ]);
@@ -336,9 +336,9 @@ class TheaterController {
         ...theaterData,
         status: theaterData.status || 'active',
         features: theaterData.features || [],
-        total_screens: theaterData.screens_id?.length || 0,
+        total_halls: theaterData.halls_id?.length || 0,
         total_capacity: theaterData.total_capacity || 0,
-        screens_id: theaterData.screens_id || []
+        halls_id: theaterData.halls_id || []
       };
 
       // Add creator info if available
@@ -514,20 +514,20 @@ class TheaterController {
         });
       }
 
-      // Check if theater has associated screens
-      const Screen = require('../models/screen.model');
-      const associatedScreens = await Screen.find({
+      // Check if theater has associated halls
+      const Hall = require('../models/hall.model');
+      const associatedHalls = await Hall.find({
         theater_id: id,
-        deletedAt: null // Only count active screens
+        deletedAt: null // Only count active halls
       });
 
-      if (associatedScreens.length > 0) {
+      if (associatedHalls.length > 0) {
         return res.status(409).json({
           success: false,
-          // message: `Cannot delete theater. It has ${associatedScreens.length} associated screen(s). Please delete or reassign the screens first.`,
+          // message: `Cannot delete theater. It has ${associatedHalls.length} associated hall(s). Please delete or reassign the halls first.`,
           data: {
-            associatedScreensCount: associatedScreens.length,
-            screenNames: associatedScreens.map(screen => screen.screen_name)
+            associatedHallsCount: associatedHalls.length,
+            hallNames: associatedHalls.map(hall => hall.hall_name)
           }
         });
       }
@@ -648,27 +648,27 @@ class TheaterController {
         });
       }
 
-      // Check if theater has associated screens (even soft deleted ones)
-      const Screen = require('../models/screen.model');
-      const associatedScreens = await Screen.find({
+      // Check if theater has associated halls (even soft deleted ones)
+      const Hall = require('../models/hall.model');
+      const associatedHalls = await Hall.find({
         theater_id: id
-        // Note: We check all screens (including soft deleted) for force delete
+        // Note: We check all halls (including soft deleted) for force delete
       });
 
-      if (associatedScreens.length > 0) {
-        const activeScreens = associatedScreens.filter(screen => !screen.deletedAt);
-        const deletedScreens = associatedScreens.filter(screen => screen.deletedAt);
+      if (associatedHalls.length > 0) {
+        const activeHalls = associatedHalls.filter(hall => !hall.deletedAt);
+        const deletedHalls = associatedHalls.filter(hall => hall.deletedAt);
         
         return res.status(409).json({
           success: false,
-          // message: `Cannot permanently delete theater. It has ${associatedScreens.length} associated screen(s) (${activeScreens.length} active, ${deletedScreens.length} deleted). Please permanently delete all screens first.`,
+          // message: `Cannot permanently delete theater. It has ${associatedHalls.length} associated hall(s) (${activeHalls.length} active, ${deletedHalls.length} deleted). Please permanently delete all halls first.`,
           data: {
-            totalScreens: associatedScreens.length,
-            activeScreens: activeScreens.length,
-            deletedScreens: deletedScreens.length,
-            screenNames: associatedScreens.map(screen => ({
-              name: screen.screen_name,
-              status: screen.deletedAt ? 'deleted' : 'active'
+            totalHalls: associatedHalls.length,
+            activeHalls: activeHalls.length,
+            deletedHalls: deletedHalls.length,
+            hallNames: associatedHalls.map(hall => ({
+              name: hall.hall_name,
+              status: hall.deletedAt ? 'deleted' : 'active'
             }))
           }
         });
@@ -681,7 +681,7 @@ class TheaterController {
         address: theater.address,
         city: theater.city,
         province: theater.province,
-        total_screens: theater.total_screens,
+        total_halls: theater.total_halls,
         total_capacity: theater.total_capacity,
         wasDeleted: theater.isDeleted()
       };
@@ -706,7 +706,7 @@ class TheaterController {
             address: theaterInfo.address,
             city: theaterInfo.city,
             province: theaterInfo.province,
-            total_screens: theaterInfo.total_screens,
+            total_halls: theaterInfo.total_halls,
             total_capacity: theaterInfo.total_capacity
           },
           warning: 'This action is irreversible'
@@ -850,21 +850,21 @@ class TheaterController {
     }
   }
 
-  // 10. ADD SCREEN TO THEATER
-  static async addScreen(req, res) {
+  // 10. ADD HALL TO THEATER
+  static async addHall(req, res) {
     try {
       const { id } = req.params;
-      const { screen_id } = req.body;
+      const { hall_id } = req.body;
 
-      if (!id || !screen_id) {
+      if (!id || !hall_id) {
         return res.status(400).json({
           success: false,
-          message: 'Theater ID and Screen ID are required'
+          message: 'Theater ID and Hall ID are required'
         });
       }
 
       TheaterController.validateObjectId(id);
-      TheaterController.validateObjectId(screen_id);
+      TheaterController.validateObjectId(hall_id);
 
       // Check if theater exists
       const theater = await Theater.findById(id);
@@ -875,38 +875,38 @@ class TheaterController {
         });
       }
 
-      // Check if screen exists
-      const screen = await Screen.findById(screen_id);
-      if (!screen) {
+      // Check if hall exists
+      const hall = await Hall.findById(hall_id);
+      if (!hall) {
         return res.status(404).json({
           success: false,
-          message: 'Screen not found'
+          message: 'Hall not found'
         });
       }
 
-      // Check if screen is already assigned to this theater
-      if (theater.screens_id.includes(screen_id)) {
+      // Check if hall is already assigned to this theater
+      if (theater.halls_id.includes(hall_id)) {
         return res.status(409).json({
           success: false,
-          message: 'Screen is already assigned to this theater'
+          message: 'Hall is already assigned to this theater'
         });
       }
 
-      // Add screen using model method
-      const updatedTheater = await theater.addScreen(screen_id);
+      // Add hall using model method
+      const updatedTheater = await theater.addHall(hall_id);
 
-      // Update screen's theater_id
-      screen.theater_id = id;
+      // Update hall's theater_id
+      hall.theater_id = id;
       if (req.user) {
-        screen.updatedBy = req.user.userId;
+        hall.updatedBy = req.user.userId;
       }
-      await screen.save();
+      await hall.save();
 
-      console.log(`Added screen ${screen_id} to theater ${id}`);
+      console.log(`Added hall ${hall_id} to theater ${id}`);
 
       res.status(200).json({
         success: true,
-        message: 'Screen added to theater successfully',
+        message: 'Hall added to theater successfully',
         data: { theater: updatedTheater }
       });
     } catch (error) {
@@ -917,29 +917,29 @@ class TheaterController {
         });
       }
 
-      console.error('Add screen to theater error:', error);
+      console.error('Add hall to theater error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to add screen to theater'
+        message: 'Failed to add hall to theater'
       });
     }
   }
 
-  // 11. REMOVE SCREEN FROM THEATER
-  static async removeScreen(req, res) {
+  // 11. REMOVE HALL FROM THEATER
+  static async removeHall(req, res) {
     try {
       const { id } = req.params;
-      const { screen_id } = req.body;
+      const { hall_id } = req.body;
 
-      if (!id || !screen_id) {
+      if (!id || !hall_id) {
         return res.status(400).json({
           success: false,
-          message: 'Theater ID and Screen ID are required'
+          message: 'Theater ID and Hall ID are required'
         });
       }
 
       TheaterController.validateObjectId(id);
-      TheaterController.validateObjectId(screen_id);
+      TheaterController.validateObjectId(hall_id);
 
       // Check if theater exists
       const theater = await Theater.findById(id);
@@ -950,32 +950,32 @@ class TheaterController {
         });
       }
 
-      // Check if screen is assigned to this theater
-      if (!theater.screens_id.includes(screen_id)) {
+      // Check if hall is assigned to this theater
+      if (!theater.halls_id.includes(hall_id)) {
         return res.status(409).json({
           success: false,
-          message: 'Screen is not assigned to this theater'
+          message: 'Hall is not assigned to this theater'
         });
       }
 
-      // Remove screen using model method
-      const updatedTheater = await theater.removeScreen(screen_id);
+      // Remove hall using model method
+      const updatedTheater = await theater.removeHall(hall_id);
 
-      // Update screen's theater_id
-      const screen = await Screen.findById(screen_id);
-      if (screen) {
-        screen.theater_id = null;
+      // Update hall's theater_id
+      const hall = await Hall.findById(hall_id);
+      if (hall) {
+        hall.theater_id = null;
         if (req.user) {
-          screen.updatedBy = req.user.userId;
+          hall.updatedBy = req.user.userId;
         }
-        await screen.save();
+        await hall.save();
       }
 
-      console.log(`Removed screen ${screen_id} from theater ${id}`);
+      console.log(`Removed hall ${hall_id} from theater ${id}`);
 
       res.status(200).json({
         success: true,
-        message: 'Screen removed from theater successfully',
+        message: 'Hall removed from theater successfully',
         data: { theater: updatedTheater }
       });
     } catch (error) {
@@ -986,10 +986,10 @@ class TheaterController {
         });
       }
 
-      console.error('Remove screen from theater error:', error);
+      console.error('Remove hall from theater error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to remove screen from theater'
+        message: 'Failed to remove hall from theater'
       });
     }
   }
@@ -1055,7 +1055,7 @@ class TheaterController {
   static async getByCity(req, res) {
     try {
       const { city } = req.params;
-      const { activeOnly = 'true', includeScreens = 'false' } = req.query;
+      const { activeOnly = 'true', includeHalls = 'false' } = req.query;
 
       if (!city) {
         return res.status(400).json({
@@ -1071,8 +1071,8 @@ class TheaterController {
 
       let theaterQuery = Theater.findByCity(city, query);
 
-      if (includeScreens === 'true') {
-        theaterQuery = theaterQuery.populate('screens_id');
+      if (includeHalls === 'true') {
+        theaterQuery = theaterQuery.populate('halls_id');
       }
 
       const theaters = await theaterQuery.lean();
@@ -1096,7 +1096,7 @@ class TheaterController {
   static async getByProvince(req, res) {
     try {
       const { province } = req.params;
-      const { activeOnly = 'true', includeScreens = 'false' } = req.query;
+      const { activeOnly = 'true', includeHalls = 'false' } = req.query;
 
       if (!province) {
         return res.status(400).json({
@@ -1112,8 +1112,8 @@ class TheaterController {
 
       let theaterQuery = Theater.findByProvince(province, query);
 
-      if (includeScreens === 'true') {
-        theaterQuery = theaterQuery.populate('screens_id');
+      if (includeHalls === 'true') {
+        theaterQuery = theaterQuery.populate('halls_id');
       }
 
       const theaters = await theaterQuery.lean();

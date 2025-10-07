@@ -47,7 +47,7 @@ Retrieve a paginated list of seats with filtering and sorting options.
 | status | string | - | Filter by status |
 | is_available | string | - | Filter by availability (true/false) |
 | theater_id | string | - | Filter by theater ID |
-| screen_id | string | - | Filter by screen ID |
+| hall_id | string | - | Filter by hall ID |
 | includeDeleted | string | "false" | Include deleted seats |
 
 #### Response
@@ -64,7 +64,7 @@ Retrieve a paginated list of seats with filtering and sorting options.
         "is_available": true,
         "status": "active",
         "theater_id": "theater_001",
-        "screen_id": "screen_001",
+        "hall_id": "hall_001",
         "price": 15.99,
         "createdAt": "2025-09-28T09:00:00.000Z",
         "updatedAt": "2025-09-28T09:00:00.000Z"
@@ -102,7 +102,7 @@ Retrieve a specific seat by its ID.
       "is_available": true,
       "status": "active",
       "theater_id": "theater_001",
-      "screen_id": "screen_001",
+      "hall_id": "hall_001",
       "price": 15.99,
       "notes": "Premium seat with extra legroom",
       "createdAt": "2025-09-28T09:00:00.000Z",
@@ -128,7 +128,7 @@ Create a new seat.
   "is_available": true,
   "status": "active",
   "theater_id": "theater_001",
-  "screen_id": "screen_001",
+  "hall_id": "hall_001",
   "price": 15.99,
   "notes": "Premium seat with extra legroom"
 }
@@ -148,7 +148,7 @@ Create a new seat.
       "is_available": true,
       "status": "active",
       "theater_id": "theater_001",
-      "screen_id": "screen_001",
+      "hall_id": "hall_001",
       "price": 15.99,
       "notes": "Premium seat with extra legroom",
       "createdAt": "2025-09-28T09:00:00.000Z",
@@ -238,7 +238,7 @@ Retrieve all available seats for booking.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | theater_id | string | Filter by theater ID |
-| screen_id | string | Filter by screen ID |
+| hall_id | string | Filter by hall ID |
 | seat_type | string | Filter by seat type |
 
 #### Response
@@ -254,13 +254,13 @@ Retrieve all available seats for booking.
         "seat_type": "premium",
         "price": 15.99,
         "theater_id": "theater_001",
-        "screen_id": "screen_001"
+        "hall_id": "hall_001"
       }
     ],
     "count": 25,
     "filters": {
       "theater_id": "theater_001",
-      "screen_id": "screen_001",
+      "hall_id": "hall_001",
       "seat_type": null
     }
   }
@@ -377,7 +377,7 @@ Permanently delete a seat.
       "seat_number": "1",
       "seat_type": "premium",
       "theater_id": "theater_001",
-      "screen_id": "screen_001"
+      "hall_id": "hall_001"
     },
     "warning": "This action is irreversible"
   }
@@ -474,7 +474,7 @@ Retrieve all soft-deleted seats.
 ```json
 {
   "success": false,
-  "message": "Seat with this row and seat number already exists in this theater/screen"
+  "message": "Seat with this row and seat number already exists in this theater/hall"
 }
 ```
 
@@ -504,7 +504,7 @@ Retrieve all soft-deleted seats.
 
 ## Business Rules
 
-1. **Unique Seats**: Each seat must be unique within a theater/screen combination
+1. **Unique Seats**: Each seat must be unique within a theater/hall combination
 2. **Status Logic**: 
    - `out_of_order` and `maintenance` statuses automatically set `is_available` to `false`
    - `active` status sets `is_available` to `true` (unless manually overridden)

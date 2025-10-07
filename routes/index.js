@@ -4,7 +4,7 @@ const router = express.Router();
 // Import route modules
 const userRoutes = require('./users.routes');
 const seatRoutes = require('./seats.routes');
-const screenRoutes = require('./screens.routes');
+const hallRoutes = require('./halls.routes');
 const theaterRoutes = require('./theaters.routes');
 const movieRoutes = require('./movies.routes');
 const uploadRoutes = require('./upload.routes');
@@ -12,7 +12,7 @@ const uploadRoutes = require('./upload.routes');
 // Mount routes
 router.use('/users', userRoutes);
 router.use('/seats', seatRoutes);
-router.use('/screens', screenRoutes);
+router.use('/halls', hallRoutes);
 router.use('/theaters', theaterRoutes);
 router.use('/movies', movieRoutes);
 router.use('/upload', uploadRoutes);
@@ -36,7 +36,7 @@ router.get('/', (req, res) => {
     endpoints: {
       users: '/api/users',
       seats: '/api/seats',
-      screens: '/api/screens',
+      halls: '/api/halls',
       theaters: '/api/theaters',
       movies: '/api/movies',
       upload: '/api/upload',

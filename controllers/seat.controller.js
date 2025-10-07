@@ -48,13 +48,13 @@ class SeatController {
       query.is_available = filters.is_available === 'true' || filters.is_available === true;
     }
 
-    // Handle theater and screen filters
+    // Handle theater and hall filters
     if (filters.theater_id) {
       query.theater_id = filters.theater_id;
     }
 
-    if (filters.screen_id) {
-      query.screen_id = filters.screen_id;
+    if (filters.hall_id) {
+      query.hall_id = filters.hall_id;
     }
 
     // Handle price range filters
@@ -220,20 +220,20 @@ class SeatController {
         });
       }
 
-      // Check if seat already exists in the same theater/screen
+      // Check if seat already exists in the same theater/hall
       const existingQuery = {
         row: seatData.row.toUpperCase(),
         seat_number: seatData.seat_number.toString().toUpperCase()
       };
 
       if (seatData.theater_id) existingQuery.theater_id = seatData.theater_id;
-      if (seatData.screen_id) existingQuery.screen_id = seatData.screen_id;
+      if (seatData.hall_id) existingQuery.hall_id = seatData.hall_id;
 
       const existingSeat = await Seat.findOne(existingQuery);
       if (existingSeat) {
         return res.status(409).json({
           success: false,
-          message: 'Seat with this row and seat number already exists in this theater/screen'
+          message: 'Seat with this row and seat number already exists in this theater/hall'
         });
       }
 
@@ -328,7 +328,7 @@ class SeatController {
           row: (updateData.row || currentSeat.row).toUpperCase(),
           seat_number: (updateData.seat_number || currentSeat.seat_number).toString().toUpperCase(),
           theater_id: updateData.theater_id || currentSeat.theater_id,
-          screen_id: updateData.screen_id || currentSeat.screen_id,
+          hall_id: updateData.hall_id || currentSeat.hall_id,
           _id: { $ne: id }
         };
 
@@ -336,7 +336,7 @@ class SeatController {
         if (existingSeat) {
           return res.status(409).json({
             success: false,
-            message: 'Seat with this row and seat number already exists in this theater/screen'
+            message: 'Seat with this row and seat number already exists in this theater/hall'
           });
         }
       }
@@ -544,7 +544,7 @@ class SeatController {
         seat_number: seat.seat_number,
         seat_type: seat.seat_type,
         theater_id: seat.theater_id,
-        screen_id: seat.screen_id,
+        hall_id: seat.hall_id,
         wasDeleted: seat.isDeleted()
       };
 
@@ -568,7 +568,7 @@ class SeatController {
             seat_number: seatInfo.seat_number,
             seat_type: seatInfo.seat_type,
             theater_id: seatInfo.theater_id,
-            screen_id: seatInfo.screen_id
+            hall_id: seatInfo.hall_id
           },
           warning: 'This action is irreversible'
         }
@@ -840,7 +840,7 @@ class SeatController {
   // Get available seats
   static async getAvailableSeats(req, res) {
     try {
-      const { theater_id, screen_id, seat_type } = req.query;
+      const { theater_id, hall_id, seat_type } = req.query;
 
       let query = {
         is_available: true,
@@ -849,7 +849,7 @@ class SeatController {
       };
 
       if (theater_id) query.theater_id = theater_id;
-      if (screen_id) query.screen_id = screen_id;
+      if (hall_id) query.hall_id = hall_id;
       if (seat_type) query.seat_type = seat_type;
 
       const seats = await Seat.find(query)
@@ -863,7 +863,7 @@ class SeatController {
           count: seats.length,
           filters: {
             theater_id: theater_id || null,
-            screen_id: screen_id || null,
+            hall_id: hall_id || null,
             seat_type: seat_type || null
           }
         }

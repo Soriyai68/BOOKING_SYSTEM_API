@@ -1,6 +1,6 @@
 # Theaters API
 
-The Theaters API provides endpoints for managing movie theaters, including their relationships with locations, screens, capacity management, and operational status.
+The Theaters API provides endpoints for managing movie theaters, including their relationships with locations, halls, capacity management, and operational status.
 
 ## Base URL
 ```
@@ -33,7 +33,7 @@ Retrieve a paginated list of theaters with filtering and sorting options.
 | location_id | string | - | Filter by location ID |
 | status | string | - | Filter by status (true/false) |
 | includeDeleted | string | "false" | Include deleted theaters |
-| hasScreens | string | - | Filter by having screens (true/false) |
+| hasHalls | string | - | Filter by having halls (true/false) |
 | minCapacity | number | - | Minimum capacity filter |
 | maxCapacity | number | - | Maximum capacity filter |
 | amenities | string/array | - | Filter by amenities |
@@ -55,10 +55,10 @@ Retrieve a paginated list of theaters with filtering and sorting options.
           "city": "Phnom Penh",
           "province": "Phnom Penh"
         },
-        "screens_id": [
+        "halls_id": [
           {
             "_id": "507f1f77bcf86cd799439013",
-            "name": "Screen 1",
+            "name": "Hall 1",
             "type": "standard",
             "capacity": 150
           }
@@ -66,7 +66,7 @@ Retrieve a paginated list of theaters with filtering and sorting options.
         "status": true,
         "description": "Premium theater with modern amenities",
         "capacity": 1200,
-        "totalScreens": 8,
+        "totalHalls": 8,
         "amenities": ["dolby_atmos", "imax", "luxury_seating"],
         "operatingHours": {
           "openTime": "09:00",
@@ -118,17 +118,17 @@ Retrieve a specific theater by its ID.
           "closeTime": "23:00"
         }
       },
-      "screens_id": [
+      "halls_id": [
         {
           "_id": "507f1f77bcf86cd799439013",
-          "name": "Screen 1",
+          "name": "Hall 1",
           "type": "standard",
           "capacity": 150,
           "status": true
         },
         {
           "_id": "507f1f77bcf86cd799439014",
-          "name": "Screen 2",
+          "name": "Hall 2",
           "type": "imax",
           "capacity": 200,
           "status": true
@@ -137,7 +137,7 @@ Retrieve a specific theater by its ID.
       "status": true,
       "description": "Premium theater with modern amenities",
       "capacity": 1200,
-      "totalScreens": 8,
+      "totalHalls": 8,
       "amenities": ["dolby_atmos", "imax", "luxury_seating"],
       "operatingHours": {
         "openTime": "09:00",
@@ -172,14 +172,14 @@ Create a new theater.
 {
   "name": "Cineplex Downtown",
   "location_id": "507f1f77bcf86cd799439012",
-  "screens_id": [
+  "halls_id": [
     "507f1f77bcf86cd799439013",
     "507f1f77bcf86cd799439014"
   ],
   "status": true,
   "description": "Premium theater with modern amenities",
   "capacity": 1200,
-  "totalScreens": 8,
+  "totalHalls": 8,
   "amenities": ["dolby_atmos", "imax", "luxury_seating"],
   "operatingHours": {
     "openTime": "09:00",
@@ -208,14 +208,14 @@ Create a new theater.
         "city": "Phnom Penh",
         "province": "Phnom Penh"
       },
-      "screens_id": [
+      "halls_id": [
         "507f1f77bcf86cd799439013",
         "507f1f77bcf86cd799439014"
       ],
       "status": true,
       "description": "Premium theater with modern amenities",
       "capacity": 1200,
-      "totalScreens": 8,
+      "totalHalls": 8,
       "createdAt": "2025-09-28T09:00:00.000Z",
       "updatedAt": "2025-09-28T09:00:00.000Z"
     }
@@ -235,7 +235,7 @@ Update an existing theater's information.
 {
   "description": "Updated premium theater with IMAX and Dolby Atmos",
   "capacity": 1500,
-  "totalScreens": 10,
+  "totalHalls": 10,
   "amenities": ["dolby_atmos", "imax", "luxury_seating", "4dx"]
 }
 ```
@@ -251,7 +251,7 @@ Update an existing theater's information.
       "name": "Cineplex Downtown",
       "description": "Updated premium theater with IMAX and Dolby Atmos",
       "capacity": 1500,
-      "totalScreens": 10,
+      "totalHalls": 10,
       "amenities": ["dolby_atmos", "imax", "luxury_seating", "4dx"],
       "updatedAt": "2025-09-28T09:15:00.000Z"
     }
@@ -349,7 +349,7 @@ Retrieve all active theaters.
         },
         "status": true,
         "capacity": 1200,
-        "totalScreens": 8
+        "totalHalls": 8
       }
     ],
     "count": 15,
@@ -388,7 +388,7 @@ Retrieve theaters filtered by location.
         },
         "status": true,
         "capacity": 1200,
-        "totalScreens": 8
+        "totalHalls": 8
       }
     ],
     "location_id": "507f1f77bcf86cd799439012",
@@ -589,10 +589,10 @@ Retrieve all soft-deleted theaters.
 - Location must exist
 - Required field
 
-### Screen Management
+### Hall Management
 - Array of valid MongoDB ObjectId references
 - Optional field
-- Automatically updates `totalScreens` count
+- Automatically updates `totalHalls` count
 
 ### Capacity Validation
 - Non-negative integer
@@ -630,8 +630,8 @@ Valid amenity types:
 2. **Status Logic**: 
    - Soft delete sets `status` to `false`
    - Restore sets `status` to `true`
-3. **Screen Management**: Adding/removing screens automatically updates `totalScreens`
-4. **Capacity Calculation**: Can be manually set or auto-calculated from screens
+3. **Hall Management**: Adding/removing halls automatically updates `totalHalls`
+4. **Capacity Calculation**: Can be manually set or auto-calculated from halls
 5. **Location Dependency**: Theater must belong to an existing location
 
 ## Virtual Fields
