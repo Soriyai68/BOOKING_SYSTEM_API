@@ -49,6 +49,7 @@ class ShowtimeController {
         sortBy = "start_time",
         sortOrder = "asc",
         search,
+        includeDeleted = false,
         ...filters
       } = req.query;
 
@@ -58,6 +59,10 @@ class ShowtimeController {
 
       const matchQuery = { ...ShowtimeController.buildFilterQuery(filters) };
 
+      // // Handle soft deleted records
+      if (!includeDeleted || includeDeleted === "false") {
+        matchQuery.deletedAt = null;
+      }
       // Aggregation pipeline
       const pipeline = [
         { $match: matchQuery },
@@ -210,7 +215,7 @@ class ShowtimeController {
         },
         { $unwind: "$hall" },
         { $match: { "hall.deletedAt": null } }, // active hall online
- 
+
         // Lookup theater
         {
           $lookup: {
@@ -233,6 +238,7 @@ class ShowtimeController {
             language: 1,
             subtitle: 1,
             status: 1,
+            createdAt: 1,
           },
         },
       ]);
@@ -455,6 +461,13 @@ class ShowtimeController {
   static async delete(req, res) {
     try {
       const { id } = req.params;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "Showtime ID is required",
+        });
+      }
       ShowtimeController.validateObjectId(id);
 
       const showtime = await Showtime.findById(id);
@@ -483,7 +496,13 @@ class ShowtimeController {
       //     `Booking model not found. Skipping check for associated bookings on showtime deletion. ID: ${id}`
       //   );
       // }
-
+      // Check if showtime is already soft deleted
+      if (showtime.isDeleted()) {
+        return res.status(409).json({
+          success: false,
+          message: "Showtime is already deactivated",
+        });
+      }
       await showtime.softDelete(req.user?.userId);
 
       logger.info(`Soft deleted showtime: ${id}`);
@@ -734,6 +753,24 @@ class ShowtimeController {
       res
         .status(500)
         .json({ success: false, message: "Failed to update showtime status" });
+    }
+  }
+
+  // 10. GET SHOWTIME ANALYTICS
+  static async getAnalytics(req, res) {
+    try {
+      const analytics = await Showtime.getAnalytics(req.query);
+      logger.info("Retrieved showtime analytics");
+      res.status(200).json({
+        success: true,
+        data: { analytics },
+      });
+    } catch (error) {
+      logger.error("Get showtime analytics error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to retrieve showtime analytics",
+      });
     }
   }
 }

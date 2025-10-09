@@ -53,8 +53,6 @@ const showtimeSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
   }
 );
 
@@ -125,6 +123,82 @@ showtimeSchema.statics.findActive = function () {
   return this.find({ deletedAt: null });
 };
 
+showtimeSchema.statics.getAnalytics = async function (query = {}) {
+  const analytics = await this.aggregate([
+    {
+      $match: {
+        ...query,
+        deletedAt: null,
+      },
+    },
+    {
+      $facet: {
+        generalStats: [
+          {
+            $group: {
+              _id: null,
+              totalShowtimes: { $sum: 1 },
+              scheduled: { $sum: { $cond: [{ $eq: ["$status", "scheduled"] }, 1, 0] } },
+              completed: { $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] } },
+              cancelled: { $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] } },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              totalShowtimes: 1,
+              statusCounts: {
+                scheduled: "$scheduled",
+                completed: "$completed",
+                cancelled: "$cancelled",
+              },
+            },
+          },
+        ],
+        byMovie: [
+          { $group: { _id: "$movie_id", count: { $sum: 1 } } },
+          { $lookup: { from: "movies", localField: "_id", foreignField: "_id", as: "movie" } },
+          { $unwind: { path: "$movie", preserveNullAndEmptyArrays: true } },
+          { $project: { _id: 0, movie: { $ifNull: ["$movie.title", "Unknown"] }, count: 1 } },
+          { $sort: { count: -1 } },
+        ],
+        byTheater: [
+          { $group: { _id: "$theater_id", count: { $sum: 1 } } },
+          { $lookup: { from: "theaters", localField: "_id", foreignField: "_id", as: "theater" } },
+          { $unwind: { path: "$theater", preserveNullAndEmptyArrays: true } },
+          { $project: { _id: 0, theater: { $ifNull: ["$theater.name", "Unknown"] }, count: 1 } },
+          { $sort: { count: -1 } },
+        ],
+      },
+    },
+    {
+      $project: {
+        stats: { $arrayElemAt: ["$generalStats", 0] },
+        byMovie: "$byMovie",
+        byTheater: "$byTheater",
+      },
+    },
+    {
+      $replaceRoot: {
+        newRoot: {
+          $mergeObjects: [
+            { $ifNull: ["$stats", {}] },
+            { showtimesByMovie: "$byMovie" },
+            { showtimesByTheater: "$byTheater" },
+          ],
+        },
+      },
+    },
+  ]);
+
+  return analytics[0] || {
+    totalShowtimes: 0,
+    statusCounts: { scheduled: 0, completed: 0, cancelled: 0 },
+    showtimesByMovie: [],
+    showtimesByTheater: [],
+  };
+};
+
 // Instance methods
 showtimeSchema.methods.softDelete = function (deletedBy = null) {
   this.deletedAt = new Date();
@@ -158,8 +232,7 @@ showtimeSchema.methods.updateStatus = function (newStatus, updateBy = null) {
     throw new Error("Invalid status provided");
   }
   this.status = newStatus;
-  this.updatedBy = updateBy
-  ;
+  this.updatedBy = updateBy;
   return this.save();
 };
 
