@@ -1,5 +1,6 @@
 // Export all validation schemas
-exports.authSchema = require('./authSchema');
-exports.userSchema = require('./userSchema');
-exports.seatSchema = require('./seatSchema');
-exports.hallSchema = require('./hallSchema');
+exports.authSchema = require("./authSchema");
+exports.userSchema = require("./userSchema");
+exports.seatSchema = require("./seatSchema");
+exports.hallSchema = require("./hallSchema");
+exports.showtimeSchema = require("./showtimeSchema");

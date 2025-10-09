@@ -7,6 +7,7 @@ const seatRoutes = require('./seats.routes');
 const hallRoutes = require('./halls.routes');
 const theaterRoutes = require('./theaters.routes');
 const movieRoutes = require('./movies.routes');
+const showtimeRoutes = require('./showtime.routes');
 const uploadRoutes = require('./upload.routes');
 
 // Mount routes
@@ -15,6 +16,7 @@ router.use('/seats', seatRoutes);
 router.use('/halls', hallRoutes);
 router.use('/theaters', theaterRoutes);
 router.use('/movies', movieRoutes);
+router.use('/showtimes', showtimeRoutes);
 router.use('/upload', uploadRoutes);
 
 

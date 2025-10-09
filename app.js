@@ -23,6 +23,7 @@ const userRoutes = require("./routes/users.routes");
 const seatRoutes = require("./routes/seats.routes");
 const hallRoutes = require("./routes/halls.routes");
 const theaterRoutes = require("./routes/theaters.routes");
+const showtimeRoutes = require("./routes/showtime.routes");
 
 const app = express();
 
@@ -106,6 +107,8 @@ app.use("/api/v1/seats", seatRoutes);
 app.use("/api/v1/theaters", theaterRoutes);
 // halls
 app.use("api/v1/halls", hallRoutes);
+// showtimes
+app.use("api/v1/showtimes", showtimeRoutes);
 
 // 404 handler for undefined routes
 app.use((req, res) => {
