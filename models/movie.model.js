@@ -210,7 +210,41 @@ movieSchema.methods.updateStatus = function(newStatus, updatedBy = null) {
   this.updatedBy = updatedBy;
   
   return this.save();
+}
+
+// Instance method to update status based on date
+movieSchema.methods.updateStatusBasedOnDate = function(updatedBy = null) {
+  const now = new Date();
+  let newStatus = 'now_showing';
+
+  if (this.release_date > now) {
+    newStatus = 'coming_soon';
+  } else if (this.end_date && this.end_date < now) {
+    newStatus = 'ended';
+  }
+
+  if (this.status !== newStatus) {
+    this.status = newStatus;
+    this.updatedBy = updatedBy;
+    return this.save();
+  }
+
+  return Promise.resolve(this);
 };
+
+// Middleware to automatically update status on find
+movieSchema.post('find', async function(docs) {
+  if (docs && docs.length > 0) {
+    const promises = docs.map(doc => doc.updateStatusBasedOnDate());
+    await Promise.all(promises);
+  }
+});
+
+movieSchema.post('findOne', async function(doc) {
+  if (doc) {
+    await doc.updateStatusBasedOnDate();
+  }
+});
 
 // Static method to find now showing movies
 movieSchema.statics.findNowShowing = function(query = {}) {
