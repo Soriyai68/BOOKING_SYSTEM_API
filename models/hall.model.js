@@ -1,3 +1,4 @@
+const { required } = require("joi");
 const mongoose = require("mongoose");
 
 const hallSchema = new mongoose.Schema(
@@ -23,10 +24,9 @@ const hallSchema = new mongoose.Schema(
       default: null,
     },
     theater_id: {
-      type: String,
-      trim: true,
-      default: null,
-      index: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Theater",
+      required: true,
     },
     screen_type: {
       type: String,

@@ -1,7 +1,7 @@
-const mongoose = require('mongoose');
-const Hall = require('../models/hall.model');
-const { Role } = require('../data');
-const logger = require('../utils/logger');
+const mongoose = require("mongoose");
+const Hall = require("../models/hall.model");
+const { Role } = require("../data");
+const logger = require("../utils/logger");
 
 /**
  * HallController - Comprehensive CRUD operations for hall management
@@ -11,7 +11,7 @@ class HallController {
   // Helper method to validate ObjectId
   static validateObjectId(id) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error('Invalid hall ID format');
+      throw new Error("Invalid hall ID format");
     }
   }
 
@@ -21,11 +21,11 @@ class HallController {
 
     return {
       $or: [
-        { hall_name: { $regex: search, $options: 'i' } },
-        { screen_type: { $regex: search, $options: 'i' } },
-        { theater_id: { $regex: search, $options: 'i' } },
-        { notes: { $regex: search, $options: 'i' } }
-      ]
+        { hall_name: { $regex: search, $options: "i" } },
+        { screen_type: { $regex: search, $options: "i" } },
+        // { theater_id: { $regex: search, $options: "i" } },
+        { notes: { $regex: search, $options: "i" } },
+      ],
     };
   }
 
@@ -44,8 +44,11 @@ class HallController {
     }
 
     // Handle theater filter
-    if (filters.theater_id) {
-      query.theater_id = filters.theater_id;
+    if (
+      filters.theater_id &&
+      mongoose.Types.ObjectId.isValid(filters.theater_id)
+    ) {
+      query.theater_id = new mongoose.Types.ObjectId(filters.theater_id);
     }
 
     // Handle seat count range filters
@@ -84,8 +87,8 @@ class HallController {
       const {
         page = 1,
         limit = 10,
-        sortBy = 'hall_name',
-        sortOrder = 'asc',
+        sortBy = "hall_name",
+        sortOrder = "asc",
         search,
         includeDeleted = false,
         ...filters
@@ -108,22 +111,18 @@ class HallController {
       query = { ...query, ...HallController.buildFilterQuery(filters) };
 
       // Handle soft deleted records
-      if (!includeDeleted || includeDeleted === 'false') {
+      if (!includeDeleted || includeDeleted === "false") {
         query.deletedAt = null; // Only get non-deleted halls
       }
 
       // Build sort object
       const sortObj = {};
-      sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
+      sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
 
       // Execute queries
       const [halls, totalCount] = await Promise.all([
-        Hall.find(query)
-          .sort(sortObj)
-          .skip(skip)
-          .limit(limitNum)
-          .lean(),
-        Hall.countDocuments(query)
+        Hall.find(query).sort(sortObj).skip(skip).limit(limitNum).lean(),
+        Hall.countDocuments(query),
       ]);
 
       // Calculate pagination info
@@ -145,15 +144,15 @@ class HallController {
             hasNextPage,
             hasPrevPage,
             nextPage: hasNextPage ? pageNum + 1 : null,
-            prevPage: hasPrevPage ? pageNum - 1 : null
-          }
-        }
+            prevPage: hasPrevPage ? pageNum - 1 : null,
+          },
+        },
       });
     } catch (error) {
-      logger.error('Get all halls error:', error);
+      logger.error("Get all halls error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve halls'
+        message: "Failed to retrieve halls",
       });
     }
   }
@@ -166,7 +165,7 @@ class HallController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Hall ID is required'
+          message: "Hall ID is required",
         });
       }
 
@@ -177,7 +176,7 @@ class HallController {
       if (!hall) {
         return res.status(404).json({
           success: false,
-          message: 'Hall not found'
+          message: "Hall not found",
         });
       }
 
@@ -185,20 +184,20 @@ class HallController {
 
       res.status(200).json({
         success: true,
-        data: { hall }
+        data: { hall },
       });
     } catch (error) {
-      if (error.message === 'Invalid hall ID format') {
+      if (error.message === "Invalid hall ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Get hall by ID error:', error);
+      logger.error("Get hall by ID error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve hall'
+        message: "Failed to retrieve hall",
       });
     }
   }
@@ -212,13 +211,13 @@ class HallController {
       if (!hallData.hall_name) {
         return res.status(400).json({
           success: false,
-          message: 'Hall name is required'
+          message: "Hall name is required",
         });
       }
 
       // Check if hall already exists in the same theater
       const existingQuery = {
-        hall_name: hallData.hall_name.trim()
+        hall_name: hallData.hall_name.trim(),
       };
 
       if (hallData.theater_id) {
@@ -229,27 +228,27 @@ class HallController {
       if (existingHall) {
         return res.status(409).json({
           success: false,
-          message: 'Hall with this name already exists in this theater'
+          message: "Hall with this name already exists in this theater",
         });
       }
 
       // Set default values
       const hallToCreate = {
         ...hallData,
-        screen_type: hallData.screen_type || 'standard',
-        status: hallData.status || 'active',
+        screen_type: hallData.screen_type || "standard",
+        status: hallData.status || "active",
         features: hallData.features || [],
         capacity: hallData.capacity || {
           standard: 0,
           premium: 0,
           vip: 0,
           wheelchair: 0,
-          recliner: 0
+          recliner: 0,
         },
         dimensions: hallData.dimensions || {
           width: 10,
-          height: 10
-        }
+          height: 10,
+        },
       };
 
       // Add creator info if available
@@ -262,7 +261,7 @@ class HallController {
 
       // Update theater's halls_id array
       if (hall.theater_id) {
-        const Theater = require('../models/theater.model');
+        const Theater = require("../models/theater.model");
         try {
           const theater = await Theater.findById(hall.theater_id);
           if (theater) {
@@ -270,7 +269,9 @@ class HallController {
             logger.info(`Added hall ${hall._id} to theater ${theater._id}`);
           }
         } catch (theaterError) {
-          logger.error(`Failed to add hall to theater: ${theaterError.message}`);
+          logger.error(
+            `Failed to add hall to theater: ${theaterError.message}`
+          );
           // Don't fail the hall creation, just log the error
         }
       }
@@ -279,29 +280,29 @@ class HallController {
 
       res.status(201).json({
         success: true,
-        message: 'Hall created successfully',
-        data: { hall }
+        message: "Hall created successfully",
+        data: { hall },
       });
     } catch (error) {
-      if (error.name === 'ValidationError') {
+      if (error.name === "ValidationError") {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
-          errors: Object.values(error.errors).map(err => err.message)
+          message: "Validation error",
+          errors: Object.values(error.errors).map((err) => err.message),
         });
       }
 
       if (error.code === 11000) {
         return res.status(409).json({
           success: false,
-          message: 'Hall with this name already exists in this theater'
+          message: "Hall with this name already exists in this theater",
         });
       }
 
-      logger.error('Create hall error:', error);
+      logger.error("Create hall error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to create hall'
+        message: "Failed to create hall",
       });
     }
   }
@@ -315,7 +316,7 @@ class HallController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Hall ID is required'
+          message: "Hall ID is required",
         });
       }
 
@@ -341,7 +342,7 @@ class HallController {
       if (!currentHall) {
         return res.status(404).json({
           success: false,
-          message: 'Hall not found'
+          message: "Hall not found",
         });
       }
 
@@ -350,44 +351,42 @@ class HallController {
         const checkQuery = {
           hall_name: updateData.hall_name.trim(),
           theater_id: updateData.theater_id || currentHall.theater_id,
-          _id: { $ne: id }
+          _id: { $ne: id },
         };
 
         const existingHall = await Hall.findOne(checkQuery);
         if (existingHall) {
           return res.status(409).json({
             success: false,
-            message: 'Hall with this name already exists in this theater'
+            message: "Hall with this name already exists in this theater",
           });
         }
       }
 
-      const hall = await Hall.findByIdAndUpdate(
-        id,
-        updateData,
-        {
-          new: true,
-          runValidators: true,
-          context: 'query'
-        }
-      );
+      const hall = await Hall.findByIdAndUpdate(id, updateData, {
+        new: true,
+        runValidators: true,
+        context: "query",
+      });
 
       // Handle theater change
       if (updateData.theater_id && currentHall.theater_id) {
         const oldTheaterId = currentHall.theater_id.toString();
         const newTheaterId = updateData.theater_id.toString();
-        
+
         if (oldTheaterId !== newTheaterId) {
-          const Theater = require('../models/theater.model');
-          
+          const Theater = require("../models/theater.model");
+
           try {
             // Remove from old theater
             const oldTheater = await Theater.findById(oldTheaterId);
             if (oldTheater) {
               await oldTheater.removeHall(id);
-              logger.info(`Removed hall ${id} from old theater ${oldTheaterId}`);
+              logger.info(
+                `Removed hall ${id} from old theater ${oldTheaterId}`
+              );
             }
-            
+
             // Add to new theater
             const newTheater = await Theater.findById(newTheaterId);
             if (newTheater) {
@@ -395,7 +394,9 @@ class HallController {
               logger.info(`Added hall ${id} to new theater ${newTheaterId}`);
             }
           } catch (theaterError) {
-            logger.error(`Failed to update theater associations: ${theaterError.message}`);
+            logger.error(
+              `Failed to update theater associations: ${theaterError.message}`
+            );
             // Don't fail the hall update, just log the error
           }
         }
@@ -404,7 +405,7 @@ class HallController {
       if (!hall) {
         return res.status(404).json({
           success: false,
-          message: 'Hall not found'
+          message: "Hall not found",
         });
       }
 
@@ -412,29 +413,29 @@ class HallController {
 
       res.status(200).json({
         success: true,
-        message: 'Hall updated successfully',
-        data: { hall }
+        message: "Hall updated successfully",
+        data: { hall },
       });
     } catch (error) {
-      if (error.message === 'Invalid hall ID format') {
+      if (error.message === "Invalid hall ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      if (error.name === 'ValidationError') {
+      if (error.name === "ValidationError") {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
-          errors: Object.values(error.errors).map(err => err.message)
+          message: "Validation error",
+          errors: Object.values(error.errors).map((err) => err.message),
         });
       }
 
-      logger.error('Update hall error:', error);
+      logger.error("Update hall error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to update hall'
+        message: "Failed to update hall",
       });
     }
   }
@@ -447,7 +448,7 @@ class HallController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Hall ID is required'
+          message: "Hall ID is required",
         });
       }
 
@@ -459,7 +460,7 @@ class HallController {
       if (!hall) {
         return res.status(404).json({
           success: false,
-          message: 'Hall not found'
+          message: "Hall not found",
         });
       }
 
@@ -467,7 +468,7 @@ class HallController {
       if (hall.isDeleted()) {
         return res.status(409).json({
           success: false,
-          message: 'Hall is already deactivated'
+          message: "Hall is already deactivated",
         });
       }
 
@@ -479,8 +480,8 @@ class HallController {
           message: `Cannot delete hall. It has ${seatCheck.count} associated seat(s). Please delete or reassign the seats first.`,
           data: {
             associatedSeatsCount: seatCheck.count,
-            seatIdentifiers: seatCheck.identifiers
-          }
+            seatIdentifiers: seatCheck.identifiers,
+          },
         });
       }
 
@@ -489,15 +490,19 @@ class HallController {
 
       // Remove hall from theater's halls_id array
       if (deletedHall.theater_id) {
-        const Theater = require('../models/theater.model');
+        const Theater = require("../models/theater.model");
         try {
           const theater = await Theater.findById(deletedHall.theater_id);
           if (theater) {
             await theater.removeHall(deletedHall._id);
-            logger.info(`Removed hall ${deletedHall._id} from theater ${theater._id}`);
+            logger.info(
+              `Removed hall ${deletedHall._id} from theater ${theater._id}`
+            );
           }
         } catch (theaterError) {
-          logger.error(`Failed to remove hall from theater: ${theaterError.message}`);
+          logger.error(
+            `Failed to remove hall from theater: ${theaterError.message}`
+          );
           // Don't fail the hall deletion, just log the error
         }
       }
@@ -506,21 +511,21 @@ class HallController {
 
       res.status(200).json({
         success: true,
-        message: 'Hall deactivated successfully',
-        data: { hall: deletedHall }
+        message: "Hall deactivated successfully",
+        data: { hall: deletedHall },
       });
     } catch (error) {
-      if (error.message === 'Invalid hall ID format') {
+      if (error.message === "Invalid hall ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Delete hall error:', error);
+      logger.error("Delete hall error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to deactivate hall'
+        message: "Failed to deactivate hall",
       });
     }
   }
@@ -533,7 +538,7 @@ class HallController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Hall ID is required'
+          message: "Hall ID is required",
         });
       }
 
@@ -545,7 +550,7 @@ class HallController {
       if (!hall) {
         return res.status(404).json({
           success: false,
-          message: 'Hall not found'
+          message: "Hall not found",
         });
       }
 
@@ -553,7 +558,7 @@ class HallController {
       if (!hall.isDeleted()) {
         return res.status(409).json({
           success: false,
-          message: 'Hall is already active'
+          message: "Hall is already active",
         });
       }
 
@@ -562,15 +567,19 @@ class HallController {
 
       // Re-add hall to theater's halls_id array
       if (restoredHall.theater_id) {
-        const Theater = require('../models/theater.model');
+        const Theater = require("../models/theater.model");
         try {
           const theater = await Theater.findById(restoredHall.theater_id);
           if (theater) {
             await theater.addHall(restoredHall._id);
-            logger.info(`Re-added hall ${restoredHall._id} to theater ${theater._id}`);
+            logger.info(
+              `Re-added hall ${restoredHall._id} to theater ${theater._id}`
+            );
           }
         } catch (theaterError) {
-          logger.error(`Failed to re-add hall to theater: ${theaterError.message}`);
+          logger.error(
+            `Failed to re-add hall to theater: ${theaterError.message}`
+          );
           // Don't fail the hall restoration, just log the error
         }
       }
@@ -579,21 +588,21 @@ class HallController {
 
       res.status(200).json({
         success: true,
-        message: 'Hall restored successfully',
-        data: { hall: restoredHall }
+        message: "Hall restored successfully",
+        data: { hall: restoredHall },
       });
     } catch (error) {
-      if (error.message === 'Invalid hall ID format') {
+      if (error.message === "Invalid hall ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Restore hall error:', error);
+      logger.error("Restore hall error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to restore hall'
+        message: "Failed to restore hall",
       });
     }
   }
@@ -606,7 +615,7 @@ class HallController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Hall ID is required'
+          message: "Hall ID is required",
         });
       }
 
@@ -614,7 +623,7 @@ class HallController {
       if (req.user?.role !== Role.ADMIN && req.user?.role !== Role.SUPERADMIN) {
         return res.status(403).json({
           success: false,
-          message: 'Only Admin or SuperAdmin can permanently delete halls'
+          message: "Only Admin or SuperAdmin can permanently delete halls",
         });
       }
 
@@ -626,21 +635,21 @@ class HallController {
       if (!hall) {
         return res.status(404).json({
           success: false,
-          message: 'Hall not found'
+          message: "Hall not found",
         });
       }
 
       // Check if hall has associated seats (even soft deleted ones)
-      const Seat = require('../models/seat.model');
+      const Seat = require("../models/seat.model");
       const associatedSeats = await Seat.find({
-        hall_id: id
+        hall_id: id,
         // Note: We check all seats (including soft deleted) for force delete
       });
 
       if (associatedSeats.length > 0) {
-        const activeSeats = associatedSeats.filter(seat => !seat.deletedAt);
-        const deletedSeats = associatedSeats.filter(seat => seat.deletedAt);
-        
+        const activeSeats = associatedSeats.filter((seat) => !seat.deletedAt);
+        const deletedSeats = associatedSeats.filter((seat) => seat.deletedAt);
+
         return res.status(409).json({
           success: false,
           message: `Cannot permanently delete hall. It has ${associatedSeats.length} associated seat(s) (${activeSeats.length} active, ${deletedSeats.length} deleted). Please permanently delete all seats first.`,
@@ -648,11 +657,12 @@ class HallController {
             totalSeats: associatedSeats.length,
             activeSeats: activeSeats.length,
             deletedSeats: deletedSeats.length,
-            seatIdentifiers: associatedSeats.map(seat => ({
-              identifier: seat.seat_identifier || `${seat.row}${seat.seat_number}`,
-              status: seat.deletedAt ? 'deleted' : 'active'
-            }))
-          }
+            seatIdentifiers: associatedSeats.map((seat) => ({
+              identifier:
+                seat.seat_identifier || `${seat.row}${seat.seat_number}`,
+              status: seat.deletedAt ? "deleted" : "active",
+            })),
+          },
         });
       }
 
@@ -663,20 +673,24 @@ class HallController {
         screen_type: hall.screen_type,
         theater_id: hall.theater_id,
         total_seats: hall.total_seats,
-        wasDeleted: hall.isDeleted()
+        wasDeleted: hall.isDeleted(),
       };
 
       // Remove hall from theater's halls_id array before deletion
       if (hallInfo.theater_id) {
-        const Theater = require('../models/theater.model');
+        const Theater = require("../models/theater.model");
         try {
           const theater = await Theater.findById(hallInfo.theater_id);
           if (theater) {
             await theater.removeHall(id);
-            logger.info(`Removed hall ${id} from theater ${theater._id} (permanent deletion)`);
+            logger.info(
+              `Removed hall ${id} from theater ${theater._id} (permanent deletion)`
+            );
           }
         } catch (theaterError) {
-          logger.error(`Failed to remove hall from theater during force delete: ${theaterError.message}`);
+          logger.error(
+            `Failed to remove hall from theater during force delete: ${theaterError.message}`
+          );
           // Don't fail the deletion, just log the error
         }
       }
@@ -684,39 +698,42 @@ class HallController {
       // Perform permanent deletion
       await Hall.findByIdAndDelete(id);
 
-      logger.warn(`⚠️  PERMANENT DELETION: Hall permanently deleted by ${req.user.role} ${req.user.userId}`, {
-        deletedHall: hallInfo,
-        deletedBy: req.user.userId,
-        deletedAt: new Date().toISOString(),
-        action: 'FORCE_DELETE_HALL'
-      });
+      logger.warn(
+        `⚠️  PERMANENT DELETION: Hall permanently deleted by ${req.user.role} ${req.user.userId}`,
+        {
+          deletedHall: hallInfo,
+          deletedBy: req.user.userId,
+          deletedAt: new Date().toISOString(),
+          action: "FORCE_DELETE_HALL",
+        }
+      );
 
       res.status(200).json({
         success: true,
-        message: 'Hall permanently deleted',
+        message: "Hall permanently deleted",
         data: {
           deletedHall: {
             id: hallInfo.id,
             hall_name: hallInfo.hall_name,
             screen_type: hallInfo.screen_type,
             theater_id: hallInfo.theater_id,
-            total_seats: hallInfo.total_seats
+            total_seats: hallInfo.total_seats,
           },
-          warning: 'This action is irreversible'
-        }
+          warning: "This action is irreversible",
+        },
       });
     } catch (error) {
-      if (error.message === 'Invalid hall ID format') {
+      if (error.message === "Invalid hall ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Force delete hall error:', error);
+      logger.error("Force delete hall error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to permanently delete hall'
+        message: "Failed to permanently delete hall",
       });
     }
   }
@@ -727,8 +744,8 @@ class HallController {
       const {
         page = 1,
         limit = 10,
-        sortBy = 'deletedAt',
-        sortOrder = 'desc'
+        sortBy = "deletedAt",
+        sortOrder = "desc",
       } = req.query;
 
       const pageNum = Math.max(1, parseInt(page));
@@ -738,29 +755,29 @@ class HallController {
       // Query for soft deleted halls only
       const query = { deletedAt: { $ne: null } };
       const sortObj = {};
-      sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
+      sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
 
       const [halls, totalCount] = await Promise.all([
-        Hall.find(query)
-          .sort(sortObj)
-          .skip(skip)
-          .limit(limitNum)
-          .lean(),
-        Hall.countDocuments(query)
+        Hall.find(query).sort(sortObj).skip(skip).limit(limitNum).lean(),
+        Hall.countDocuments(query),
       ]);
 
       // Add delete info to each hall
-      const hallsWithDeleteInfo = halls.map(hall => ({
+      const hallsWithDeleteInfo = halls.map((hall) => ({
         ...hall,
         deleteInfo: {
           deletedAt: hall.deletedAt,
           deletedBy: hall.deletedBy,
-          daysSinceDeleted: hall.deletedAt ? Math.floor((Date.now() - new Date(hall.deletedAt)) / (1000 * 60 * 60 * 24)) : null
+          daysSinceDeleted: hall.deletedAt
+            ? Math.floor(
+                (Date.now() - new Date(hall.deletedAt)) / (1000 * 60 * 60 * 24)
+              )
+            : null,
         },
         restoreInfo: {
           restoredAt: hall.restoredAt,
-          restoredBy: hall.restoredBy
-        }
+          restoredBy: hall.restoredBy,
+        },
       }));
 
       const totalPages = Math.ceil(totalCount / limitNum);
@@ -777,15 +794,15 @@ class HallController {
             totalCount,
             limit: limitNum,
             hasNextPage: pageNum < totalPages,
-            hasPrevPage: pageNum > 1
-          }
-        }
+            hasPrevPage: pageNum > 1,
+          },
+        },
       });
     } catch (error) {
-      logger.error('Get deleted halls error:', error);
+      logger.error("Get deleted halls error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve deleted halls'
+        message: "Failed to retrieve deleted halls",
       });
     }
   }
@@ -799,14 +816,14 @@ class HallController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Hall ID is required'
+          message: "Hall ID is required",
         });
       }
 
       if (!status) {
         return res.status(400).json({
           success: false,
-          message: 'Status is required'
+          message: "Status is required",
         });
       }
 
@@ -818,7 +835,7 @@ class HallController {
       if (!hall) {
         return res.status(404).json({
           success: false,
-          message: 'Hall not found'
+          message: "Hall not found",
         });
       }
 
@@ -826,39 +843,42 @@ class HallController {
       if (hall.isDeleted()) {
         return res.status(409).json({
           success: false,
-          message: 'Cannot update status of deleted hall. Please restore it first.'
+          message:
+            "Cannot update status of deleted hall. Please restore it first.",
         });
       }
 
       // Update status using model method
       const updatedHall = await hall.updateStatus(status, req.user?.userId);
 
-      logger.info(`Updated hall status: ${id} (${hall.hall_name}) to ${status}`);
+      logger.info(
+        `Updated hall status: ${id} (${hall.hall_name}) to ${status}`
+      );
 
       res.status(200).json({
         success: true,
-        message: 'Hall status updated successfully',
-        data: { hall: updatedHall }
+        message: "Hall status updated successfully",
+        data: { hall: updatedHall },
       });
     } catch (error) {
-      if (error.message === 'Invalid hall ID format') {
+      if (error.message === "Invalid hall ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      if (error.message === 'Invalid status provided') {
+      if (error.message === "Invalid status provided") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Update hall status error:', error);
+      logger.error("Update hall status error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to update hall status'
+        message: "Failed to update hall status",
       });
     }
   }
@@ -872,14 +892,14 @@ class HallController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Hall ID is required'
+          message: "Hall ID is required",
         });
       }
 
       if (!capacity) {
         return res.status(400).json({
           success: false,
-          message: 'Capacity is required'
+          message: "Capacity is required",
         });
       }
 
@@ -891,7 +911,7 @@ class HallController {
       if (!hall) {
         return res.status(404).json({
           success: false,
-          message: 'Hall not found'
+          message: "Hall not found",
         });
       }
 
@@ -899,7 +919,8 @@ class HallController {
       if (hall.isDeleted()) {
         return res.status(409).json({
           success: false,
-          message: 'Cannot update capacity of deleted hall. Please restore it first.'
+          message:
+            "Cannot update capacity of deleted hall. Please restore it first.",
         });
       }
 
@@ -910,21 +931,21 @@ class HallController {
 
       res.status(200).json({
         success: true,
-        message: 'Hall capacity updated successfully',
-        data: { hall: updatedHall }
+        message: "Hall capacity updated successfully",
+        data: { hall: updatedHall },
       });
     } catch (error) {
-      if (error.message === 'Invalid hall ID format') {
+      if (error.message === "Invalid hall ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Update hall capacity error:', error);
+      logger.error("Update hall capacity error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to update hall capacity'
+        message: "Failed to update hall capacity",
       });
     }
   }
@@ -938,27 +959,43 @@ class HallController {
         Hall.countDocuments({}), // Total halls
         Hall.countDocuments({ deletedAt: null }), // Active halls
         Hall.countDocuments({ deletedAt: { $ne: null } }), // Deleted halls
-        Hall.countDocuments({ status: 'active', deletedAt: null }), // Available halls
-        Hall.countDocuments({ screen_type: 'standard', deletedAt: null }),
-        Hall.countDocuments({ screen_type: 'imax', deletedAt: null }),
-        Hall.countDocuments({ screen_type: '3d', deletedAt: null }),
-        Hall.countDocuments({ screen_type: '4dx', deletedAt: null }),
-        Hall.countDocuments({ screen_type: 'vip', deletedAt: null }),
-        Hall.countDocuments({ status: 'active', deletedAt: null }),
-        Hall.countDocuments({ status: 'maintenance', deletedAt: null }),
-        Hall.countDocuments({ status: 'closed', deletedAt: null }),
-        Hall.countDocuments({ status: 'renovation', deletedAt: null }),
+        Hall.countDocuments({ status: "active", deletedAt: null }), // Available halls
+        Hall.countDocuments({ screen_type: "standard", deletedAt: null }),
+        Hall.countDocuments({ screen_type: "imax", deletedAt: null }),
+        Hall.countDocuments({ screen_type: "3d", deletedAt: null }),
+        Hall.countDocuments({ screen_type: "4dx", deletedAt: null }),
+        Hall.countDocuments({ screen_type: "vip", deletedAt: null }),
+        Hall.countDocuments({ status: "active", deletedAt: null }),
+        Hall.countDocuments({ status: "maintenance", deletedAt: null }),
+        Hall.countDocuments({ status: "closed", deletedAt: null }),
+        Hall.countDocuments({ status: "renovation", deletedAt: null }),
         Hall.aggregate([
           { $match: { deletedAt: null } },
-          { $group: { _id: null, totalSeats: { $sum: '$total_seats' }, avgSeats: { $avg: '$total_seats' } } }
-        ])
+          {
+            $group: {
+              _id: null,
+              totalSeats: { $sum: "$total_seats" },
+              avgSeats: { $avg: "$total_seats" },
+            },
+          },
+        ]),
       ]);
 
       const [
-        total, active, deleted, available,
-        standard, imax, threeDimension, fourDX, vip,
-        activeStatus, maintenance, closed, renovation,
-        seatsStats
+        total,
+        active,
+        deleted,
+        available,
+        standard,
+        imax,
+        threeDimension,
+        fourDX,
+        vip,
+        activeStatus,
+        maintenance,
+        closed,
+        renovation,
+        seatsStats,
       ] = stats;
 
       const totalSeats = seatsStats[0]?.totalSeats || 0;
@@ -974,29 +1011,30 @@ class HallController {
           screenTypes: {
             standard,
             imax,
-            '3d': threeDimension,
-            '4dx': fourDX,
-            vip
+            "3d": threeDimension,
+            "4dx": fourDX,
+            vip,
           },
           statuses: {
             active: activeStatus,
             maintenance,
             closed,
-            renovation
+            renovation,
           },
           seating: {
             totalSeats,
-            averageSeats: Math.round(avgSeats)
+            averageSeats: Math.round(avgSeats),
           },
           percentageActive: total > 0 ? Math.round((active / total) * 100) : 0,
-          percentageAvailable: active > 0 ? Math.round((available / active) * 100) : 0
-        }
+          percentageAvailable:
+            active > 0 ? Math.round((available / active) * 100) : 0,
+        },
       });
     } catch (error) {
-      logger.error('Get hall stats error:', error);
+      logger.error("Get hall stats error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve hall statistics'
+        message: "Failed to retrieve hall statistics",
       });
     }
   }
@@ -1012,7 +1050,7 @@ class HallController {
       const skip = (pageNum - 1) * limitNum;
 
       const query = { screen_type: type };
-      if (activeOnly === 'true') {
+      if (activeOnly === "true") {
         query.deletedAt = null;
       }
 
@@ -1022,7 +1060,7 @@ class HallController {
           .skip(skip)
           .limit(limitNum)
           .lean(),
-        Hall.countDocuments(query)
+        Hall.countDocuments(query),
       ]);
 
       res.status(200).json({
@@ -1034,15 +1072,15 @@ class HallController {
             currentPage: pageNum,
             totalPages: Math.ceil(totalCount / limitNum),
             totalCount,
-            limit: limitNum
-          }
-        }
+            limit: limitNum,
+          },
+        },
       });
     } catch (error) {
-      logger.error('Get halls by screen type error:', error);
+      logger.error("Get halls by screen type error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve halls by screen type'
+        message: "Failed to retrieve halls by screen type",
       });
     }
   }
@@ -1054,28 +1092,26 @@ class HallController {
       const { activeOnly = true } = req.query;
 
       let query = { theater_id: theaterId };
-      if (activeOnly === 'true') {
+      if (activeOnly === "true") {
         query.deletedAt = null;
-        query.status = 'active';
+        query.status = "active";
       }
 
-      const halls = await Hall.find(query)
-        .sort({ hall_name: 1 })
-        .lean();
+      const halls = await Hall.find(query).sort({ hall_name: 1 }).lean();
 
       res.status(200).json({
         success: true,
         data: {
           halls,
           theater_id: theaterId,
-          count: halls.length
-        }
+          count: halls.length,
+        },
       });
     } catch (error) {
-      logger.error('Get halls by theater error:', error);
+      logger.error("Get halls by theater error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve halls by theater'
+        message: "Failed to retrieve halls by theater",
       });
     }
   }
@@ -1088,9 +1124,9 @@ class HallController {
       let matchQuery = {};
       if (theater_id) matchQuery.theater_id = theater_id;
       if (screen_type) matchQuery.screen_type = screen_type;
-      if (activeOnly === 'true') {
+      if (activeOnly === "true") {
         matchQuery.deletedAt = null;
-        matchQuery.status = 'active';
+        matchQuery.status = "active";
       }
 
       const halls = await Hall.getHallsWithSeatCounts(matchQuery);
@@ -1103,15 +1139,15 @@ class HallController {
           filters: {
             theater_id: theater_id || null,
             screen_type: screen_type || null,
-            activeOnly: activeOnly === 'true'
-          }
-        }
+            activeOnly: activeOnly === "true",
+          },
+        },
       });
     } catch (error) {
-      logger.error('Get halls with seat counts error:', error);
+      logger.error("Get halls with seat counts error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve halls with seat counts'
+        message: "Failed to retrieve halls with seat counts",
       });
     }
   }

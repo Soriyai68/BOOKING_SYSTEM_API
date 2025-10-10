@@ -25,22 +25,33 @@ class ShowtimeController {
   // Build filter query
   static buildFilterQuery(filters) {
     const query = {};
-    if (filters.status) query.status = filters.status;
-    if (filters.movie_id) query.movie_id = filters.movie_id;
-    if (filters.hall_id) query.hall_id = filters.hall_id;
-    if (filters.theater_id) query.theater_id = filters.theater_id;
 
+    if (filters.status) {
+      query.status = filters.status;
+    }
+
+    if (filters.movie_id && mongoose.Types.ObjectId.isValid(filters.movie_id)) {
+      query.movie_id = new mongoose.Types.ObjectId(filters.movie_id);
+    }
+    if (filters.hall_id && mongoose.Types.ObjectId.isValid(filters.hall_id)) {
+      query.hall_id = new mongoose.Types.ObjectId(filters.hall_id);
+    }
+    if (
+      filters.theater_id &&
+      mongoose.Types.ObjectId.isValid(filters.theater_id)
+    ) {
+      query.theater_id = new mongoose.Types.ObjectId(filters.theater_id);
+    }
     // Date range
     if (filters.dateFrom || filters.dateTo) {
       query.start_time = {};
       if (filters.dateFrom) query.start_time.$gte = new Date(filters.dateFrom);
       if (filters.dateTo) query.start_time.$lte = new Date(filters.dateTo);
     }
-
     return query;
   }
 
-  // 1. GET ALL SHOWTIMES - with pagination, filtering, and sorting
+  //1.GET ALL SHOWTIMES
   static async getAll(req, res) {
     try {
       const {
@@ -59,11 +70,10 @@ class ShowtimeController {
 
       const matchQuery = { ...ShowtimeController.buildFilterQuery(filters) };
 
-      // // Handle soft deleted records
       if (!includeDeleted || includeDeleted === "false") {
         matchQuery.deletedAt = null;
       }
-      // Aggregation pipeline
+
       const pipeline = [
         { $match: matchQuery },
 
@@ -76,8 +86,7 @@ class ShowtimeController {
             as: "movie",
           },
         },
-        { $unwind: "$movie" },
-        { $match: { "movie.deletedAt": null } },
+        { $unwind: { path: "$movie", preserveNullAndEmptyArrays: true } },
 
         // Lookup hall
         {
@@ -88,8 +97,7 @@ class ShowtimeController {
             as: "hall",
           },
         },
-        { $unwind: "$hall" },
-        { $match: { "hall.deletedAt": null } },
+        { $unwind: { path: "$hall", preserveNullAndEmptyArrays: true } },
 
         // Lookup theater
         {
@@ -100,11 +108,10 @@ class ShowtimeController {
             as: "theater",
           },
         },
-        { $unwind: "$theater" },
-        { $match: { "theater.deletedAt": null } },
+        { $unwind: { path: "$theater", preserveNullAndEmptyArrays: true } },
       ];
 
-      // Search (simple $regex, case-insensitive)
+      // Optional search
       if (search) {
         pipeline.push({
           $match: {
@@ -131,7 +138,6 @@ class ShowtimeController {
 
       // Project
       pipeline.push({
-        // Select only the necessary fields for the response
         $project: {
           movie: { _id: 1, title: 1, poster_url: 1 },
           hall: { _id: 1, hall_name: 1, screen_type: 1 },
@@ -169,28 +175,25 @@ class ShowtimeController {
       });
     } catch (error) {
       logger.error("Get all showtimes error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to retrieve showtimes",
-      });
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to retrieve showtimes" });
     }
   }
 
-  // 2. GET SHOWTIME BY ID
+  //2. GET SHOWTIME BY ID
   static async getById(req, res) {
     try {
       const { id } = req.params;
+      if (!id)
+        return res
+          .status(400)
+          .json({ success: false, message: "Showtime ID is required" });
 
-      if (!id) {
-        return res.status(400).json({
-          success: false,
-          message: "Showtime ID is required",
-        });
-      }
       ShowtimeController.validateObjectId(id);
-      // Aggregation pipeline
+
       const showtimeResult = await Showtime.aggregate([
-        { $match: { _id: new mongoose.Types.ObjectId(id) } },
+        { $match: { _id: new mongoose.Types.ObjectId(id), deletedAt: null } },
 
         // Lookup movie
         {
@@ -201,8 +204,7 @@ class ShowtimeController {
             as: "movie",
           },
         },
-        { $unwind: "$movie" },
-        { $match: { "movie.deletedAt": null } }, // active movies only
+        { $unwind: { path: "$movie", preserveNullAndEmptyArrays: true } },
 
         // Lookup hall
         {
@@ -213,8 +215,7 @@ class ShowtimeController {
             as: "hall",
           },
         },
-        { $unwind: "$hall" },
-        { $match: { "hall.deletedAt": null } }, // active hall online
+        { $unwind: { path: "$hall", preserveNullAndEmptyArrays: true } },
 
         // Lookup theater
         {
@@ -225,10 +226,9 @@ class ShowtimeController {
             as: "theater",
           },
         },
-        { $unwind: "$theater" },
-        { $match: { "theater.deletedAt": null } }, // active theater only
+        { $unwind: { path: "$theater", preserveNullAndEmptyArrays: true } },
+
         {
-          // Select only the necessary fields for the response
           $project: {
             movie: { _id: 1, title: 1, poster_url: 1 },
             hall: { _id: 1, hall_name: 1, screen_type: 1 },
@@ -242,41 +242,27 @@ class ShowtimeController {
           },
         },
       ]);
+
       if (!showtimeResult || showtimeResult.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "Showtime not found or references are deleted",
-        });
+        return res
+          .status(404)
+          .json({ success: false, message: "Showtime not found" });
       }
 
-      const showtime = await showtimeResult[0];
-      if (!showtime) {
-        return res.status(404).json({
-          success: false,
-          message: "Showwtime not found",
-        });
-      }
-      logger.info(`Retrieved showtime by ID: ${id}`);
-
-      res.status(200).json({
-        success: true,
-        data: { showtime },
-      });
+      res
+        .status(200)
+        .json({ success: true, data: { showtime: showtimeResult[0] } });
     } catch (error) {
       if (error.message === "Invalid ID format") {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
+        return res.status(400).json({ success: false, message: error.message });
       }
       logger.error("Get showtime by ID error:", error);
-
-      res.status(500).json({
-        success: false,
-        message: "Failed to retrieve showtime",
-      });
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to retrieve showtime" });
     }
   }
+
   // 3. CREATE SHOWTIME
   static async create(req, res) {
     try {

@@ -94,9 +94,9 @@ const getAllShowtimesQuerySchema = paginationSchema
       .default("start_time"),
     sortOrder: Joi.string().trim().valid("asc", "desc").default("asc"),
     searchQuery: Joi.string().trim().max(100).optional(),
-    movie_id: objectId.optional(),
-    hall_id: objectId.optional(),
-    theater_id: objectId.optional(),
+    movie_id: Joi.string().trim().optional(),
+    hall_id: Joi.string().trim().optional(),
+    theater_id: Joi.string().trim().optional(),
     status: Joi.string()
       .trim()
       .valid(...SHOWTIME_STATUSES)
@@ -124,9 +124,9 @@ const advancedShowtimeSearchSchema = Joi.object({
   sortOrder: Joi.string().trim().valid("asc", "desc").default("asc"),
   exactMatch: Joi.boolean().default(false),
   caseSensitive: Joi.boolean().default(false),
-  movie_id: objectId.optional(),
-  hall_id: objectId.optional(),
-  theater_id: objectId.optional(),
+  movie_id: Joi.string().trim().optional(),
+  hall_id: Joi.string().trim().optional(),
+  theater_id: Joi.string().trim().optional(),
   status: Joi.string()
     .trim()
     .valid(...SHOWTIME_STATUSES)
@@ -135,9 +135,9 @@ const advancedShowtimeSearchSchema = Joi.object({
 
 // Analytics
 const analyticsQuerySchema = Joi.object({
-  movie_id: objectId.optional(),
-  hall_id: objectId.optional(),
-  theater_id: objectId.optional(),
+  movie_id: Joi.string().trim().optional(),
+  hall_id: Joi.string().trim().optional(),
+  theater_id: Joi.string().trim().optional(),
   groupBy: Joi.string()
     .trim()
     .valid("day", "week", "month", "movie_id", "hall_id", "theater_id") // Added 'theater_id' for grouping
