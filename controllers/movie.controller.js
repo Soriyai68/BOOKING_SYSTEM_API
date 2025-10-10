@@ -128,8 +128,7 @@ class MovieController {
         Movie.find(query)
           .sort(sortObj)
           .skip(skip)
-          .limit(limitNum)
-          .lean(),
+          .limit(limitNum),
         Movie.countDocuments(query)
       ]);
 
@@ -179,7 +178,7 @@ class MovieController {
 
       MovieController.validateObjectId(id);
 
-      const movie = await Movie.findById(id).lean();
+      const movie = await Movie.findById(id);
 
       if (!movie) {
         return res.status(404).json({
@@ -552,8 +551,7 @@ class MovieController {
         Movie.find({ deletedAt: { $ne: null } })
           .sort(sortObj)
           .skip(skip)
-          .limit(limitNum)
-          .lean(),
+          .limit(limitNum),
         Movie.countDocuments({ deletedAt: { $ne: null } })
       ]);
 
@@ -642,8 +640,7 @@ class MovieController {
 
       const movies = await Movie.findNowShowing()
         .skip(skip)
-        .limit(limitNum)
-        .lean();
+        .limit(limitNum);
 
       const totalCount = await Movie.countDocuments({
         status: 'now_showing',
@@ -684,8 +681,7 @@ class MovieController {
 
       const movies = await Movie.findComingSoon()
         .skip(skip)
-        .limit(limitNum)
-        .lean();
+        .limit(limitNum);
 
       const totalCount = await Movie.countDocuments({
         status: 'coming_soon',
@@ -734,8 +730,7 @@ class MovieController {
 
       const movies = await Movie.findByGenre(genre)
         .skip(skip)
-        .limit(limitNum)
-        .lean();
+        .limit(limitNum);
 
       const totalCount = await Movie.countDocuments({
         genres: genre,
