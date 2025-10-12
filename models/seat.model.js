@@ -24,26 +24,10 @@ const seatSchema = new mongoose.Schema(
       enum: ["regular", "vip", "couple", "queen"],
       default: "regular",
     },
-    is_available: {
-      type: Boolean,
-      default: true,
-    },
     status: {
       type: String,
       enum: ["active", "maintenance", "out_of_order", "reserved", "closed"],
       default: "active",
-    },
-    theater_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Theater",
-      default: null,
-      index: true,
-    },
-    hall_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Hall",
-      default: null,
-      index: true,
     },
     price: {
       type: Number,
@@ -96,13 +80,7 @@ const seatSchema = new mongoose.Schema(
 // Index for faster queries
 seatSchema.index({ row: 1, seat_number: 1 }, { unique: true });
 seatSchema.index({ seat_type: 1 });
-seatSchema.index({ is_available: 1 });
 
-// Instance method to toggle availability
-seatSchema.methods.toggleAvailability = function () {
-  this.is_available = !this.is_available;
-  return this.save();
-};
 // Instance method to soft delete seat
 seatSchema.methods.softDelete = function (deletedBy = null) {
   this.deletedAt = new Date();
@@ -126,14 +104,6 @@ seatSchema.methods.isDeleted = function () {
 // Static method to find seats by type
 seatSchema.statics.findByType = function (seatType) {
   return this.find({ seat_type: seatType });
-};
-
-// Static method to find available seats
-seatSchema.statics.findAvailable = function (query = {}) {
-  return this.find({
-    ...query,
-    is_available: true,
-  });
 };
 
 // Virtual for full seat identifier
@@ -173,97 +143,6 @@ seatSchema.pre("save", function (next) {
     this.row = this.row.toString().toUpperCase();
   }
   next();
-});
-
-// Post-save middleware to update Hall's total_seats
-seatSchema.post("save", async function (doc) {
-  try {
-    if (doc.hall_id) {
-      const Hall = mongoose.model("Hall");
-      const hall = await Hall.findById(doc.hall_id);
-      if (hall) {
-        // Count active seats for this hall
-        const seatCount = await mongoose.model("Seat").countDocuments({
-          hall_id: doc.hall_id,
-          deletedAt: null
-        });
-        // Update total_seats directly
-        await Hall.findByIdAndUpdate(
-          doc.hall_id,
-          { total_seats: seatCount },
-          { timestamps: false }
-        );
-      }
-    }
-  } catch (error) {
-    console.error("Error updating hall total_seats after seat save:", error);
-  }
-});
-
-// Post-remove middleware to update Hall's total_seats
-seatSchema.post("remove", async function (doc) {
-  try {
-    if (doc.hall_id) {
-      const Hall = mongoose.model("Hall");
-      const hall = await Hall.findById(doc.hall_id);
-      if (hall) {
-        const seatCount = await mongoose.model("Seat").countDocuments({
-          hall_id: doc.hall_id,
-          deletedAt: null
-        });
-        await Hall.findByIdAndUpdate(
-          doc.hall_id,
-          { total_seats: seatCount },
-          { timestamps: false }
-        );
-      }
-    }
-  } catch (error) {
-    console.error("Error updating hall total_seats after seat removal:", error);
-  }
-});
-
-// Post-findOneAndDelete middleware to update Hall's total_seats
-seatSchema.post("findOneAndDelete", async function (doc) {
-  try {
-    if (doc && doc.hall_id) {
-      const Hall = mongoose.model("Hall");
-      const hall = await Hall.findById(doc.hall_id);
-      if (hall) {
-        const seatCount = await mongoose.model("Seat").countDocuments({
-          hall_id: doc.hall_id,
-          deletedAt: null
-        });
-        await Hall.findByIdAndUpdate(
-          doc.hall_id,
-          { total_seats: seatCount },
-          { timestamps: false }
-        );
-      }
-    }
-  } catch (error) {
-    console.error("Error updating hall total_seats after seat deletion:", error);
-  }
-});
-
-// Post-findOneAndUpdate middleware to update Hall's total_seats when seat's hall changes
-seatSchema.post("findOneAndUpdate", async function (doc) {
-  try {
-    if (doc && doc.hall_id) {
-      const Hall = mongoose.model("Hall");
-      const seatCount = await mongoose.model("Seat").countDocuments({
-        hall_id: doc.hall_id,
-        deletedAt: null
-      });
-      await Hall.findByIdAndUpdate(
-        doc.hall_id,
-        { total_seats: seatCount },
-        { timestamps: false }
-      );
-    }
-  } catch (error) {
-    console.error("Error updating hall total_seats after seat update:", error);
-  }
 });
 
 module.exports = mongoose.model("Seat", seatSchema);

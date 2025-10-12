@@ -18,9 +18,9 @@ const hallSchema = new mongoose.Schema(
       max: 1000,
       default: 0,
     },
-    seat_layout_id: {
+    seat_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "SeatLayout",
+      ref: "Seat",
       default: null,
     },
     theater_id: {

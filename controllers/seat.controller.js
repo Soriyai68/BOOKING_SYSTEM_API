@@ -1,7 +1,7 @@
-const mongoose = require('mongoose');
-const Seat = require('../models/seat.model');
-const { Role } = require('../data');
-const logger = require('../utils/logger');
+const mongoose = require("mongoose");
+const Seat = require("../models/seat.model");
+const { Role } = require("../data");
+const logger = require("../utils/logger");
 
 /**
  * SeatController - Comprehensive CRUD operations for seat management
@@ -11,7 +11,7 @@ class SeatController {
   // Helper method to validate ObjectId
   static validateObjectId(id) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error('Invalid seat ID format');
+      throw new Error("Invalid seat ID format");
     }
   }
 
@@ -21,40 +21,29 @@ class SeatController {
 
     return {
       $or: [
-        { row: { $regex: search, $options: 'i' } },
-        { seat_number: { $regex: search, $options: 'i' } },
-        { seat_type: { $regex: search, $options: 'i' } },
-        { notes: { $regex: search, $options: 'i' } }
-      ]
+        { row: { $regex: search, $options: "i" } },
+        { seat_number: { $regex: search, $options: "i" } },
+        { seat_type: { $regex: search, $options: "i" } },
+        { notes: { $regex: search, $options: "i" } },
+      ],
     };
   }
 
   // Helper method to build filter query
   static buildFilterQuery(filters) {
     const query = {};
-
+    // Handle seat by row
+    if (filters.row) {
+      query.row = filters.row;
+    }
     // Handle seat type filter
     if (filters.seat_type) {
       query.seat_type = filters.seat_type;
     }
-    
+
     // Handle status filter
     if (filters.status) {
       query.status = filters.status;
-    }
-
-    // Handle availability filter
-    if (filters.is_available !== undefined) {
-      query.is_available = filters.is_available === 'true' || filters.is_available === true;
-    }
-
-    // Handle theater and hall filters
-    if (filters.theater_id) {
-      query.theater_id = filters.theater_id;
-    }
-
-    if (filters.hall_id) {
-      query.hall_id = filters.hall_id;
     }
 
     // Handle price range filters
@@ -88,8 +77,8 @@ class SeatController {
       const {
         page = 1,
         limit = 10,
-        sortBy = 'row',
-        sortOrder = 'asc',
+        sortBy = "row",
+        sortOrder = "asc",
         search,
         includeDeleted = false,
         ...filters
@@ -112,22 +101,18 @@ class SeatController {
       query = { ...query, ...SeatController.buildFilterQuery(filters) };
 
       // Handle soft deleted records
-      if (!includeDeleted || includeDeleted === 'false') {
+      if (!includeDeleted || includeDeleted === "false") {
         query.deletedAt = null; // Only get non-deleted seats
       }
 
       // Build sort object
       const sortObj = {};
-      sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
+      sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
 
       // Execute queries
       const [seats, totalCount] = await Promise.all([
-        Seat.find(query)
-          .sort(sortObj)
-          .skip(skip)
-          .limit(limitNum)
-          .lean(),
-        Seat.countDocuments(query)
+        Seat.find(query).sort(sortObj).skip(skip).limit(limitNum).lean(),
+        Seat.countDocuments(query),
       ]);
 
       // Calculate pagination info
@@ -149,15 +134,15 @@ class SeatController {
             hasNextPage,
             hasPrevPage,
             nextPage: hasNextPage ? pageNum + 1 : null,
-            prevPage: hasPrevPage ? pageNum - 1 : null
-          }
-        }
+            prevPage: hasPrevPage ? pageNum - 1 : null,
+          },
+        },
       });
     } catch (error) {
-      logger.error('Get all seats error:', error);
+      logger.error("Get all seats error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve seats'
+        message: "Failed to retrieve seats",
       });
     }
   }
@@ -170,7 +155,7 @@ class SeatController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Seat ID is required'
+          message: "Seat ID is required",
         });
       }
 
@@ -181,7 +166,7 @@ class SeatController {
       if (!seat) {
         return res.status(404).json({
           success: false,
-          message: 'Seat not found'
+          message: "Seat not found",
         });
       }
 
@@ -189,20 +174,20 @@ class SeatController {
 
       res.status(200).json({
         success: true,
-        data: { seat }
+        data: { seat },
       });
     } catch (error) {
-      if (error.message === 'Invalid seat ID format') {
+      if (error.message === "Invalid seat ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Get seat by ID error:', error);
+      logger.error("Get seat by ID error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve seat'
+        message: "Failed to retrieve seat",
       });
     }
   }
@@ -216,34 +201,30 @@ class SeatController {
       if (!seatData.row || !seatData.seat_number) {
         return res.status(400).json({
           success: false,
-          message: 'Row and seat number are required'
+          message: "Row and seat number are required",
         });
       }
 
-      // Check if seat already exists in the same theater/hall
+      // Check if seat already exists
       const existingQuery = {
         row: seatData.row.toUpperCase(),
-        seat_number: seatData.seat_number.toString().toUpperCase()
+        seat_number: seatData.seat_number.toString().toUpperCase(),
       };
-
-      if (seatData.theater_id) existingQuery.theater_id = seatData.theater_id;
-      if (seatData.hall_id) existingQuery.hall_id = seatData.hall_id;
 
       const existingSeat = await Seat.findOne(existingQuery);
       if (existingSeat) {
         return res.status(409).json({
           success: false,
-          message: 'Seat with this row and seat number already exists in this theater/hall'
+          message: "Seat with this row and seat number already exists",
         });
       }
 
       // Set default values
       const seatToCreate = {
         ...seatData,
-        seat_type: seatData.seat_type || 'standard',
-        is_available: seatData.is_available !== undefined ? seatData.is_available : true,
-        status: seatData.status || 'active',
-        price: seatData.price || 0
+        seat_type: seatData.seat_type || "standard",
+        status: seatData.status || "active",
+        price: seatData.price || 0,
       };
 
       // Add creator info if available
@@ -254,33 +235,35 @@ class SeatController {
       const seat = new Seat(seatToCreate);
       await seat.save();
 
-      logger.info(`Created new seat: ${seat._id} (${seat.row}${seat.seat_number})`);
+      logger.info(
+        `Created new seat: ${seat._id} (${seat.row}${seat.seat_number})`
+      );
 
       res.status(201).json({
         success: true,
-        message: 'Seat created successfully',
-        data: { seat }
+        message: "Seat created successfully",
+        data: { seat },
       });
     } catch (error) {
-      if (error.name === 'ValidationError') {
+      if (error.name === "ValidationError") {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
-          errors: Object.values(error.errors).map(err => err.message)
+          message: "Validation error",
+          errors: Object.values(error.errors).map((err) => err.message),
         });
       }
 
       if (error.code === 11000) {
         return res.status(409).json({
           success: false,
-          message: 'Seat with this row and seat number already exists'
+          message: "Seat with this row and seat number already exists",
         });
       }
 
-      logger.error('Create seat error:', error);
+      logger.error("Create seat error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to create seat'
+        message: "Failed to create seat",
       });
     }
   }
@@ -294,7 +277,7 @@ class SeatController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Seat ID is required'
+          message: "Seat ID is required",
         });
       }
 
@@ -320,41 +303,37 @@ class SeatController {
         if (!currentSeat) {
           return res.status(404).json({
             success: false,
-            message: 'Seat not found'
+            message: "Seat not found",
           });
         }
 
         const checkQuery = {
           row: (updateData.row || currentSeat.row).toUpperCase(),
-          seat_number: (updateData.seat_number || currentSeat.seat_number).toString().toUpperCase(),
-          theater_id: updateData.theater_id || currentSeat.theater_id,
-          hall_id: updateData.hall_id || currentSeat.hall_id,
-          _id: { $ne: id }
+          seat_number: (updateData.seat_number || currentSeat.seat_number)
+            .toString()
+            .toUpperCase(),
+          _id: { $ne: id },
         };
 
         const existingSeat = await Seat.findOne(checkQuery);
         if (existingSeat) {
           return res.status(409).json({
             success: false,
-            message: 'Seat with this row and seat number already exists in this theater/hall'
+            message: "Seat with this row and seat number already exists",
           });
         }
       }
 
-      const seat = await Seat.findByIdAndUpdate(
-        id,
-        updateData,
-        {
-          new: true,
-          runValidators: true,
-          context: 'query'
-        }
-      );
+      const seat = await Seat.findByIdAndUpdate(id, updateData, {
+        new: true,
+        runValidators: true,
+        context: "query",
+      });
 
       if (!seat) {
         return res.status(404).json({
           success: false,
-          message: 'Seat not found'
+          message: "Seat not found",
         });
       }
 
@@ -362,29 +341,29 @@ class SeatController {
 
       res.status(200).json({
         success: true,
-        message: 'Seat updated successfully',
-        data: { seat }
+        message: "Seat updated successfully",
+        data: { seat },
       });
     } catch (error) {
-      if (error.message === 'Invalid seat ID format') {
+      if (error.message === "Invalid seat ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      if (error.name === 'ValidationError') {
+      if (error.name === "ValidationError") {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
-          errors: Object.values(error.errors).map(err => err.message)
+          message: "Validation error",
+          errors: Object.values(error.errors).map((err) => err.message),
         });
       }
 
-      logger.error('Update seat error:', error);
+      logger.error("Update seat error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to update seat'
+        message: "Failed to update seat",
       });
     }
   }
@@ -397,7 +376,7 @@ class SeatController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Seat ID is required'
+          message: "Seat ID is required",
         });
       }
 
@@ -409,7 +388,7 @@ class SeatController {
       if (!seat) {
         return res.status(404).json({
           success: false,
-          message: 'Seat not found'
+          message: "Seat not found",
         });
       }
 
@@ -417,32 +396,34 @@ class SeatController {
       if (seat.isDeleted()) {
         return res.status(409).json({
           success: false,
-          message: 'Seat is already deactivated'
+          message: "Seat is already deactivated",
         });
       }
 
       // Soft delete using model method
       const deletedSeat = await seat.softDelete(req.user?.userId);
 
-      logger.info(`Soft deleted seat: ${id} (${deletedSeat.row}${deletedSeat.seat_number})`);
+      logger.info(
+        `Soft deleted seat: ${id} (${deletedSeat.row}${deletedSeat.seat_number})`
+      );
 
       res.status(200).json({
         success: true,
-        message: 'Seat deactivated successfully',
-        data: { seat: deletedSeat }
+        message: "Seat deactivated successfully",
+        data: { seat: deletedSeat },
       });
     } catch (error) {
-      if (error.message === 'Invalid seat ID format') {
+      if (error.message === "Invalid seat ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Delete seat error:', error);
+      logger.error("Delete seat error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to deactivate seat'
+        message: "Failed to deactivate seat",
       });
     }
   }
@@ -455,7 +436,7 @@ class SeatController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Seat ID is required'
+          message: "Seat ID is required",
         });
       }
 
@@ -467,7 +448,7 @@ class SeatController {
       if (!seat) {
         return res.status(404).json({
           success: false,
-          message: 'Seat not found'
+          message: "Seat not found",
         });
       }
 
@@ -475,32 +456,34 @@ class SeatController {
       if (!seat.isDeleted()) {
         return res.status(409).json({
           success: false,
-          message: 'Seat is already active'
+          message: "Seat is already active",
         });
       }
 
       // Restore using model method
       const restoredSeat = await seat.restore(req.user?.userId);
 
-      logger.info(`Restored seat: ${id} (${restoredSeat.row}${restoredSeat.seat_number})`);
+      logger.info(
+        `Restored seat: ${id} (${restoredSeat.row}${restoredSeat.seat_number})`
+      );
 
       res.status(200).json({
         success: true,
-        message: 'Seat restored successfully',
-        data: { seat: restoredSeat }
+        message: "Seat restored successfully",
+        data: { seat: restoredSeat },
       });
     } catch (error) {
-      if (error.message === 'Invalid seat ID format') {
+      if (error.message === "Invalid seat ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Restore seat error:', error);
+      logger.error("Restore seat error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to restore seat'
+        message: "Failed to restore seat",
       });
     }
   }
@@ -513,7 +496,7 @@ class SeatController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Seat ID is required'
+          message: "Seat ID is required",
         });
       }
 
@@ -521,7 +504,7 @@ class SeatController {
       if (req.user?.role !== Role.ADMIN && req.user?.role !== Role.SUPERADMIN) {
         return res.status(403).json({
           success: false,
-          message: 'Only Admin or SuperAdmin can permanently delete seats'
+          message: "Only Admin or SuperAdmin can permanently delete seats",
         });
       }
 
@@ -533,7 +516,7 @@ class SeatController {
       if (!seat) {
         return res.status(404).json({
           success: false,
-          message: 'Seat not found'
+          message: "Seat not found",
         });
       }
 
@@ -543,48 +526,47 @@ class SeatController {
         row: seat.row,
         seat_number: seat.seat_number,
         seat_type: seat.seat_type,
-        theater_id: seat.theater_id,
-        hall_id: seat.hall_id,
-        wasDeleted: seat.isDeleted()
+        wasDeleted: seat.isDeleted(),
       };
 
       // Perform permanent deletion
       await Seat.findByIdAndDelete(id);
 
-      logger.warn(`⚠️  PERMANENT DELETION: Seat permanently deleted by ${req.user.role} ${req.user.userId}`, {
-        deletedSeat: seatInfo,
-        deletedBy: req.user.userId,
-        deletedAt: new Date().toISOString(),
-        action: 'FORCE_DELETE_SEAT'
-      });
+      logger.warn(
+        `⚠️  PERMANENT DELETION: Seat permanently deleted by ${req.user.role} ${req.user.userId}`,
+        {
+          deletedSeat: seatInfo,
+          deletedBy: req.user.userId,
+          deletedAt: new Date().toISOString(),
+          action: "FORCE_DELETE_SEAT",
+        }
+      );
 
       res.status(200).json({
         success: true,
-        message: 'Seat permanently deleted',
+        message: "Seat permanently deleted",
         data: {
           deletedSeat: {
             id: seatInfo.id,
             row: seatInfo.row,
             seat_number: seatInfo.seat_number,
             seat_type: seatInfo.seat_type,
-            theater_id: seatInfo.theater_id,
-            hall_id: seatInfo.hall_id
           },
-          warning: 'This action is irreversible'
-        }
+          warning: "This action is irreversible",
+        },
       });
     } catch (error) {
-      if (error.message === 'Invalid seat ID format') {
+      if (error.message === "Invalid seat ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Force delete seat error:', error);
+      logger.error("Force delete seat error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to permanently delete seat'
+        message: "Failed to permanently delete seat",
       });
     }
   }
@@ -595,8 +577,8 @@ class SeatController {
       const {
         page = 1,
         limit = 10,
-        sortBy = 'deletedAt',
-        sortOrder = 'desc'
+        sortBy = "deletedAt",
+        sortOrder = "desc",
       } = req.query;
 
       const pageNum = Math.max(1, parseInt(page));
@@ -606,29 +588,29 @@ class SeatController {
       // Query for soft deleted seats only
       const query = { deletedAt: { $ne: null } };
       const sortObj = {};
-      sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
+      sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
 
       const [seats, totalCount] = await Promise.all([
-        Seat.find(query)
-          .sort(sortObj)
-          .skip(skip)
-          .limit(limitNum)
-          .lean(),
-        Seat.countDocuments(query)
+        Seat.find(query).sort(sortObj).skip(skip).limit(limitNum).lean(),
+        Seat.countDocuments(query),
       ]);
 
       // Add delete info to each seat
-      const seatsWithDeleteInfo = seats.map(seat => ({
+      const seatsWithDeleteInfo = seats.map((seat) => ({
         ...seat,
         deleteInfo: {
           deletedAt: seat.deletedAt,
           deletedBy: seat.deletedBy,
-          daysSinceDeleted: seat.deletedAt ? Math.floor((Date.now() - new Date(seat.deletedAt)) / (1000 * 60 * 60 * 24)) : null
+          daysSinceDeleted: seat.deletedAt
+            ? Math.floor(
+                (Date.now() - new Date(seat.deletedAt)) / (1000 * 60 * 60 * 24)
+              )
+            : null,
         },
         restoreInfo: {
           restoredAt: seat.restoredAt,
-          restoredBy: seat.restoredBy
-        }
+          restoredBy: seat.restoredBy,
+        },
       }));
 
       const totalPages = Math.ceil(totalCount / limitNum);
@@ -645,15 +627,15 @@ class SeatController {
             totalCount,
             limit: limitNum,
             hasNextPage: pageNum < totalPages,
-            hasPrevPage: pageNum > 1
-          }
-        }
+            hasPrevPage: pageNum > 1,
+          },
+        },
       });
     } catch (error) {
-      logger.error('Get deleted seats error:', error);
+      logger.error("Get deleted seats error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve deleted seats'
+        message: "Failed to retrieve deleted seats",
       });
     }
   }
@@ -667,14 +649,14 @@ class SeatController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Seat ID is required'
+          message: "Seat ID is required",
         });
       }
 
       if (!status) {
         return res.status(400).json({
           success: false,
-          message: 'Status is required'
+          message: "Status is required",
         });
       }
 
@@ -686,7 +668,7 @@ class SeatController {
       if (!seat) {
         return res.status(404).json({
           success: false,
-          message: 'Seat not found'
+          message: "Seat not found",
         });
       }
 
@@ -694,39 +676,42 @@ class SeatController {
       if (seat.isDeleted()) {
         return res.status(409).json({
           success: false,
-          message: 'Cannot update status of deleted seat. Please restore it first.'
+          message:
+            "Cannot update status of deleted seat. Please restore it first.",
         });
       }
 
       // Update status using model method
       const updatedSeat = await seat.updateStatus(status, req.user?.userId);
 
-      logger.info(`Updated seat status: ${id} (${seat.row}${seat.seat_number}) to ${status}`);
+      logger.info(
+        `Updated seat status: ${id} (${seat.row}${seat.seat_number}) to ${status}`
+      );
 
       res.status(200).json({
         success: true,
-        message: 'Seat status updated successfully',
-        data: { seat: updatedSeat }
+        message: "Seat status updated successfully",
+        data: { seat: updatedSeat },
       });
     } catch (error) {
-      if (error.message === 'Invalid seat ID format') {
+      if (error.message === "Invalid seat ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      if (error.message === 'Invalid status provided') {
+      if (error.message === "Invalid status provided") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Update seat status error:', error);
+      logger.error("Update seat status error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to update seat status'
+        message: "Failed to update seat status",
       });
     }
   }
@@ -740,22 +725,30 @@ class SeatController {
         Seat.countDocuments({}), // Total seats
         Seat.countDocuments({ deletedAt: null }), // Active seats
         Seat.countDocuments({ deletedAt: { $ne: null } }), // Deleted seats
-        Seat.countDocuments({ is_available: true, deletedAt: null }), // Available seats
-        Seat.countDocuments({ seat_type: 'standard', deletedAt: null }),
-        Seat.countDocuments({ seat_type: 'premium', deletedAt: null }),
-        Seat.countDocuments({ seat_type: 'vip', deletedAt: null }),
-        Seat.countDocuments({ seat_type: 'wheelchair', deletedAt: null }),
-        Seat.countDocuments({ seat_type: 'recliner', deletedAt: null }),
-        Seat.countDocuments({ status: 'active', deletedAt: null }),
-        Seat.countDocuments({ status: 'maintenance', deletedAt: null }),
-        Seat.countDocuments({ status: 'out_of_order', deletedAt: null }),
-        Seat.countDocuments({ status: 'reserved', deletedAt: null })
+        Seat.countDocuments({ seat_type: "standard", deletedAt: null }),
+        Seat.countDocuments({ seat_type: "premium", deletedAt: null }),
+        Seat.countDocuments({ seat_type: "vip", deletedAt: null }),
+        Seat.countDocuments({ seat_type: "wheelchair", deletedAt: null }),
+        Seat.countDocuments({ seat_type: "recliner", deletedAt: null }),
+        Seat.countDocuments({ status: "active", deletedAt: null }),
+        Seat.countDocuments({ status: "maintenance", deletedAt: null }),
+        Seat.countDocuments({ status: "out_of_order", deletedAt: null }),
+        Seat.countDocuments({ status: "reserved", deletedAt: null }),
       ]);
 
       const [
-        total, active, deleted, available,
-        standard, premium, vip, wheelchair, recliner,
-        activeStatus, maintenance, outOfOrder, reserved
+        total,
+        active,
+        deleted,
+        standard,
+        premium,
+        vip,
+        wheelchair,
+        recliner,
+        activeStatus,
+        maintenance,
+        outOfOrder,
+        reserved,
       ] = stats;
 
       res.status(200).json({
@@ -764,29 +757,27 @@ class SeatController {
           total,
           active,
           deleted,
-          available,
           seatTypes: {
             standard,
             premium,
             vip,
             wheelchair,
-            recliner
+            recliner,
           },
           statuses: {
             active: activeStatus,
             maintenance,
             outOfOrder,
-            reserved
+            reserved,
           },
-          percentageAvailable: active > 0 ? Math.round((available / active) * 100) : 0,
-          percentageActive: total > 0 ? Math.round((active / total) * 100) : 0
-        }
+          percentageActive: total > 0 ? Math.round((active / total) * 100) : 0,
+        },
       });
     } catch (error) {
-      logger.error('Get seat stats error:', error);
+      logger.error("Get seat stats error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve seat statistics'
+        message: "Failed to retrieve seat statistics",
       });
     }
   }
@@ -802,7 +793,7 @@ class SeatController {
       const skip = (pageNum - 1) * limitNum;
 
       const query = { seat_type: type };
-      if (activeOnly === 'true') {
+      if (activeOnly === "true") {
         query.deletedAt = null;
       }
 
@@ -812,7 +803,7 @@ class SeatController {
           .skip(skip)
           .limit(limitNum)
           .lean(),
-        Seat.countDocuments(query)
+        Seat.countDocuments(query),
       ]);
 
       res.status(200).json({
@@ -824,55 +815,15 @@ class SeatController {
             currentPage: pageNum,
             totalPages: Math.ceil(totalCount / limitNum),
             totalCount,
-            limit: limitNum
-          }
-        }
+            limit: limitNum,
+          },
+        },
       });
     } catch (error) {
-      logger.error('Get seats by type error:', error);
+      logger.error("Get seats by type error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve seats by type'
-      });
-    }
-  }
-
-  // Get available seats
-  static async getAvailableSeats(req, res) {
-    try {
-      const { theater_id, hall_id, seat_type } = req.query;
-
-      let query = {
-        is_available: true,
-        deletedAt: null,
-        status: 'active'
-      };
-
-      if (theater_id) query.theater_id = theater_id;
-      if (hall_id) query.hall_id = hall_id;
-      if (seat_type) query.seat_type = seat_type;
-
-      const seats = await Seat.find(query)
-        .sort({ row: 1, seat_number: 1 })
-        .lean();
-
-      res.status(200).json({
-        success: true,
-        data: {
-          seats,
-          count: seats.length,
-          filters: {
-            theater_id: theater_id || null,
-            hall_id: hall_id || null,
-            seat_type: seat_type || null
-          }
-        }
-      });
-    } catch (error) {
-      logger.error('Get available seats error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve available seats'
+        message: "Failed to retrieve seats by type",
       });
     }
   }

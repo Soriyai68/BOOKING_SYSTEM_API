@@ -1,6 +1,6 @@
 # Seats API
 
-The Seats API provides endpoints for managing theater seats, including seat configuration, availability tracking, and status management.
+The Seats API provides endpoints for managing theater seats, including seat configuration, and status management.
 
 ## Base URL
 ```
@@ -14,17 +14,17 @@ Authorization: Bearer <your-jwt-token>
 ```
 
 ## Seat Types
-- `standard` - Regular seating
-- `premium` - Premium seating with enhanced comfort
+- `regular` - Regular seating
 - `vip` - VIP seating with luxury amenities
-- `wheelchair` - Wheelchair accessible seating
-- `recliner` - Reclining seats
+- `couple` - A seat for two people
+- `queen` - A large seat for two people
 
 ## Seat Statuses
 - `active` - Seat is operational and available for booking
 - `maintenance` - Seat is under maintenance
 - `out_of_order` - Seat is broken or unusable
 - `reserved` - Seat is temporarily reserved
+- `closed` - The seat is not available for booking.
 
 ## Endpoints
 
@@ -45,9 +45,6 @@ Retrieve a paginated list of seats with filtering and sorting options.
 | search | string | - | Search term |
 | seat_type | string | - | Filter by seat type |
 | status | string | - | Filter by status |
-| is_available | string | - | Filter by availability (true/false) |
-| theater_id | string | - | Filter by theater ID |
-| hall_id | string | - | Filter by hall ID |
 | includeDeleted | string | "false" | Include deleted seats |
 
 #### Response
@@ -61,10 +58,7 @@ Retrieve a paginated list of seats with filtering and sorting options.
         "row": "A",
         "seat_number": "1",
         "seat_type": "premium",
-        "is_available": true,
         "status": "active",
-        "theater_id": "theater_001",
-        "hall_id": "hall_001",
         "price": 15.99,
         "createdAt": "2025-09-28T09:00:00.000Z",
         "updatedAt": "2025-09-28T09:00:00.000Z"
@@ -99,10 +93,7 @@ Retrieve a specific seat by its ID.
       "row": "A",
       "seat_number": "1",
       "seat_type": "premium",
-      "is_available": true,
       "status": "active",
-      "theater_id": "theater_001",
-      "hall_id": "hall_001",
       "price": 15.99,
       "notes": "Premium seat with extra legroom",
       "createdAt": "2025-09-28T09:00:00.000Z",
@@ -125,10 +116,7 @@ Create a new seat.
   "row": "A",
   "seat_number": "1",
   "seat_type": "premium",
-  "is_available": true,
   "status": "active",
-  "theater_id": "theater_001",
-  "hall_id": "hall_001",
   "price": 15.99,
   "notes": "Premium seat with extra legroom"
 }
@@ -145,10 +133,7 @@ Create a new seat.
       "row": "A",
       "seat_number": "1",
       "seat_type": "premium",
-      "is_available": true,
       "status": "active",
-      "theater_id": "theater_001",
-      "hall_id": "hall_001",
       "price": 15.99,
       "notes": "Premium seat with extra legroom",
       "createdAt": "2025-09-28T09:00:00.000Z",
@@ -185,7 +170,6 @@ Update an existing seat's information.
       "row": "A",
       "seat_number": "1",
       "seat_type": "vip",
-      "is_available": true,
       "status": "active",
       "price": 25.99,
       "notes": "Upgraded to VIP with reclining feature",
@@ -220,54 +204,13 @@ Update a seat's operational status.
       "row": "A",
       "seat_number": "1",
       "status": "maintenance",
-      "is_available": false,
       "updatedAt": "2025-09-28T09:20:00.000Z"
     }
   }
 }
 ```
 
-### 6. Get Available Seats
-Retrieve all available seats for booking.
-
-**Endpoint**: `GET /api/seats/available`  
-**Authentication**: Required  
-**Authorization**: All authenticated users  
-
-#### Query Parameters
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| theater_id | string | Filter by theater ID |
-| hall_id | string | Filter by hall ID |
-| seat_type | string | Filter by seat type |
-
-#### Response
-```json
-{
-  "success": true,
-  "data": {
-    "seats": [
-      {
-        "_id": "507f1f77bcf86cd799439011",
-        "row": "A",
-        "seat_number": "1",
-        "seat_type": "premium",
-        "price": 15.99,
-        "theater_id": "theater_001",
-        "hall_id": "hall_001"
-      }
-    ],
-    "count": 25,
-    "filters": {
-      "theater_id": "theater_001",
-      "hall_id": "hall_001",
-      "seat_type": null
-    }
-  }
-}
-```
-
-### 7. Get Seats by Type
+### 6. Get Seats by Type
 Retrieve seats filtered by seat type.
 
 **Endpoint**: `GET /api/seats/type/:type`  
@@ -277,7 +220,7 @@ Retrieve seats filtered by seat type.
 #### Parameters
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| type | string | Seat type (standard, premium, vip, wheelchair, recliner) |
+| type | string | Seat type (regular, vip, couple, queen) |
 
 #### Response
 ```json
@@ -290,7 +233,6 @@ Retrieve seats filtered by seat type.
         "row": "A",
         "seat_number": "1",
         "seat_type": "premium",
-        "is_available": true,
         "price": 15.99
       }
     ],
@@ -305,7 +247,7 @@ Retrieve seats filtered by seat type.
 }
 ```
 
-### 8. Soft Delete Seat
+### 7. Soft Delete Seat
 Deactivate a seat (soft delete).
 
 **Endpoint**: `DELETE /api/seats/:id`  
@@ -322,8 +264,7 @@ Deactivate a seat (soft delete).
       "_id": "507f1f77bcf86cd799439011",
       "row": "A",
       "seat_number": "1",
-      "is_available": false,
-      "status": "out_of_order",
+      "status": "closed",
       "deletedAt": "2025-09-28T09:25:00.000Z",
       "deletedBy": "507f1f77bcf86cd799439012"
     }
@@ -331,7 +272,7 @@ Deactivate a seat (soft delete).
 }
 ```
 
-### 9. Restore Seat
+### 8. Restore Seat
 Restore a soft-deleted seat.
 
 **Endpoint**: `PUT /api/seats/:id/restore`  
@@ -348,7 +289,6 @@ Restore a soft-deleted seat.
       "_id": "507f1f77bcf86cd799439011",
       "row": "A",
       "seat_number": "1",
-      "is_available": true,
       "status": "active",
       "deletedAt": null,
       "restoredAt": "2025-09-28T09:30:00.000Z",
@@ -358,7 +298,7 @@ Restore a soft-deleted seat.
 }
 ```
 
-### 10. Force Delete Seat
+### 9. Force Delete Seat
 Permanently delete a seat.
 
 **Endpoint**: `DELETE /api/seats/:id/force-delete`  
@@ -375,16 +315,14 @@ Permanently delete a seat.
       "id": "507f1f77bcf86cd799439011",
       "row": "A",
       "seat_number": "1",
-      "seat_type": "premium",
-      "theater_id": "theater_001",
-      "hall_id": "hall_001"
+      "seat_type": "premium"
     },
     "warning": "This action is irreversible"
   }
 }
 ```
 
-### 11. Get Seat Statistics
+### 10. Get Seat Statistics
 Get comprehensive seat statistics.
 
 **Endpoint**: `GET /api/seats/stats`  
@@ -399,13 +337,11 @@ Get comprehensive seat statistics.
     "total": 500,
     "active": 480,
     "deleted": 20,
-    "available": 350,
     "seatTypes": {
-      "standard": 300,
-      "premium": 120,
-      "vip": 50,
-      "wheelchair": 25,
-      "recliner": 5
+      "regular": 300,
+      "vip": 120,
+      "couple": 50,
+      "queen": 10
     },
     "statuses": {
       "active": 400,
@@ -413,13 +349,12 @@ Get comprehensive seat statistics.
       "outOfOrder": 30,
       "reserved": 0
     },
-    "percentageAvailable": 73,
     "percentageActive": 96
   }
 }
 ```
 
-### 12. Get Deleted Seats
+### 11. Get Deleted Seats
 Retrieve all soft-deleted seats.
 
 **Endpoint**: `GET /api/seats/deleted`  
@@ -474,7 +409,7 @@ Retrieve all soft-deleted seats.
 ```json
 {
   "success": false,
-  "message": "Seat with this row and seat number already exists in this theater/hall"
+  "message": "Seat with this row and seat number already exists"
 }
 ```
 
@@ -504,14 +439,11 @@ Retrieve all soft-deleted seats.
 
 ## Business Rules
 
-1. **Unique Seats**: Each seat must be unique within a theater/hall combination
-2. **Status Logic**: 
-   - `out_of_order` and `maintenance` statuses automatically set `is_available` to `false`
-   - `active` status sets `is_available` to `true` (unless manually overridden)
-3. **Soft Delete**: Deleted seats are set to `out_of_order` status and `is_available` becomes `false`
-4. **Restore Logic**: Restored seats are set to `active` status and `is_available` becomes `true`
+1. **Unique Seats**: Each seat must be unique.
+2. **Soft Delete**: Deleted seats are set to `closed` status.
+3. **Restore Logic**: Restored seats are set to `active` status.
 
 ---
 
-**Last Updated**: September 28, 2025  
-**Version**: 1.0.0
+**Last Updated**: October 13, 2025  
+**Version**: 2.0.0

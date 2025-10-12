@@ -21,12 +21,6 @@ router.get('/deleted',
   SeatController.listDeleted
 );
 
-// GET /api/seats/available - Get available seats (accessible to all roles)
-router.get('/available',
-  middlewares.authenticate,
-  SeatController.getAvailableSeats
-);
-
 // GET /api/seats/type/:type - Get seats by type
 router.get('/type/:type',
   middlewares.authenticate,
