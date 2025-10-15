@@ -40,6 +40,12 @@ const seatSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    hall_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Hall",
+      required: true,
+      index: true,
+    },
     // Soft delete fields
     deletedAt: {
       type: Date,
@@ -78,7 +84,7 @@ const seatSchema = new mongoose.Schema(
 );
 
 // Index for faster queries
-seatSchema.index({ row: 1, seat_number: 1 }, { unique: true });
+seatSchema.index({ hall_id: 1, row: 1, seat_number: 1 }, { unique: true });
 seatSchema.index({ seat_type: 1 });
 
 // Instance method to soft delete seat
@@ -143,6 +149,19 @@ seatSchema.pre("save", function (next) {
     this.row = this.row.toString().toUpperCase();
   }
   next();
+});
+// After a seat is saved
+seatSchema.post("save", async function () {
+  const Hall = mongoose.model("Hall");
+  await Hall.updateTotalSeatsForHall(this.hall_id);
+});
+
+// After a seat is deleted
+seatSchema.post("findOneAndDelete", async function (doc) {
+  if (doc) {
+    const Hall = mongoose.model("Hall");
+    await Hall.updateTotalSeatsForHall(doc.hall_id);
+  }
 });
 
 module.exports = mongoose.model("Seat", seatSchema);

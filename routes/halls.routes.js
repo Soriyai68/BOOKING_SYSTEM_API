@@ -42,6 +42,15 @@ router.get('/theater/:theaterId',
   HallController.getHallsByTheater
 );
 
+// POST /api/halls/:id/layout - Generate seat layout for a hall (Admin/SuperAdmin only)
+router.post('/:id/layout',
+  middlewares.authenticate,
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.validator(hallSchema.hallIdParamSchema, 'params'),
+  middlewares.validator(hallSchema.generateLayoutSchema),
+  HallController.generateSeatLayout
+);
+
 // PUT /api/halls/:id/restore - Restore deleted hall (Admin/SuperAdmin only)
 router.put('/:id/restore',
   middlewares.authenticate,

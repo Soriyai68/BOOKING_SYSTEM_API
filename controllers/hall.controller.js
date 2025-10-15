@@ -259,18 +259,18 @@ class HallController {
       const hall = new Hall(hallToCreate);
       await hall.save();
 
-      // Update theater's halls_id array
+      // Update theater's total capacity
       if (hall.theater_id) {
         const Theater = require("../models/theater.model");
         try {
           const theater = await Theater.findById(hall.theater_id);
           if (theater) {
-            await theater.addHall(hall._id);
-            logger.info(`Added hall ${hall._id} to theater ${theater._id}`);
+            await theater.calculateTotalCapacity();
+            logger.info(`Updated capacity for theater ${theater._id}`);
           }
         } catch (theaterError) {
           logger.error(
-            `Failed to add hall to theater: ${theaterError.message}`
+            `Failed to update theater capacity: ${theaterError.message}`
           );
           // Don't fail the hall creation, just log the error
         }
@@ -378,24 +378,24 @@ class HallController {
           const Theater = require("../models/theater.model");
 
           try {
-            // Remove from old theater
+            // Recalculate for old theater
             const oldTheater = await Theater.findById(oldTheaterId);
             if (oldTheater) {
-              await oldTheater.removeHall(id);
+              await oldTheater.updateTotalHalls();
               logger.info(
-                `Removed hall ${id} from old theater ${oldTheaterId}`
+                `Updated hall count for old theater ${oldTheaterId}`
               );
             }
 
-            // Add to new theater
+            // Recalculate for new theater
             const newTheater = await Theater.findById(newTheaterId);
             if (newTheater) {
-              await newTheater.addHall(id);
-              logger.info(`Added hall ${id} to new theater ${newTheaterId}`);
+              await newTheater.updateTotalHalls();
+              logger.info(`Updated hall count for new theater ${newTheaterId}`);
             }
           } catch (theaterError) {
             logger.error(
-              `Failed to update theater associations: ${theaterError.message}`
+              `Failed to update theater hall counts: ${theaterError.message}`
             );
             // Don't fail the hall update, just log the error
           }
@@ -488,20 +488,20 @@ class HallController {
       // Soft delete using model method
       const deletedHall = await hall.softDelete(req.user?.userId);
 
-      // Remove hall from theater's halls_id array
+      // Update theater's total capacity
       if (deletedHall.theater_id) {
         const Theater = require("../models/theater.model");
         try {
           const theater = await Theater.findById(deletedHall.theater_id);
           if (theater) {
-            await theater.removeHall(deletedHall._id);
+            await theater.calculateTotalCapacity();
             logger.info(
-              `Removed hall ${deletedHall._id} from theater ${theater._id}`
+              `Updated capacity for theater ${theater._id} after deleting hall ${deletedHall._id}`
             );
           }
         } catch (theaterError) {
           logger.error(
-            `Failed to remove hall from theater: ${theaterError.message}`
+            `Failed to update theater capacity after deleting hall: ${theaterError.message}`
           );
           // Don't fail the hall deletion, just log the error
         }
@@ -565,20 +565,20 @@ class HallController {
       // Restore using model method
       const restoredHall = await hall.restore(req.user?.userId);
 
-      // Re-add hall to theater's halls_id array
+      // Update theater's total capacity
       if (restoredHall.theater_id) {
         const Theater = require("../models/theater.model");
         try {
           const theater = await Theater.findById(restoredHall.theater_id);
           if (theater) {
-            await theater.addHall(restoredHall._id);
+            await theater.updateTotalHalls();
             logger.info(
-              `Re-added hall ${restoredHall._id} to theater ${theater._id}`
+              `Updated hall count for theater ${theater._id} after restoring hall ${restoredHall._id}`
             );
           }
         } catch (theaterError) {
           logger.error(
-            `Failed to re-add hall to theater: ${theaterError.message}`
+            `Failed to update theater hall count after restoring hall: ${theaterError.message}`
           );
           // Don't fail the hall restoration, just log the error
         }
@@ -676,26 +676,23 @@ class HallController {
         wasDeleted: hall.isDeleted(),
       };
 
-      // Remove hall from theater's halls_id array before deletion
+      // Update theater's total halls before deletion
       if (hallInfo.theater_id) {
         const Theater = require("../models/theater.model");
         try {
           const theater = await Theater.findById(hallInfo.theater_id);
           if (theater) {
-            await theater.removeHall(id);
+            await theater.updateTotalHalls();
             logger.info(
-              `Removed hall ${id} from theater ${theater._id} (permanent deletion)`
+              `Updated hall count for theater ${theater._id} before force deleting hall ${id}`
             );
           }
         } catch (theaterError) {
           logger.error(
-            `Failed to remove hall from theater during force delete: ${theaterError.message}`
+            `Failed to update theater hall count during force delete: ${theaterError.message}`
           );
-          // Don't fail the deletion, just log the error
         }
       }
-
-      // Perform permanent deletion
       await Hall.findByIdAndDelete(id);
 
       logger.warn(
@@ -1148,6 +1145,123 @@ class HallController {
       res.status(500).json({
         success: false,
         message: "Failed to retrieve halls with seat counts",
+      });
+    }
+  }
+
+  // 11. GENERATE SEAT LAYOUT FOR A HALL
+  static async generateSeatLayout(req, res) {
+    try {
+      const { id } = req.params; // hallId
+      const { rows, defaultPrice, replaceExisting = false } = req.body;
+
+      if (!rows || !Array.isArray(rows) || rows.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Seat layout definition ('rows' array) is required.",
+        });
+      }
+
+      HallController.validateObjectId(id);
+      const hall = await Hall.findById(id);
+      if (!hall) {
+        return res.status(404).json({ success: false, message: "Hall not found" });
+      }
+
+      const Seat = require("../models/seat.model");
+
+      if (replaceExisting) {
+        // If replacing, first delete all existing seats for the hall
+        const deletionResult = await Seat.deleteMany({ hall_id: id });
+        logger.info(`Deleted ${deletionResult.deletedCount} existing seats from hall ${id} before generating new layout.`);
+      }
+
+      const seatsToCreate = [];
+      const seatIdentifiers = new Set();
+
+      for (const row of rows) {
+        if (!row.row || !row.count) {
+            continue; // skip invalid row definitions
+        }
+        for (let i = 1; i <= row.count; i++) {
+          const identifier = `${row.row.toUpperCase()}${i}`;
+          if (seatIdentifiers.has(identifier)) {
+            // Avoid duplicate seats in the same request
+            continue;
+          }
+          seatIdentifiers.add(identifier);
+
+          seatsToCreate.push({
+            hall_id: id,
+            row: row.row.toUpperCase(),
+            seat_number: i.toString(),
+            seat_type: row.type || 'standard',
+            price: row.price !== undefined ? row.price : defaultPrice || 0,
+            status: 'active',
+            createdBy: req.user?.userId,
+            seat_identifier: identifier
+          });
+        }
+      }
+
+      if (seatsToCreate.length === 0) {
+        return res.status(400).json({ success: false, message: "No valid seats to create." });
+      }
+
+      // Check for existing seats if not replacing
+      if (!replaceExisting) {
+        const existingSeats = await Seat.find({ hall_id: id }).select('seat_identifier');
+        const existingSeatSet = new Set(existingSeats.map(s => s.seat_identifier));
+        
+        const newSeats = seatsToCreate.filter(s => !existingSeatSet.has(s.seat_identifier));
+
+        if (newSeats.length === 0) {
+            return res.status(409).json({ success: false, message: "All specified seats already exist in this hall." });
+        }
+        
+        const createdSeats = await Seat.insertMany(newSeats);
+        await Hall.updateTotalSeatsForHall(id);
+
+        return res.status(201).json({
+            success: true,
+            message: `Successfully created ${createdSeats.length} new seats. Skipped ${seatsToCreate.length - newSeats.length} existing seats.`,
+            data: {
+                createdCount: createdSeats.length,
+                skippedCount: seatsToCreate.length - newSeats.length
+            }
+        });
+      }
+
+      // Bulk insert all seats if replacing
+      const createdSeats = await Seat.insertMany(seatsToCreate);
+
+      // Update hall's total capacity
+      await Hall.updateTotalSeatsForHall(id);
+
+      res.status(201).json({
+        success: true,
+        message: `Successfully generated and created ${createdSeats.length} new seats.`,
+        data: {
+          createdCount: createdSeats.length,
+        }
+      });
+
+    } catch (error) {
+      if (error.message.includes("Invalid hall ID format")) {
+        return res.status(400).json({ success: false, message: error.message });
+      }
+      if (error.code === 11000) { // Duplicate key error
+        await Hall.updateTotalSeatsForHall(id); // Recalculate seats just in case
+        return res.status(409).json({
+          success: false,
+          message: "Failed to create seats due to a conflict. Some seats might already exist.",
+          error: "Duplicate key error on seat_identifier."
+        });
+      }
+      logger.error("Generate seat layout error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to generate seat layout",
       });
     }
   }

@@ -12,7 +12,7 @@ class TheaterController {
   // Helper method to validate ObjectId
   static validateObjectId(id) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error('Invalid theater ID format');
+      throw new Error("Invalid theater ID format");
     }
   }
 
@@ -22,12 +22,12 @@ class TheaterController {
 
     return {
       $or: [
-        { name: { $regex: search, $options: 'i' } },
-        { address: { $regex: search, $options: 'i' } },
-        { city: { $regex: search, $options: 'i' } },
-        { province: { $regex: search, $options: 'i' } },
-        { notes: { $regex: search, $options: 'i' } }
-      ]
+        { name: { $regex: search, $options: "i" } },
+        { address: { $regex: search, $options: "i" } },
+        { city: { $regex: search, $options: "i" } },
+        { province: { $regex: search, $options: "i" } },
+        { notes: { $regex: search, $options: "i" } },
+      ],
     };
   }
 
@@ -42,12 +42,12 @@ class TheaterController {
 
     // Handle city filter
     if (filters.city) {
-      query.city = new RegExp(filters.city, 'i');
+      query.city = new RegExp(filters.city, "i");
     }
 
     // Handle province filter
     if (filters.province) {
-      query.province = new RegExp(filters.province, 'i');
+      query.province = new RegExp(filters.province, "i");
     }
 
     // Handle hall count range filters
@@ -62,7 +62,10 @@ class TheaterController {
     }
 
     // Handle capacity range filters
-    if (filters.minCapacity !== undefined || filters.maxCapacity !== undefined) {
+    if (
+      filters.minCapacity !== undefined ||
+      filters.maxCapacity !== undefined
+    ) {
       query.total_capacity = {};
       if (filters.minCapacity !== undefined) {
         query.total_capacity.$gte = parseInt(filters.minCapacity);
@@ -90,16 +93,16 @@ class TheaterController {
 
     // Handle nearby location filter
     if (filters.nearLocation) {
-      const [longitude, latitude] = filters.nearLocation.split(',').map(Number);
+      const [longitude, latitude] = filters.nearLocation.split(",").map(Number);
       if (!isNaN(longitude) && !isNaN(latitude)) {
-        query['location.coordinates'] = {
+        query["location.coordinates"] = {
           $near: {
             $geometry: {
-              type: 'Point',
-              coordinates: [longitude, latitude]
+              type: "Point",
+              coordinates: [longitude, latitude],
             },
-            $maxDistance: parseInt(filters.maxDistance) || 10000
-          }
+            $maxDistance: parseInt(filters.maxDistance) || 10000,
+          },
         };
       }
     }
@@ -108,19 +111,19 @@ class TheaterController {
   }
 
   // 1. GET ALL THEATERS - with pagination, filtering, and sorting
+  // 1. GET ALL THEATERS
   static async getAll(req, res) {
     try {
       const {
         page = 1,
         limit = 10,
-        sortBy = 'name',
-        sortOrder = 'asc',
+        sortBy = "name",
+        sortOrder = "asc",
         search,
         includeDeleted = false,
         ...filters
       } = req.query;
 
-      // Convert and validate pagination
       const pageNum = Math.max(1, parseInt(page));
       const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
       const skip = (pageNum - 1) * limitNum;
@@ -128,95 +131,51 @@ class TheaterController {
       // Build query
       let query = {};
 
-      // Handle search
       if (search) {
         query = { ...query, ...TheaterController.buildSearchQuery(search) };
       }
 
-      // Handle filters
       query = { ...query, ...TheaterController.buildFilterQuery(filters) };
 
-      // Handle soft deleted records
-      if (!includeDeleted || includeDeleted === 'false') {
-        query.deletedAt = null; // Only get non-deleted theaters
+      if (!includeDeleted || includeDeleted === "false") {
+        query.deletedAt = null;
       }
 
       // Build sort object
       const sortObj = {};
-      sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
+      sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
 
-      // Use aggregation to calculate actual total capacity from halls
-      const theatersAggregation = await Theater.aggregate([
-        { $match: query },
-        { $sort: sortObj },
-        { $skip: skip },
-        { $limit: limitNum },
-        {
-          $lookup: {
-            from: 'halls',
-            localField: 'halls_id',
-            foreignField: '_id',
-            as: 'halls'
-          }
-        },
-        {
-          $addFields: {
-            // Filter out deleted halls
-            active_halls: {
-              $filter: {
-                input: '$halls',
-                as: 'hall',
-                cond: { $eq: ['$$hall.deletedAt', null] }
-              }
-            }
-          }
-        },
-        {
-          $addFields: {
-            // Calculate actual total capacity from active halls
-            calculated_total_capacity: { $sum: '$active_halls.total_seats' },
-            calculated_total_halls: { $size: '$active_halls' }
-          }
-        },
-        {
-          $project: {
-            halls: 0, // Remove halls array from output
-            active_halls: 0 // Remove temp field
-          }
-        }
-      ]);
+      // Fetch theaters
+      const theaters = await Theater.find(query)
+        .sort(sortObj)
+        .skip(skip)
+        .limit(limitNum)
+        .lean();
 
-      // Get total count
       const totalCount = await Theater.countDocuments(query);
-
-      // Calculate pagination info
       const totalPages = Math.ceil(totalCount / limitNum);
-      const hasNextPage = pageNum < totalPages;
-      const hasPrevPage = pageNum > 1;
-
-      console.log(`Retrieved ${theatersAggregation.length} theaters with calculated capacity`);
 
       res.status(200).json({
         success: true,
         data: {
-          theaters: theatersAggregation,
+          theaters,
           pagination: {
             currentPage: pageNum,
             totalPages,
             totalCount,
             limit: limitNum,
-            hasNextPage,
-            hasPrevPage,
-            nextPage: hasNextPage ? pageNum + 1 : null,
-            prevPage: hasPrevPage ? pageNum - 1 : null
-          }
-        }
+            hasNextPage: pageNum < totalPages,
+            hasPrevPage: pageNum > 1,
+            nextPage: pageNum < totalPages ? pageNum + 1 : null,
+            prevPage: pageNum > 1 ? pageNum - 1 : null,
+          },
+        },
       });
     } catch (error) {
-      console.error('Get all theaters error:', error);
+      console.error("Get all theaters error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve theaters'
+        message: "Failed to retrieve theaters",
       });
     }
   }
@@ -225,120 +184,71 @@ class TheaterController {
   static async getById(req, res) {
     try {
       const { id } = req.params;
-
       if (!id) {
-        return res.status(400).json({
-          success: false,
-          message: 'Theater ID is required'
-        });
+        return res
+          .status(400)
+          .json({ success: false, message: "Theater ID is required" });
       }
 
       TheaterController.validateObjectId(id);
 
-      // Use aggregation to get theater with calculated capacity
-      const theaterResult = await Theater.aggregate([
-        { $match: { _id: new mongoose.Types.ObjectId(id) } },
-        {
-          $lookup: {
-            from: 'halls',
-            localField: 'halls_id',
-            foreignField: '_id',
-            as: 'halls'
-          }
-        },
-        {
-          $addFields: {
-            // Filter out deleted halls
-            active_halls: {
-              $filter: {
-                input: '$halls',
-                as: 'hall',
-                cond: { $eq: ['$$hall.deletedAt', null] }
-              }
-            }
-          }
-        },
-        {
-          $addFields: {
-            // Calculate actual total capacity from active halls
-            calculated_total_capacity: { $sum: '$active_halls.total_seats' },
-            calculated_total_halls: { $size: '$active_halls' },
-            // Keep halls for display
-            halls_info: '$active_halls'
-          }
-        },
-        {
-          $project: {
-            active_halls: 0 // Remove temp field
-          }
-        }
-      ]);
-
-      if (!theaterResult || theaterResult.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Theater not found'
-        });
+      const theater = await Theater.findById(id).lean();
+      if (!theater) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Theater not found" });
       }
 
-      const theater = theaterResult[0];
-
-      console.log(`Retrieved theater by ID: ${id} with capacity: ${theater.calculated_total_capacity}`);
-
-      res.status(200).json({
-        success: true,
-        data: { theater }
-      });
+      res.status(200).json({ success: true, data: { theater } });
     } catch (error) {
-      if (error.message === 'Invalid theater ID format') {
-        return res.status(400).json({
-          success: false,
-          message: error.message
-        });
+      if (error.message === "Invalid theater ID format") {
+        return res.status(400).json({ success: false, message: error.message });
       }
 
-      console.error('Get theater by ID error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve theater'
-      });
+      console.error("Get theater by ID error:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to retrieve theater" });
     }
   }
-
   // 3. CREATE THEATER
   static async create(req, res) {
     try {
       const theaterData = req.body;
 
       // Validate required fields
-      if (!theaterData.name || !theaterData.address || !theaterData.city || !theaterData.province) {
+      if (
+        !theaterData.name ||
+        !theaterData.address ||
+        !theaterData.city ||
+        !theaterData.province
+      ) {
         return res.status(400).json({
           success: false,
-          message: 'Theater name, address, city, and province are required'
+          message: "Theater name, address, city, and province are required",
         });
       }
 
       // Check if theater already exists in the same city with same name
       const existingTheater = await Theater.findOne({
         name: theaterData.name.trim(),
-        city: theaterData.city.trim()
+        city: theaterData.city.trim(),
       });
 
       if (existingTheater) {
         return res.status(409).json({
           success: false,
-          message: 'Theater with this name already exists in this city'
+          message: "Theater with this name already exists in this city",
         });
       }
 
       // Set default values
       const theaterToCreate = {
         ...theaterData,
-        status: theaterData.status || 'active',
+        status: theaterData.status || "active",
         features: theaterData.features || [],
-        total_halls: theaterData.halls_id?.length || 0,
-        total_capacity: theaterData.total_capacity || 0,
-        halls_id: theaterData.halls_id || []
+        total_halls: 0,
+        total_capacity: 0,
       };
 
       // Add creator info if available
@@ -353,29 +263,29 @@ class TheaterController {
 
       res.status(201).json({
         success: true,
-        message: 'Theater created successfully',
-        data: { theater }
+        message: "Theater created successfully",
+        data: { theater },
       });
     } catch (error) {
-      if (error.name === 'ValidationError') {
+      if (error.name === "ValidationError") {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
-          errors: Object.values(error.errors).map(err => err.message)
+          message: "Validation error",
+          errors: Object.values(error.errors).map((err) => err.message),
         });
       }
 
       if (error.code === 11000) {
         return res.status(409).json({
           success: false,
-          message: 'Theater with this name already exists in this city'
+          message: "Theater with this name already exists in this city",
         });
       }
 
-      console.error('Create theater error:', error);
+      console.error("Create theater error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to create theater'
+        message: "Failed to create theater",
       });
     }
   }
@@ -389,7 +299,7 @@ class TheaterController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Theater ID is required'
+          message: "Theater ID is required",
         });
       }
 
@@ -415,39 +325,35 @@ class TheaterController {
         if (!currentTheater) {
           return res.status(404).json({
             success: false,
-            message: 'Theater not found'
+            message: "Theater not found",
           });
         }
 
         const checkQuery = {
           name: updateData.name.trim(),
           city: updateData.city || currentTheater.city,
-          _id: { $ne: id }
+          _id: { $ne: id },
         };
 
         const existingTheater = await Theater.findOne(checkQuery);
         if (existingTheater) {
           return res.status(409).json({
             success: false,
-            message: 'Theater with this name already exists in this city'
+            message: "Theater with this name already exists in this city",
           });
         }
       }
 
-      const theater = await Theater.findByIdAndUpdate(
-        id,
-        updateData,
-        {
-          new: true,
-          runValidators: true,
-          context: 'query'
-        }
-      );
+      const theater = await Theater.findByIdAndUpdate(id, updateData, {
+        new: true,
+        runValidators: true,
+        context: "query",
+      });
 
       if (!theater) {
         return res.status(404).json({
           success: false,
-          message: 'Theater not found'
+          message: "Theater not found",
         });
       }
 
@@ -455,29 +361,29 @@ class TheaterController {
 
       res.status(200).json({
         success: true,
-        message: 'Theater updated successfully',
-        data: { theater }
+        message: "Theater updated successfully",
+        data: { theater },
       });
     } catch (error) {
-      if (error.message === 'Invalid theater ID format') {
+      if (error.message === "Invalid theater ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      if (error.name === 'ValidationError') {
+      if (error.name === "ValidationError") {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
-          errors: Object.values(error.errors).map(err => err.message)
+          message: "Validation error",
+          errors: Object.values(error.errors).map((err) => err.message),
         });
       }
 
-      console.error('Update theater error:', error);
+      console.error("Update theater error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to update theater'
+        message: "Failed to update theater",
       });
     }
   }
@@ -490,7 +396,7 @@ class TheaterController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Theater ID is required'
+          message: "Theater ID is required",
         });
       }
 
@@ -502,7 +408,7 @@ class TheaterController {
       if (!theater) {
         return res.status(404).json({
           success: false,
-          message: 'Theater not found'
+          message: "Theater not found",
         });
       }
 
@@ -510,15 +416,15 @@ class TheaterController {
       if (theater.isDeleted()) {
         return res.status(409).json({
           success: false,
-          message: 'Theater is already deactivated'
+          message: "Theater is already deactivated",
         });
       }
 
       // Check if theater has associated halls
-      const Hall = require('../models/hall.model');
+      const Hall = require("../models/hall.model");
       const associatedHalls = await Hall.find({
         theater_id: id,
-        deletedAt: null // Only count active halls
+        deletedAt: null, // Only count active halls
       });
 
       if (associatedHalls.length > 0) {
@@ -527,8 +433,8 @@ class TheaterController {
           // message: `Cannot delete theater. It has ${associatedHalls.length} associated hall(s). Please delete or reassign the halls first.`,
           data: {
             associatedHallsCount: associatedHalls.length,
-            hallNames: associatedHalls.map(hall => hall.hall_name)
-          }
+            hallNames: associatedHalls.map((hall) => hall.hall_name),
+          },
         });
       }
 
@@ -539,21 +445,21 @@ class TheaterController {
 
       res.status(200).json({
         success: true,
-        message: 'Theater deactivated successfully',
-        data: { theater: deletedTheater }
+        message: "Theater deactivated successfully",
+        data: { theater: deletedTheater },
       });
     } catch (error) {
-      if (error.message === 'Invalid theater ID format') {
+      if (error.message === "Invalid theater ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      console.error('Delete theater error:', error);
+      console.error("Delete theater error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to deactivate theater'
+        message: "Failed to deactivate theater",
       });
     }
   }
@@ -566,7 +472,7 @@ class TheaterController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Theater ID is required'
+          message: "Theater ID is required",
         });
       }
 
@@ -578,7 +484,7 @@ class TheaterController {
       if (!theater) {
         return res.status(404).json({
           success: false,
-          message: 'Theater not found'
+          message: "Theater not found",
         });
       }
 
@@ -586,7 +492,7 @@ class TheaterController {
       if (!theater.isDeleted()) {
         return res.status(409).json({
           success: false,
-          message: 'Theater is already active'
+          message: "Theater is already active",
         });
       }
 
@@ -597,21 +503,21 @@ class TheaterController {
 
       res.status(200).json({
         success: true,
-        message: 'Theater restored successfully',
-        data: { theater: restoredTheater }
+        message: "Theater restored successfully",
+        data: { theater: restoredTheater },
       });
     } catch (error) {
-      if (error.message === 'Invalid theater ID format') {
+      if (error.message === "Invalid theater ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      console.error('Restore theater error:', error);
+      console.error("Restore theater error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to restore theater'
+        message: "Failed to restore theater",
       });
     }
   }
@@ -624,7 +530,7 @@ class TheaterController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Theater ID is required'
+          message: "Theater ID is required",
         });
       }
 
@@ -632,7 +538,7 @@ class TheaterController {
       if (req.user?.role !== Role.ADMIN && req.user?.role !== Role.SUPERADMIN) {
         return res.status(403).json({
           success: false,
-          message: 'Only Admin or SuperAdmin can permanently delete theaters'
+          message: "Only Admin or SuperAdmin can permanently delete theaters",
         });
       }
 
@@ -644,21 +550,21 @@ class TheaterController {
       if (!theater) {
         return res.status(404).json({
           success: false,
-          message: 'Theater not found'
+          message: "Theater not found",
         });
       }
 
       // Check if theater has associated halls (even soft deleted ones)
-      const Hall = require('../models/hall.model');
+      const Hall = require("../models/hall.model");
       const associatedHalls = await Hall.find({
-        theater_id: id
+        theater_id: id,
         // Note: We check all halls (including soft deleted) for force delete
       });
 
       if (associatedHalls.length > 0) {
-        const activeHalls = associatedHalls.filter(hall => !hall.deletedAt);
-        const deletedHalls = associatedHalls.filter(hall => hall.deletedAt);
-        
+        const activeHalls = associatedHalls.filter((hall) => !hall.deletedAt);
+        const deletedHalls = associatedHalls.filter((hall) => hall.deletedAt);
+
         return res.status(409).json({
           success: false,
           // message: `Cannot permanently delete theater. It has ${associatedHalls.length} associated hall(s) (${activeHalls.length} active, ${deletedHalls.length} deleted). Please permanently delete all halls first.`,
@@ -666,11 +572,11 @@ class TheaterController {
             totalHalls: associatedHalls.length,
             activeHalls: activeHalls.length,
             deletedHalls: deletedHalls.length,
-            hallNames: associatedHalls.map(hall => ({
+            hallNames: associatedHalls.map((hall) => ({
               name: hall.hall_name,
-              status: hall.deletedAt ? 'deleted' : 'active'
-            }))
-          }
+              status: hall.deletedAt ? "deleted" : "active",
+            })),
+          },
         });
       }
 
@@ -683,22 +589,25 @@ class TheaterController {
         province: theater.province,
         total_halls: theater.total_halls,
         total_capacity: theater.total_capacity,
-        wasDeleted: theater.isDeleted()
+        wasDeleted: theater.isDeleted(),
       };
 
       // Perform permanent deletion
       await Theater.findByIdAndDelete(id);
 
-      console.warn(`  PERMANENT DELETION: Theater permanently deleted by ${req.user.role} ${req.user.userId}`, {
-        deletedTheater: theaterInfo,
-        deletedBy: req.user.userId,
-        deletedAt: new Date().toISOString(),
-        action: 'FORCE_DELETE_THEATER'
-      });
+      console.warn(
+        `  PERMANENT DELETION: Theater permanently deleted by ${req.user.role} ${req.user.userId}`,
+        {
+          deletedTheater: theaterInfo,
+          deletedBy: req.user.userId,
+          deletedAt: new Date().toISOString(),
+          action: "FORCE_DELETE_THEATER",
+        }
+      );
 
       res.status(200).json({
         success: true,
-        message: 'Theater permanently deleted',
+        message: "Theater permanently deleted",
         data: {
           deletedTheater: {
             id: theaterInfo.id,
@@ -707,23 +616,23 @@ class TheaterController {
             city: theaterInfo.city,
             province: theaterInfo.province,
             total_halls: theaterInfo.total_halls,
-            total_capacity: theaterInfo.total_capacity
+            total_capacity: theaterInfo.total_capacity,
           },
-          warning: 'This action is irreversible'
-        }
+          warning: "This action is irreversible",
+        },
       });
     } catch (error) {
-      if (error.message === 'Invalid theater ID format') {
+      if (error.message === "Invalid theater ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      console.error('Force delete theater error:', error);
+      console.error("Force delete theater error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to permanently delete theater'
+        message: "Failed to permanently delete theater",
       });
     }
   }
@@ -734,8 +643,8 @@ class TheaterController {
       const {
         page = 1,
         limit = 10,
-        sortBy = 'deletedAt',
-        sortOrder = 'desc'
+        sortBy = "deletedAt",
+        sortOrder = "desc",
       } = req.query;
 
       // Convert and validate pagination
@@ -745,7 +654,7 @@ class TheaterController {
 
       // Build sort object
       const sortObj = {};
-      sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
+      sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
 
       // Query only deleted theaters
       const query = { deletedAt: { $ne: null } };
@@ -756,9 +665,9 @@ class TheaterController {
           .sort(sortObj)
           .skip(skip)
           .limit(limitNum)
-          .populate('deletedBy', 'username email')
+          .populate("deletedBy", "username email")
           .lean(),
-        Theater.countDocuments(query)
+        Theater.countDocuments(query),
       ]);
 
       // Calculate pagination info
@@ -780,15 +689,15 @@ class TheaterController {
             hasNextPage,
             hasPrevPage,
             nextPage: hasNextPage ? pageNum + 1 : null,
-            prevPage: hasPrevPage ? pageNum - 1 : null
-          }
-        }
+            prevPage: hasPrevPage ? pageNum - 1 : null,
+          },
+        },
       });
     } catch (error) {
-      console.error('List deleted theaters error:', error);
+      console.error("List deleted theaters error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve deleted theaters'
+        message: "Failed to retrieve deleted theaters",
       });
     }
   }
@@ -802,14 +711,14 @@ class TheaterController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Theater ID is required'
+          message: "Theater ID is required",
         });
       }
 
       if (!status) {
         return res.status(400).json({
           success: false,
-          message: 'Status is required'
+          message: "Status is required",
         });
       }
 
@@ -820,176 +729,40 @@ class TheaterController {
       if (!theater) {
         return res.status(404).json({
           success: false,
-          message: 'Theater not found'
+          message: "Theater not found",
         });
       }
 
       // Update status using model method
-      const updatedTheater = await theater.updateStatus(status, req.user?.userId);
+      const updatedTheater = await theater.updateStatus(
+        status,
+        req.user?.userId
+      );
 
-      console.log(`Updated theater status: ${id} (${theater.name}) -> ${status}`);
-
-      res.status(200).json({
-        success: true,
-        message: 'Theater status updated successfully',
-        data: { theater: updatedTheater }
-      });
-    } catch (error) {
-      if (error.message === 'Invalid theater ID format' || error.message === 'Invalid status provided') {
-        return res.status(400).json({
-          success: false,
-          message: error.message
-        });
-      }
-
-      console.error('Update theater status error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to update theater status'
-      });
-    }
-  }
-
-  // 10. ADD HALL TO THEATER
-  static async addHall(req, res) {
-    try {
-      const { id } = req.params;
-      const { hall_id } = req.body;
-
-      if (!id || !hall_id) {
-        return res.status(400).json({
-          success: false,
-          message: 'Theater ID and Hall ID are required'
-        });
-      }
-
-      TheaterController.validateObjectId(id);
-      TheaterController.validateObjectId(hall_id);
-
-      // Check if theater exists
-      const theater = await Theater.findById(id);
-      if (!theater) {
-        return res.status(404).json({
-          success: false,
-          message: 'Theater not found'
-        });
-      }
-
-      // Check if hall exists
-      const hall = await Hall.findById(hall_id);
-      if (!hall) {
-        return res.status(404).json({
-          success: false,
-          message: 'Hall not found'
-        });
-      }
-
-      // Check if hall is already assigned to this theater
-      if (theater.halls_id.includes(hall_id)) {
-        return res.status(409).json({
-          success: false,
-          message: 'Hall is already assigned to this theater'
-        });
-      }
-
-      // Add hall using model method
-      const updatedTheater = await theater.addHall(hall_id);
-
-      // Update hall's theater_id
-      hall.theater_id = id;
-      if (req.user) {
-        hall.updatedBy = req.user.userId;
-      }
-      await hall.save();
-
-      console.log(`Added hall ${hall_id} to theater ${id}`);
+      console.log(
+        `Updated theater status: ${id} (${theater.name}) -> ${status}`
+      );
 
       res.status(200).json({
         success: true,
-        message: 'Hall added to theater successfully',
-        data: { theater: updatedTheater }
+        message: "Theater status updated successfully",
+        data: { theater: updatedTheater },
       });
     } catch (error) {
-      if (error.message === 'Invalid theater ID format') {
+      if (
+        error.message === "Invalid theater ID format" ||
+        error.message === "Invalid status provided"
+      ) {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      console.error('Add hall to theater error:', error);
+      console.error("Update theater status error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to add hall to theater'
-      });
-    }
-  }
-
-  // 11. REMOVE HALL FROM THEATER
-  static async removeHall(req, res) {
-    try {
-      const { id } = req.params;
-      const { hall_id } = req.body;
-
-      if (!id || !hall_id) {
-        return res.status(400).json({
-          success: false,
-          message: 'Theater ID and Hall ID are required'
-        });
-      }
-
-      TheaterController.validateObjectId(id);
-      TheaterController.validateObjectId(hall_id);
-
-      // Check if theater exists
-      const theater = await Theater.findById(id);
-      if (!theater) {
-        return res.status(404).json({
-          success: false,
-          message: 'Theater not found'
-        });
-      }
-
-      // Check if hall is assigned to this theater
-      if (!theater.halls_id.includes(hall_id)) {
-        return res.status(409).json({
-          success: false,
-          message: 'Hall is not assigned to this theater'
-        });
-      }
-
-      // Remove hall using model method
-      const updatedTheater = await theater.removeHall(hall_id);
-
-      // Update hall's theater_id
-      const hall = await Hall.findById(hall_id);
-      if (hall) {
-        hall.theater_id = null;
-        if (req.user) {
-          hall.updatedBy = req.user.userId;
-        }
-        await hall.save();
-      }
-
-      console.log(`Removed hall ${hall_id} from theater ${id}`);
-
-      res.status(200).json({
-        success: true,
-        message: 'Hall removed from theater successfully',
-        data: { theater: updatedTheater }
-      });
-    } catch (error) {
-      if (error.message === 'Invalid theater ID format') {
-        return res.status(400).json({
-          success: false,
-          message: error.message
-        });
-      }
-
-      console.error('Remove hall from theater error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to remove hall from theater'
+        message: "Failed to update theater status",
       });
     }
   }
@@ -1003,14 +776,14 @@ class TheaterController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Theater ID is required'
+          message: "Theater ID is required",
         });
       }
 
       if (longitude === undefined || latitude === undefined) {
         return res.status(400).json({
           success: false,
-          message: 'Longitude and latitude are required'
+          message: "Longitude and latitude are required",
         });
       }
 
@@ -1021,32 +794,34 @@ class TheaterController {
       if (!theater) {
         return res.status(404).json({
           success: false,
-          message: 'Theater not found'
+          message: "Theater not found",
         });
       }
 
       // Update location using model method
       const updatedTheater = await theater.updateLocation(longitude, latitude);
 
-      console.log(`Updated theater location: ${id} -> [${longitude}, ${latitude}]`);
+      console.log(
+        `Updated theater location: ${id} -> [${longitude}, ${latitude}]`
+      );
 
       res.status(200).json({
         success: true,
-        message: 'Theater location updated successfully',
-        data: { theater: updatedTheater }
+        message: "Theater location updated successfully",
+        data: { theater: updatedTheater },
       });
     } catch (error) {
-      if (error.message === 'Invalid theater ID format') {
+      if (error.message === "Invalid theater ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      console.error('Update theater location error:', error);
+      console.error("Update theater location error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to update theater location'
+        message: "Failed to update theater location",
       });
     }
   }
@@ -1055,24 +830,24 @@ class TheaterController {
   static async getByCity(req, res) {
     try {
       const { city } = req.params;
-      const { activeOnly = 'true', includeHalls = 'false' } = req.query;
+      const { activeOnly = "true", includeHalls = "false" } = req.query;
 
       if (!city) {
         return res.status(400).json({
           success: false,
-          message: 'City is required'
+          message: "City is required",
         });
       }
 
       let query = {};
-      if (activeOnly === 'true') {
-        query.status = 'active';
+      if (activeOnly === "true") {
+        query.status = "active";
       }
 
       let theaterQuery = Theater.findByCity(city, query);
 
-      if (includeHalls === 'true') {
-        theaterQuery = theaterQuery.populate('halls_id');
+      if (includeHalls === "true") {
+        theaterQuery = theaterQuery.populate("halls_id");
       }
 
       const theaters = await theaterQuery.lean();
@@ -1081,13 +856,13 @@ class TheaterController {
 
       res.status(200).json({
         success: true,
-        data: { theaters, city }
+        data: { theaters, city },
       });
     } catch (error) {
-      console.error('Get theaters by city error:', error);
+      console.error("Get theaters by city error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve theaters by city'
+        message: "Failed to retrieve theaters by city",
       });
     }
   }
@@ -1096,24 +871,24 @@ class TheaterController {
   static async getByProvince(req, res) {
     try {
       const { province } = req.params;
-      const { activeOnly = 'true', includeHalls = 'false' } = req.query;
+      const { activeOnly = "true", includeHalls = "false" } = req.query;
 
       if (!province) {
         return res.status(400).json({
           success: false,
-          message: 'Province is required'
+          message: "Province is required",
         });
       }
 
       let query = {};
-      if (activeOnly === 'true') {
-        query.status = 'active';
+      if (activeOnly === "true") {
+        query.status = "active";
       }
 
       let theaterQuery = Theater.findByProvince(province, query);
 
-      if (includeHalls === 'true') {
-        theaterQuery = theaterQuery.populate('halls_id');
+      if (includeHalls === "true") {
+        theaterQuery = theaterQuery.populate("halls_id");
       }
 
       const theaters = await theaterQuery.lean();
@@ -1122,13 +897,13 @@ class TheaterController {
 
       res.status(200).json({
         success: true,
-        data: { theaters, province }
+        data: { theaters, province },
       });
     } catch (error) {
-      console.error('Get theaters by province error:', error);
+      console.error("Get theaters by province error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve theaters by province'
+        message: "Failed to retrieve theaters by province",
       });
     }
   }
@@ -1136,12 +911,17 @@ class TheaterController {
   // 15. GET NEARBY THEATERS
   static async getNearby(req, res) {
     try {
-      const { longitude, latitude, maxDistance = 10000, activeOnly = 'true' } = req.query;
+      const {
+        longitude,
+        latitude,
+        maxDistance = 10000,
+        activeOnly = "true",
+      } = req.query;
 
       if (!longitude || !latitude) {
         return res.status(400).json({
           success: false,
-          message: 'Longitude and latitude are required'
+          message: "Longitude and latitude are required",
         });
       }
 
@@ -1152,34 +932,39 @@ class TheaterController {
       if (isNaN(lon) || isNaN(lat)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid coordinates provided'
+          message: "Invalid coordinates provided",
         });
       }
 
       let query = {};
-      if (activeOnly === 'true') {
-        query.status = 'active';
+      if (activeOnly === "true") {
+        query.status = "active";
       }
 
-      const theaters = await Theater.findNearby(lon, lat, distance, query).lean();
+      const theaters = await Theater.findNearby(
+        lon,
+        lat,
+        distance,
+        query
+      ).lean();
 
       console.log(`Retrieved ${theaters.length} nearby theaters`);
 
       res.status(200).json({
         success: true,
-        data: { 
+        data: {
           theaters,
           searchCriteria: {
             coordinates: [lon, lat],
-            maxDistance: distance
-          }
-        }
+            maxDistance: distance,
+          },
+        },
       });
     } catch (error) {
-      console.error('Get nearby theaters error:', error);
+      console.error("Get nearby theaters error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve nearby theaters'
+        message: "Failed to retrieve nearby theaters",
       });
     }
   }
@@ -1187,16 +972,23 @@ class TheaterController {
   // 16. GET THEATER ANALYTICS
   static async getAnalytics(req, res) {
     try {
-      const { city, province, status, dateFrom, dateTo, groupBy = 'province' } = req.query;
+      const {
+        city,
+        province,
+        status,
+        dateFrom,
+        dateTo,
+        groupBy = "province",
+      } = req.query;
 
       let query = {};
 
       if (city) {
-        query.city = new RegExp(city, 'i');
+        query.city = new RegExp(city, "i");
       }
 
       if (province) {
-        query.province = new RegExp(province, 'i');
+        query.province = new RegExp(province, "i");
       }
 
       if (status) {
@@ -1215,20 +1007,20 @@ class TheaterController {
 
       const analytics = await Theater.getAnalytics(query);
 
-      console.log('Generated theater analytics');
+      console.log("Generated theater analytics");
 
       res.status(200).json({
         success: true,
         data: {
           analytics: analytics[0] || {},
-          filters: { city, province, status, dateFrom, dateTo, groupBy }
-        }
+          filters: { city, province, status, dateFrom, dateTo, groupBy },
+        },
       });
     } catch (error) {
-      console.error('Get theater analytics error:', error);
+      console.error("Get theater analytics error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve theater analytics'
+        message: "Failed to retrieve theater analytics",
       });
     }
   }

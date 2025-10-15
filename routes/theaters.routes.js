@@ -80,24 +80,24 @@ router.put(
 );
 
 // POST /api/theaters/:id/halls - Add hall to theater (Admin/SuperAdmin only)
-router.post(
-  "/:id/halls",
-  middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
-  middlewares.validator(theaterSchema.theaterIdParamSchema, "params"),
-  middlewares.validator(theaterSchema.addHallSchema),
-  TheaterController.addHall
-);
+// router.post(
+//   "/:id/halls",
+//   middlewares.authenticate,
+//   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+//   middlewares.validator(theaterSchema.theaterIdParamSchema, "params"),
+//   middlewares.validator(theaterSchema.addHallSchema),
+//   TheaterController.addHall
+// );
 
 // DELETE /api/theaters/:id/halls - Remove hall from theater (Admin/SuperAdmin only)
-router.delete(
-  "/:id/halls",
-  middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
-  middlewares.validator(theaterSchema.theaterIdParamSchema, "params"),
-  middlewares.validator(theaterSchema.removeHallSchema),
-  TheaterController.removeHall
-);
+// router.delete(
+//   "/:id/halls",
+//   middlewares.authenticate,
+//   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+//   middlewares.validator(theaterSchema.theaterIdParamSchema, "params"),
+//   middlewares.validator(theaterSchema.removeHallSchema),
+//   TheaterController.removeHall
+// );
 
 // DELETE /api/theaters/:id/force-delete - Permanently delete theater (Admin/SuperAdmin only)
 router.delete(

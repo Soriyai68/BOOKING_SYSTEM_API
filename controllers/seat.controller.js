@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Seat = require("../models/seat.model");
+const Hall = require("../models/hall.model");
 const { Role } = require("../data");
 const logger = require("../utils/logger");
 
@@ -30,7 +31,7 @@ class SeatController {
   }
 
   // Helper method to build filter query
-  static buildFilterQuery(filters) {
+  static async buildFilterQuery(filters) {
     const query = {};
     // Handle seat by row
     if (filters.row) {
@@ -44,6 +45,17 @@ class SeatController {
     // Handle status filter
     if (filters.status) {
       query.status = filters.status;
+    }
+
+    // Handle filter by hall_id and theater_id
+    if (filters.hall_id) {
+      query.hall_id = new mongoose.Types.ObjectId(filters.hall_id);
+    } else if (filters.theater_id) {
+      const hallsInTheater = await Hall.find({
+        theater_id: filters.theater_id,
+      }).select("_id");
+      const hallIds = hallsInTheater.map((h) => h._id);
+      query.hall_id = { $in: hallIds };
     }
 
     // Handle price range filters
@@ -98,7 +110,7 @@ class SeatController {
       }
 
       // Handle filters
-      query = { ...query, ...SeatController.buildFilterQuery(filters) };
+      query = { ...query, ...(await SeatController.buildFilterQuery(filters)) };
 
       // Handle soft deleted records
       if (!includeDeleted || includeDeleted === "false") {
@@ -111,7 +123,16 @@ class SeatController {
 
       // Execute queries
       const [seats, totalCount] = await Promise.all([
-        Seat.find(query).sort(sortObj).skip(skip).limit(limitNum).lean(),
+        Seat.find(query)
+          .sort(sortObj)
+          .skip(skip)
+          .limit(limitNum)
+          .populate({
+            path: "hall_id",
+            select: "hall_name theater_id",
+            populate: { path: "theater_id", select: "name" },
+          })
+          .lean(),
         Seat.countDocuments(query),
       ]);
 
@@ -161,7 +182,13 @@ class SeatController {
 
       SeatController.validateObjectId(id);
 
-      const seat = await Seat.findById(id).lean();
+      const seat = await Seat.findById(id)
+        .populate({
+          path: "hall_id",
+          select: "hall_name theater_id",
+          populate: { path: "theater_id", select: "name" },
+        })
+        .lean();
 
       if (!seat) {
         return res.status(404).json({
@@ -197,77 +224,61 @@ class SeatController {
     try {
       const seatData = req.body;
 
-      // Validate required fields
-      if (!seatData.row || !seatData.seat_number) {
+      // ✅ Validate required fields
+      if (!seatData.hall_id || !seatData.row || !seatData.seat_number) {
         return res.status(400).json({
           success: false,
-          message: "Row and seat number are required",
+          message: "Hall, row, and seat number are required",
         });
       }
 
-      // Check if seat already exists
-      const existingQuery = {
-        row: seatData.row.toUpperCase(),
-        seat_number: seatData.seat_number.toString().toUpperCase(),
-      };
-
-      const existingSeat = await Seat.findOne(existingQuery);
-      if (existingSeat) {
-        return res.status(409).json({
+      // ✅ Find hall to get its theater_id
+      const hall = await Hall.findById(seatData.hall_id);
+      if (!hall) {
+        return res.status(404).json({
           success: false,
-          message: "Seat with this row and seat number already exists",
+          message: "Hall not found",
         });
       }
 
-      // Set default values
-      const seatToCreate = {
-        ...seatData,
-        seat_type: seatData.seat_type || "standard",
-        status: seatData.status || "active",
-        price: seatData.price || 0,
-      };
+      // ✅ Automatically assign theater_id based on the hall
+      seatData.theater_id = hall.theater_id;
 
-      // Add creator info if available
-      if (req.user) {
-        seatToCreate.createdBy = req.user.userId;
+      // ✅ Check if seat with same row + number already exists in the same hall
+      const existingSeat = await Seat.findOne({
+        hall_id: seatData.hall_id,
+        row: seatData.row.toUpperCase(),
+        seat_number: seatData.seat_number.toUpperCase(),
+      });
+
+      if (existingSeat) {
+        return res.status(400).json({
+          success: false,
+          message: "Seat with this row and number already exists in this hall",
+        });
       }
 
-      const seat = new Seat(seatToCreate);
-      await seat.save();
+      // ✅ Create new seat
+      const newSeat = await Seat.create({
+        ...seatData,
+        row: seatData.row.toUpperCase(),
+        seat_number: seatData.seat_number.toUpperCase(),
+      });
 
-      logger.info(
-        `Created new seat: ${seat._id} (${seat.row}${seat.seat_number})`
-      );
-
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         message: "Seat created successfully",
-        data: { seat },
+        data: newSeat,
       });
     } catch (error) {
-      if (error.name === "ValidationError") {
-        return res.status(400).json({
-          success: false,
-          message: "Validation error",
-          errors: Object.values(error.errors).map((err) => err.message),
-        });
-      }
-
-      if (error.code === 11000) {
-        return res.status(409).json({
-          success: false,
-          message: "Seat with this row and seat number already exists",
-        });
-      }
-
-      logger.error("Create seat error:", error);
-      res.status(500).json({
+      console.error("Error creating seat:", error);
+      return res.status(500).json({
         success: false,
         message: "Failed to create seat",
+        error: error.message,
       });
     }
   }
-
   // 4. UPDATE SEAT
   static async update(req, res) {
     try {
@@ -292,26 +303,46 @@ class SeatController {
       delete updateData.restoredAt;
       delete updateData.restoredBy;
 
-      // Add updater info if available
+      // Find current seat
+      const currentSeat = await Seat.findById(id);
+      if (!currentSeat) {
+        return res.status(404).json({
+          success: false,
+          message: "Seat not found",
+        });
+      }
+
+      // Add updater info
       if (req.user) {
         updateData.updatedBy = req.user.userId;
       }
 
-      // Validate unique constraint if row/seat_number is being updated
-      if (updateData.row || updateData.seat_number) {
-        const currentSeat = await Seat.findById(id);
-        if (!currentSeat) {
+      // Handle hall change: sync theater_id
+      if (
+        updateData.hall_id &&
+        updateData.hall_id !== currentSeat.hall_id.toString()
+      ) {
+        const newHall = await Hall.findById(updateData.hall_id).lean();
+        if (!newHall) {
           return res.status(404).json({
             success: false,
-            message: "Seat not found",
+            message: "New hall not found",
           });
         }
+        updateData.theater_id = newHall.theater_id;
+      }
 
+      // Ensure uppercase row and seat_number
+      if (updateData.row) updateData.row = updateData.row.toUpperCase();
+      if (updateData.seat_number)
+        updateData.seat_number = updateData.seat_number.toUpperCase();
+
+      // Validate unique constraint if row/seat_number or hall changes
+      if (updateData.row || updateData.seat_number || updateData.hall_id) {
         const checkQuery = {
-          row: (updateData.row || currentSeat.row).toUpperCase(),
-          seat_number: (updateData.seat_number || currentSeat.seat_number)
-            .toString()
-            .toUpperCase(),
+          hall_id: updateData.hall_id || currentSeat.hall_id,
+          row: updateData.row || currentSeat.row,
+          seat_number: updateData.seat_number || currentSeat.seat_number,
           _id: { $ne: id },
         };
 
@@ -319,25 +350,24 @@ class SeatController {
         if (existingSeat) {
           return res.status(409).json({
             success: false,
-            message: "Seat with this row and seat number already exists",
+            message:
+              "Seat with this row and seat number already exists in this hall",
           });
         }
       }
 
+      // Update seat
       const seat = await Seat.findByIdAndUpdate(id, updateData, {
         new: true,
         runValidators: true,
         context: "query",
-      });
-
-      if (!seat) {
-        return res.status(404).json({
-          success: false,
-          message: "Seat not found",
-        });
-      }
-
-      logger.info(`Updated seat: ${id} (${seat.row}${seat.seat_number})`);
+      })
+        .populate({
+          path: "hall_id",
+          select: "hall_name theater_id",
+          populate: { path: "theater_id", select: "name" },
+        })
+        .lean();
 
       res.status(200).json({
         success: true,
@@ -360,7 +390,7 @@ class SeatController {
         });
       }
 
-      logger.error("Update seat error:", error);
+      console.error("Update seat error:", error);
       res.status(500).json({
         success: false,
         message: "Failed to update seat",
@@ -402,6 +432,19 @@ class SeatController {
 
       // Soft delete using model method
       const deletedSeat = await seat.softDelete(req.user?.userId);
+
+      // Update hall's total_seats count
+      if (deletedSeat.hall_id) {
+        try {
+          await Hall.updateTotalSeatsForHall(deletedSeat.hall_id);
+          logger.info(`Updated total_seats for hall ${deletedSeat.hall_id}`);
+        } catch (hallError) {
+          logger.error(
+            `Failed to update total_seats for hall ${deletedSeat.hall_id}: ${hallError.message}`
+          );
+          // Don't fail the seat deletion, just log the error
+        }
+      }
 
       logger.info(
         `Soft deleted seat: ${id} (${deletedSeat.row}${deletedSeat.seat_number})`
@@ -462,6 +505,19 @@ class SeatController {
 
       // Restore using model method
       const restoredSeat = await seat.restore(req.user?.userId);
+
+      // Update hall's total_seats count
+      if (restoredSeat.hall_id) {
+        try {
+          await Hall.updateTotalSeatsForHall(restoredSeat.hall_id);
+          logger.info(`Updated total_seats for hall ${restoredSeat.hall_id}`);
+        } catch (hallError) {
+          logger.error(
+            `Failed to update total_seats for hall ${restoredSeat.hall_id}: ${hallError.message}`
+          );
+          // Don't fail the seat restoration, just log the error
+        }
+      }
 
       logger.info(
         `Restored seat: ${id} (${restoredSeat.row}${restoredSeat.seat_number})`
@@ -527,7 +583,21 @@ class SeatController {
         seat_number: seat.seat_number,
         seat_type: seat.seat_type,
         wasDeleted: seat.isDeleted(),
+        hall_id: seat.hall_id,
       };
+
+      // Update hall's total_seats count before deletion
+      if (seatInfo.hall_id) {
+        try {
+          await Hall.updateTotalSeatsForHall(seatInfo.hall_id);
+          logger.info(`Updated total_seats for hall ${seatInfo.hall_id}`);
+        } catch (hallError) {
+          logger.error(
+            `Failed to update total_seats for hall ${seatInfo.hall_id}: ${hallError.message}`
+          );
+          // Don't fail the seat deletion, just log the error
+        }
+      }
 
       // Perform permanent deletion
       await Seat.findByIdAndDelete(id);
@@ -830,3 +900,4 @@ class SeatController {
 }
 
 module.exports = SeatController;
+

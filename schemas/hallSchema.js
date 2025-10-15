@@ -227,6 +227,23 @@ const updateCapacitySchema = Joi.object({
   }),
 });
 
+// Schema for generating a seat layout
+const generateLayoutSchema = Joi.object({
+  rows: Joi.array()
+    .items(
+      Joi.object({
+        row: Joi.string().trim().max(5).required(),
+        count: Joi.number().integer().min(1).max(100).required(),
+        type: Joi.string().optional(),
+        price: Joi.number().min(0).optional(),
+      })
+    )
+    .min(1)
+    .required(),
+  defaultPrice: Joi.number().min(0).optional(),
+  replaceExisting: Joi.boolean().default(false),
+});
+
 // Pagination schema (reusable)
 const paginationSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
@@ -352,6 +369,9 @@ module.exports = {
   updateHallSchema,
   hallIdParamSchema,
   getAllHallsQuerySchema,
+
+  // Layout schema
+  generateLayoutSchema,
 
   // Parameter schemas
   hallScreenTypeParamSchema,

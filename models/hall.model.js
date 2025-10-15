@@ -18,11 +18,6 @@ const hallSchema = new mongoose.Schema(
       max: 1000,
       default: 0,
     },
-    seat_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Seat",
-      default: null,
-    },
     theater_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Theater",
@@ -379,7 +374,6 @@ hallSchema.pre("save", function (next) {
 
   next();
 });
-
 // Pre-aggregate middleware to exclude deleted halls by default
 hallSchema.pre(
   ["find", "findOne", "findOneAndUpdate", "count", "countDocuments"],

@@ -1,191 +1,193 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const theaterSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true,
-    minlength: 1,
-    maxlength: 100,
-    index: true
-  },
-  halls_id: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Hall',
-    default: []
-  }],
-  address: {
-    type: String,
-    required: true,
-    trim: true,
-    minlength: 1,
-    maxlength: 500,
-    index: true
-  },
-  city: {
-    type: String,
-    required: true,
-    trim: true,
-    minlength: 1,
-    maxlength: 100,
-    index: true
-  },
-  province: {
-    type: String,
-    required: true,
-    trim: true,
-    minlength: 1,
-    maxlength: 100,
-    index: true
-  },
-  status: {
-    type: String,
-    enum: ['active', 'maintenance', 'closed', 'renovation'],
-    default: 'active',
-    index: true
-  },
-  contact_info: {
-    phone: {
+const theaterSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 1,
+      maxlength: 100,
+      index: true,
+    },
+    address: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 1,
+      maxlength: 500,
+      index: true,
+    },
+    city: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 1,
+      maxlength: 100,
+      index: true,
+    },
+    province: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 1,
+      maxlength: 100,
+      index: true,
+    },
+    status: {
+      type: String,
+      enum: ["active", "maintenance", "closed", "renovation"],
+      default: "active",
+      index: true,
+    },
+    contact_info: {
+      phone: {
+        type: String,
+        trim: true,
+        match: /^\+?[\d\s\-\(\)]{8,20}$/,
+        default: null,
+      },
+      email: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        default: null,
+      },
+      website: {
+        type: String,
+        trim: true,
+        match: /^https?:\/\/.+/,
+        default: null,
+      },
+    },
+    operating_hours: {
+      monday: {
+        open: { type: String, default: "09:00" },
+        close: { type: String, default: "23:00" },
+        closed: { type: Boolean, default: false },
+      },
+      tuesday: {
+        open: { type: String, default: "09:00" },
+        close: { type: String, default: "23:00" },
+        closed: { type: Boolean, default: false },
+      },
+      wednesday: {
+        open: { type: String, default: "09:00" },
+        close: { type: String, default: "23:00" },
+        closed: { type: Boolean, default: false },
+      },
+      thursday: {
+        open: { type: String, default: "09:00" },
+        close: { type: String, default: "23:00" },
+        closed: { type: Boolean, default: false },
+      },
+      friday: {
+        open: { type: String, default: "09:00" },
+        close: { type: String, default: "23:00" },
+        closed: { type: Boolean, default: false },
+      },
+      saturday: {
+        open: { type: String, default: "09:00" },
+        close: { type: String, default: "23:00" },
+        closed: { type: Boolean, default: false },
+      },
+      sunday: {
+        open: { type: String, default: "09:00" },
+        close: { type: String, default: "23:00" },
+        closed: { type: Boolean, default: false },
+      },
+    },
+    features: {
+      type: [String],
+      enum: [
+        "parking",
+        "food_court",
+        "disabled_access",
+        "air_conditioning",
+        "wifi",
+        "3d_capable",
+        "imax",
+        "vip_lounge",
+        "arcade",
+      ],
+      default: [],
+    },
+    total_halls: {
+      type: Number,
+      min: 0,
+      max: 50,
+      default: 0,
+    },
+    location: {
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        index: "2dsphere",
+        default: null,
+      },
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+    },
+    notes: {
       type: String,
       trim: true,
-      match: /^\+?[\d\s\-\(\)]{8,20}$/,
-      default: null
+      maxlength: 1000,
+      default: "",
     },
-    email: {
-      type: String,
-      trim: true,
-      lowercase: true,
-      match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-      default: null
+    // Soft delete fields
+    deletedAt: {
+      type: Date,
+      default: null,
+      index: true,
     },
-    website: {
-      type: String,
-      trim: true,
-      match: /^https?:\/\/.+/,
-      default: null
-    }
-  },
-  operating_hours: {
-    monday: {
-      open: { type: String, default: '09:00' },
-      close: { type: String, default: '23:00' },
-      closed: { type: Boolean, default: false }
+    deletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
-    tuesday: {
-      open: { type: String, default: '09:00' },
-      close: { type: String, default: '23:00' },
-      closed: { type: Boolean, default: false }
+    restoredAt: {
+      type: Date,
+      default: null,
     },
-    wednesday: {
-      open: { type: String, default: '09:00' },
-      close: { type: String, default: '23:00' },
-      closed: { type: Boolean, default: false }
+    restoredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
-    thursday: {
-      open: { type: String, default: '09:00' },
-      close: { type: String, default: '23:00' },
-      closed: { type: Boolean, default: false }
+    // Audit fields
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
-    friday: {
-      open: { type: String, default: '09:00' },
-      close: { type: String, default: '23:00' },
-      closed: { type: Boolean, default: false }
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
-    saturday: {
-      open: { type: String, default: '09:00' },
-      close: { type: String, default: '23:00' },
-      closed: { type: Boolean, default: false }
-    },
-    sunday: {
-      open: { type: String, default: '09:00' },
-      close: { type: String, default: '23:00' },
-      closed: { type: Boolean, default: false }
-    }
   },
-  features: {
-    type: [String],
-    enum: ['parking', 'food_court', 'disabled_access', 'air_conditioning', 'wifi', '3d_capable', 'imax', 'vip_lounge', 'arcade'],
-    default: []
-  },
-  total_halls: {
-    type: Number,
-    min: 0,
-    max: 50,
-    default: 0
-  },
-  total_capacity: {
-    type: Number,
-    min: 0,
-    default: 0
-  },
-  location: {
-    coordinates: {
-      type: [Number], // [longitude, latitude]
-      index: '2dsphere',
-      default: null
-    },
-    type: {
-      type: String,
-      enum: ['Point'],
-      default: 'Point'
-    }
-  },
-  notes: {
-    type: String,
-    trim: true,
-    maxlength: 1000,
-    default: ''
-  },
-  // Soft delete fields
-  deletedAt: {
-    type: Date,
-    default: null,
-    index: true
-  },
-  deletedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
-  },
-  restoredAt: {
-    type: Date,
-    default: null
-  },
-  restoredBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
-  },
-  // Audit fields
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
-  },
-  updatedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
+  {
+    timestamps: true,
   }
-}, {
-  timestamps: true
-});
+);
 
 // Indexes for faster queries
 theaterSchema.index({ name: 1, city: 1 }, { unique: true });
 theaterSchema.index({ city: 1, province: 1 });
 theaterSchema.index({ status: 1 });
 theaterSchema.index({ total_halls: 1 });
-theaterSchema.index({ total_capacity: 1 });
 theaterSchema.index({ deletedAt: 1 });
 theaterSchema.index({ createdAt: 1 });
-theaterSchema.index({ 'location.coordinates': '2dsphere' });
+theaterSchema.index({ "location.coordinates": "2dsphere" });
 
 // Instance method for soft delete
 theaterSchema.methods.softDelete = function (deletedBy = null) {
   this.deletedAt = new Date();
   this.deletedBy = deletedBy;
-  this.status = 'closed'; // Change status when deleted
+  this.status = "closed"; // Change status when deleted
   return this.save();
 };
 
@@ -195,7 +197,7 @@ theaterSchema.methods.restore = function (restoredBy = null) {
   this.deletedBy = null;
   this.restoredAt = new Date();
   this.restoredBy = restoredBy;
-  this.status = 'active'; // Restore to active status
+  this.status = "active"; // Restore to active status
   return this.save();
 };
 
@@ -206,9 +208,9 @@ theaterSchema.methods.isDeleted = function () {
 
 // Instance method to update status
 theaterSchema.methods.updateStatus = function (newStatus, updatedBy = null) {
-  const validStatuses = ['active', 'maintenance', 'closed', 'renovation'];
+  const validStatuses = ["active", "maintenance", "closed", "renovation"];
   if (!validStatuses.includes(newStatus)) {
-    throw new Error('Invalid status provided');
+    throw new Error("Invalid status provided");
   }
 
   this.status = newStatus;
@@ -217,45 +219,25 @@ theaterSchema.methods.updateStatus = function (newStatus, updatedBy = null) {
   return this.save();
 };
 
-// Instance method to add hall
-theaterSchema.methods.addHall = function (hallId) {
-  if (!this.halls_id.includes(hallId)) {
-    this.halls_id.push(hallId);
-    this.total_halls = this.halls_id.length;
-  }
-  return this.save();
-};
+// Instance method to update total halls count
+theaterSchema.methods.updateTotalHalls = async function () {
+  const Hall = mongoose.model("Hall");
 
-// Instance method to remove hall
-theaterSchema.methods.removeHall = function (hallId) {
-  this.halls_id = this.halls_id.filter(id => !id.equals(hallId));
-  this.total_halls = this.halls_id.length;
-  return this.save();
-};
-
-// Instance method to calculate total capacity from halls
-theaterSchema.methods.calculateTotalCapacity = async function () {
-  const Hall = mongoose.model('Hall');
-  
   // Get all active halls for this theater
   const halls = await Hall.find({
-    _id: { $in: this.halls_id },
-    deletedAt: null
-  }).select('total_seats');
-  
-  // Sum up all hall capacities
-  const totalCapacity = halls.reduce((sum, hall) => sum + (hall.total_seats || 0), 0);
-  
-  // Update the theater's total capacity
-  this.total_capacity = totalCapacity;
+    theater_id: this._id,
+    deletedAt: null,
+  });
+
+  // Update the theater's total halls
   this.total_halls = halls.length;
-  
+
   return this.save();
 };
 
 // Instance method to update location
 theaterSchema.methods.updateLocation = function (longitude, latitude) {
-  if (typeof longitude === 'number' && typeof latitude === 'number') {
+  if (typeof longitude === "number" && typeof latitude === "number") {
     this.location.coordinates = [longitude, latitude];
   }
   return this.save();
@@ -263,11 +245,19 @@ theaterSchema.methods.updateLocation = function (longitude, latitude) {
 
 // Instance method to update operating hours
 theaterSchema.methods.updateOperatingHours = function (day, hours) {
-  const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  const validDays = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+  ];
   if (validDays.includes(day.toLowerCase())) {
     this.operating_hours[day.toLowerCase()] = {
       ...this.operating_hours[day.toLowerCase()],
-      ...hours
+      ...hours,
     };
   }
   return this.save();
@@ -277,8 +267,8 @@ theaterSchema.methods.updateOperatingHours = function (day, hours) {
 theaterSchema.statics.findByCity = function (city, query = {}) {
   return this.find({
     ...query,
-    city: new RegExp(city, 'i'),
-    deletedAt: null
+    city: new RegExp(city, "i"),
+    deletedAt: null,
   });
 };
 
@@ -286,8 +276,8 @@ theaterSchema.statics.findByCity = function (city, query = {}) {
 theaterSchema.statics.findByProvince = function (province, query = {}) {
   return this.find({
     ...query,
-    province: new RegExp(province, 'i'),
-    deletedAt: null
+    province: new RegExp(province, "i"),
+    deletedAt: null,
   });
 };
 
@@ -296,7 +286,7 @@ theaterSchema.statics.findActive = function (query = {}) {
   return this.find({
     ...query,
     deletedAt: null,
-    status: 'active'
+    status: "active",
   });
 };
 
@@ -305,7 +295,7 @@ theaterSchema.statics.findByStatus = function (status, query = {}) {
   return this.find({
     ...query,
     status: status,
-    deletedAt: null
+    deletedAt: null,
   });
 };
 
@@ -313,24 +303,29 @@ theaterSchema.statics.findByStatus = function (status, query = {}) {
 theaterSchema.statics.findDeleted = function (query = {}) {
   return this.find({
     ...query,
-    deletedAt: { $ne: null }
+    deletedAt: { $ne: null },
   });
 };
 
 // Static method to find theaters near location
-theaterSchema.statics.findNearby = function (longitude, latitude, maxDistance = 10000, query = {}) {
+theaterSchema.statics.findNearby = function (
+  longitude,
+  latitude,
+  maxDistance = 10000,
+  query = {}
+) {
   return this.find({
     ...query,
-    'location.coordinates': {
+    "location.coordinates": {
       $near: {
         $geometry: {
-          type: 'Point',
-          coordinates: [longitude, latitude]
+          type: "Point",
+          coordinates: [longitude, latitude],
         },
-        $maxDistance: maxDistance
-      }
+        $maxDistance: maxDistance,
+      },
     },
-    deletedAt: null
+    deletedAt: null,
   });
 };
 
@@ -340,26 +335,24 @@ theaterSchema.statics.getTheatersWithHallCounts = async function (query = {}) {
     {
       $match: {
         ...query,
-        deletedAt: null
-      }
+        deletedAt: null,
+      },
     },
     {
       $lookup: {
-        from: 'halls',
-        localField: 'halls_id',
-        foreignField: '_id',
-        as: 'halls',
-        pipeline: [
-          { $match: { deletedAt: null } }
-        ]
-      }
+        from: "halls",
+        localField: "_id",
+        foreignField: "theater_id",
+        as: "halls",
+        pipeline: [{ $match: { deletedAt: null } }],
+      },
     },
     {
       $addFields: {
-        actualHallCount: { $size: '$halls' },
-        totalActualCapacity: { $sum: '$halls.total_seats' }
-      }
-    }
+        actualHallCount: { $size: "$halls" },
+        totalActualCapacity: { $sum: "$halls.total_seats" },
+      },
+    },
   ]);
 };
 
@@ -369,82 +362,97 @@ theaterSchema.statics.getAnalytics = async function (query = {}) {
     {
       $match: {
         ...query,
-        deletedAt: null
-      }
+        deletedAt: null,
+      },
     },
     {
       $group: {
         _id: null,
         totalTheaters: { $sum: 1 },
         activeTheaters: {
-          $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] }
+          $sum: { $cond: [{ $eq: ["$status", "active"] }, 1, 0] },
         },
-        totalHalls: { $sum: '$total_halls' },
-        totalCapacity: { $sum: '$total_capacity' },
-        averageHallsPerTheater: { $avg: '$total_halls' },
+        totalHalls: { $sum: "$total_halls" },
+        averageHallsPerTheater: { $avg: "$total_halls" },
         theatersByProvince: {
           $push: {
-            province: '$province',
-            city: '$city',
-            name: '$name',
-            halls: '$total_halls',
-            capacity: '$total_capacity'
-          }
-        }
-      }
+            province: "$province",
+            city: "$city",
+            name: "$name",
+            halls: "$total_halls",
+          },
+        },
+      },
     },
     {
       $addFields: {
         provinceStats: {
           $reduce: {
-            input: '$theatersByProvince',
+            input: "$theatersByProvince",
             initialValue: {},
             in: {
               $mergeObjects: [
-                '$$value',
+                "$$value",
                 {
-                  $arrayToObject: [[
-                    { k: '$$this.province', v: { $add: [{ $ifNull: [{ $getField: { field: '$$this.province', input: '$$value' } }, 0] }, 1] } }
-                  ]]
-                }
-              ]
-            }
-          }
-        }
-      }
-    }
+                  $arrayToObject: [
+                    [
+                      {
+                        k: "$$this.province",
+                        v: {
+                          $add: [
+                            {
+                              $ifNull: [
+                                {
+                                  $getField: {
+                                    field: "$$this.province",
+                                    input: "$$value",
+                                  },
+                                },
+                                0,
+                              ],
+                            },
+                            1,
+                          ],
+                        },
+                      },
+                    ],
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
   ]);
 };
 
 // Virtual for display name with location
-theaterSchema.virtual('display_name').get(function () {
+theaterSchema.virtual("display_name").get(function () {
   return `${this.name} - ${this.city}, ${this.province}`;
 });
 
 // Virtual for status display
-theaterSchema.virtual('status_display').get(function () {
-  if (this.isDeleted()) return 'Deleted';
-  return this.status.charAt(0).toUpperCase() + this.status.slice(1).replace('_', ' ');
+theaterSchema.virtual("status_display").get(function () {
+  if (this.isDeleted()) return "Deleted";
+  return (
+    this.status.charAt(0).toUpperCase() + this.status.slice(1).replace("_", " ")
+  );
 });
 
 // Virtual for full address
-theaterSchema.virtual('full_address').get(function () {
+theaterSchema.virtual("full_address").get(function () {
   return `${this.address}, ${this.city}, ${this.province}`;
 });
 
 // Virtual for hall count display
-theaterSchema.virtual('hall_count_display').get(function () {
-  const count = this.halls_id.length;
-  return `${count} hall${count !== 1 ? 's' : ''}`;
-});
-
-// Virtual for capacity display
-theaterSchema.virtual('capacity_display').get(function () {
-  return `${this.total_capacity} seats`;
+theaterSchema.virtual("hall_count_display").get(function () {
+  const count = this.total_halls;
+  return `${count} hall${count !== 1 ? "s" : ""}`;
 });
 
 // Pre-save middleware
-theaterSchema.pre('save', function (next) {
+theaterSchema.pre("save", function (next) {
   // Ensure name is properly formatted
   if (this.name) {
     this.name = this.name.trim();
@@ -467,24 +475,22 @@ theaterSchema.pre('save', function (next) {
   }
 
   // Ensure deleted theaters are not active
-  if (this.deletedAt && this.status === 'active') {
-    this.status = 'closed';
-  }
-
-  // Update total halls count
-  if (this.isModified('halls_id')) {
-    this.total_halls = this.halls_id.length;
+  if (this.deletedAt && this.status === "active") {
+    this.status = "closed";
   }
 
   next();
 });
 
 // Pre-aggregate middleware to exclude deleted theaters by default
-theaterSchema.pre(['find', 'findOne', 'findOneAndUpdate', 'count', 'countDocuments'], function () {
-  // Only apply if deletedAt filter is not already specified
-  if (!this.getQuery().hasOwnProperty('deletedAt')) {
-    this.where({ deletedAt: null });
+theaterSchema.pre(
+  ["find", "findOne", "findOneAndUpdate", "count", "countDocuments"],
+  function () {
+    // Only apply if deletedAt filter is not already specified
+    if (!this.getQuery().hasOwnProperty("deletedAt")) {
+      this.where({ deletedAt: null });
+    }
   }
-});
+);
 
-module.exports = mongoose.model('Theater', theaterSchema);
+module.exports = mongoose.model("Theater", theaterSchema);
