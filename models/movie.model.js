@@ -45,11 +45,6 @@ const movieSchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  end_date: {
-    type: Date,
-    default: null,
-    index: true
-  },
   rating: {
     type: Number,
     min: 0,
@@ -66,10 +61,6 @@ const movieSchema = new mongoose.Schema({
     type: String,
     trim: true,
     default: null
-  },
-  cast: {
-    type: [String],
-    default: []
   },
   director: {
     type: String,
@@ -133,7 +124,6 @@ movieSchema.index({ status: 1, release_date: -1 });
 movieSchema.index({ genres: 1, status: 1 });
 movieSchema.index({ rating: -1 });
 movieSchema.index({ release_date: -1 });
-movieSchema.index({ end_date: 1 });
 movieSchema.index({ deletedAt: 1 });
 movieSchema.index({ createdAt: -1 });
 
@@ -145,7 +135,6 @@ movieSchema.index({ genres: 1, release_date: -1 });
 movieSchema.index({ 
   title: 'text', 
   description: 'text',
-  cast: 'text',
   director: 'text'
 });
 
@@ -168,8 +157,6 @@ movieSchema.methods.restore = function(restoredBy = null) {
   const now = new Date();
   if (this.release_date > now) {
     this.status = 'coming_soon';
-  } else if (this.end_date && this.end_date < now) {
-    this.status = 'ended';
   } else {
     this.status = 'now_showing';
   }
@@ -187,7 +174,6 @@ movieSchema.methods.isNowShowing = function() {
   const now = new Date();
   return this.status === 'now_showing' && 
          this.release_date <= now && 
-         (!this.end_date || this.end_date >= now) &&
          !this.isDeleted();
 };
 
@@ -215,16 +201,10 @@ movieSchema.methods.updateStatus = function(newStatus, updatedBy = null) {
 // Instance method to update status based on date
 movieSchema.methods.updateStatusBasedOnDate = function(updatedBy = null) {
   const now = new Date();
-  let newStatus = 'now_showing';
-
-  if (this.release_date > now) {
-    newStatus = 'coming_soon';
-  } else if (this.end_date && this.end_date < now) {
-    newStatus = 'ended';
-  }
-
-  if (this.status !== newStatus) {
-    this.status = newStatus;
+  
+  // Only transition from 'coming_soon' to 'now_showing'
+  if (this.status === 'coming_soon' && this.release_date <= now) {
+    this.status = 'now_showing';
     this.updatedBy = updatedBy;
     return this.save();
   }
@@ -253,10 +233,6 @@ movieSchema.statics.findNowShowing = function(query = {}) {
     ...query,
     status: 'now_showing',
     release_date: { $lte: now },
-    $or: [
-      { end_date: null },
-      { end_date: { $gte: now } }
-    ],
     deletedAt: null
   }).sort({ release_date: -1 });
 };

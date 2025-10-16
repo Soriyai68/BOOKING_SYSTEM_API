@@ -24,8 +24,7 @@ class MovieController {
       $or: [
         { title: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
-        { director: { $regex: search, $options: 'i' } },
-        { cast: { $regex: search, $options: 'i' } }
+        { director: { $regex: search, $options: 'i' } }
       ]
     };
   }
