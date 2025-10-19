@@ -1,2 +1,2 @@
-exports.Permission = require("./permissionSeeder")
+exports.seedPermissions = require("./permissionSeeder")
 exports.Seeder = require("./seeder")

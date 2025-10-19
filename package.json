@@ -5,8 +5,11 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "db": "node scripts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "seed:permissions": "node scripts/permissionSeeder.js",
+    "seed:users": "node scripts/seeder.js",
+    "seed:all": "npm run seed:permissions && npm run seed:users"
+  },
   },
   "keywords": [],
   "author": "",
