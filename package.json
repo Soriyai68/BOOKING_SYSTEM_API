@@ -10,7 +10,6 @@
     "seed:users": "node scripts/seeder.js",
     "seed:all": "npm run seed:permissions && npm run seed:users"
   },
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",
