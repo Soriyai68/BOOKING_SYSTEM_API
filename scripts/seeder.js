@@ -24,6 +24,15 @@ const adminUsers = [
     provider: Providers.PHONE,
     isVerified: true,
     isActive: true
+  },
+  {
+    phone: '+85581218844',
+    name: 'Cashier User',
+    password: '123456',
+    role: Role.CASHIER,
+    provider: Providers.PHONE,
+    isVerified: true,
+    isActive: true
   }
 ];
 
