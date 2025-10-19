@@ -24,6 +24,7 @@ const seatRoutes = require("./routes/seats.routes");
 const hallRoutes = require("./routes/halls.routes");
 const theaterRoutes = require("./routes/theaters.routes");
 const showtimeRoutes = require("./routes/showtime.routes");
+const permissionRoutes = require("./routes/permission.routes");
 
 const app = express();
 
@@ -106,9 +107,13 @@ app.use("/api/v1/seats", seatRoutes);
 // theaters
 app.use("/api/v1/theaters", theaterRoutes);
 // halls
-app.use("api/v1/halls", hallRoutes);
+app.use("/api/v1/halls", hallRoutes);
 // showtimes
-app.use("api/v1/showtimes", showtimeRoutes);
+app.use("/api/v1/showtimes", showtimeRoutes);
+//permission
+app.use("/api/v1/permissions", permissionRoutes);
+// roles
+
 
 // 404 handler for undefined routes
 app.use((req, res) => {

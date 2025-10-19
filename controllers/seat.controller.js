@@ -16,14 +16,15 @@ class SeatController {
     }
   }
 
-  // Helper method to build search query
+  // Helper method to build search query - handles both string and array seat_number
   static buildSearchQuery(search) {
     if (!search) return {};
 
     return {
       $or: [
         { row: { $regex: search, $options: "i" } },
-        { seat_number: { $regex: search, $options: "i" } },
+        { seat_number: { $regex: search, $options: "i" } }, // For string seat_number
+        { seat_number: { $in: [new RegExp(search, "i")] } }, // For array seat_number
         { seat_type: { $regex: search, $options: "i" } },
         { notes: { $regex: search, $options: "i" } },
       ],
@@ -244,26 +245,55 @@ class SeatController {
       // ✅ Automatically assign theater_id based on the hall
       seatData.theater_id = hall.theater_id;
 
-      // ✅ Check if seat with same row + number already exists in the same hall
-      const existingSeat = await Seat.findOne({
-        hall_id: seatData.hall_id,
-        row: seatData.row.toUpperCase(),
-        seat_number: seatData.seat_number.toUpperCase(),
-      });
-
-      if (existingSeat) {
+      // ✅ Handle multi-seat validation
+      let seatNumbers = seatData.seat_number;
+      if (typeof seatNumbers === 'string') {
+        seatNumbers = [seatNumbers];
+      }
+      
+      // Check for duplicates in the input
+      const uniqueSeatNumbers = [...new Set(seatNumbers.map(s => s.toUpperCase()))];
+      if (uniqueSeatNumbers.length !== seatNumbers.length) {
         return res.status(400).json({
           success: false,
-          message: "Seat with this row and number already exists in this hall",
+          message: "Duplicate seat numbers are not allowed in the same entry",
+        });
+      }
+      
+      // Check if any seat number already exists in the same hall and row
+      const existingSeats = await Seat.find({
+        hall_id: seatData.hall_id,
+        row: seatData.row.toUpperCase(),
+      });
+      
+      const conflictingSeats = [];
+      for (const existingSeat of existingSeats) {
+        const existingNumbers = Array.isArray(existingSeat.seat_number) 
+          ? existingSeat.seat_number 
+          : [existingSeat.seat_number];
+        
+        for (const newSeatNumber of uniqueSeatNumbers) {
+          if (existingNumbers.includes(newSeatNumber.toUpperCase())) {
+            conflictingSeats.push(newSeatNumber);
+          }
+        }
+      }
+      
+      if (conflictingSeats.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Seat(s) ${conflictingSeats.join(', ')} already exist(s) in row ${seatData.row} of this hall`,
         });
       }
 
-      // ✅ Create new seat
-      const newSeat = await Seat.create({
+      // ✅ Create new seat with multi-seat support
+      const processedSeatData = {
         ...seatData,
         row: seatData.row.toUpperCase(),
-        seat_number: seatData.seat_number.toUpperCase(),
-      });
+        seat_number: uniqueSeatNumbers.length === 1 ? uniqueSeatNumbers[0] : uniqueSeatNumbers,
+      };
+      
+      const newSeat = await Seat.create(processedSeatData);
 
       return res.status(201).json({
         success: true,
@@ -335,24 +365,54 @@ class SeatController {
       // Ensure uppercase row and seat_number
       if (updateData.row) updateData.row = updateData.row.toUpperCase();
       if (updateData.seat_number)
-        updateData.seat_number = updateData.seat_number.toUpperCase();
+        // updateData.seat_number = updateData.seat_number.toUpperCase();
 
-      // Validate unique constraint if row/seat_number or hall changes
+      // Validate unique constraint for multi-seat if row/seat_number or hall changes
       if (updateData.row || updateData.seat_number || updateData.hall_id) {
-        const checkQuery = {
+        let newSeatNumbers = updateData.seat_number || currentSeat.seat_number;
+        if (typeof newSeatNumbers === 'string') {
+          newSeatNumbers = [newSeatNumbers];
+        }
+        
+        // Check for duplicates in the input
+        const uniqueNewSeatNumbers = [...new Set(newSeatNumbers.map(s => s.toString().toUpperCase()))];
+        if (uniqueNewSeatNumbers.length !== newSeatNumbers.length) {
+          return res.status(400).json({
+            success: false,
+            message: "Duplicate seat numbers are not allowed in the same entry",
+          });
+        }
+        
+        // Check existing seats in the same hall and row
+        const existingSeats = await Seat.find({
           hall_id: updateData.hall_id || currentSeat.hall_id,
           row: updateData.row || currentSeat.row,
-          seat_number: updateData.seat_number || currentSeat.seat_number,
           _id: { $ne: id },
-        };
-
-        const existingSeat = await Seat.findOne(checkQuery);
-        if (existingSeat) {
+        });
+        
+        const conflictingSeats = [];
+        for (const existingSeat of existingSeats) {
+          const existingNumbers = Array.isArray(existingSeat.seat_number) 
+            ? existingSeat.seat_number 
+            : [existingSeat.seat_number];
+          
+          for (const newSeatNumber of uniqueNewSeatNumbers) {
+            if (existingNumbers.includes(newSeatNumber)) {
+              conflictingSeats.push(newSeatNumber);
+            }
+          }
+        }
+        
+        if (conflictingSeats.length > 0) {
           return res.status(409).json({
             success: false,
-            message:
-              "Seat with this row and seat number already exists in this hall",
+            message: `Seat(s) ${conflictingSeats.join(', ')} already exist(s) in row ${updateData.row || currentSeat.row} of this hall`,
           });
+        }
+        
+        // Update seat_number to be single string or array based on count
+        if (updateData.seat_number) {
+          updateData.seat_number = uniqueNewSeatNumbers.length === 1 ? uniqueNewSeatNumbers[0] : uniqueNewSeatNumbers;
         }
       }
 

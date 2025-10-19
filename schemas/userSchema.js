@@ -22,25 +22,23 @@ const createUserSchema = Joi.object({
       'any.required': 'Phone number is required'
     }),
   
-  // Add missing password validation
+  // Password required for all roles except 'user'
   password: Joi.string()
     .min(6)
     .when('role', {
-      is: Joi.string().valid(Role.ADMIN, Role.SUPERADMIN),
-      then: Joi.required(),
-      otherwise: Joi.optional()
+      is: Joi.string().valid('user'),
+      then: Joi.optional(),
+      otherwise: Joi.required()
     })
     .messages({
       'string.min': 'Password must be at least 6 characters',
-      'any.required': 'Password is required for admin users'
+      'any.required': 'Password is required for this role (non-user)'
     }),
   
   role: Joi.string()
-    .valid(...Object.values(Role))
-    .default('user')
-    .messages({
-      'any.only': `Role must be one of: ${Object.values(Role).join(', ')}`
-    }),
+    .trim()
+    .lowercase()
+    .default('user'),
   
   provider: Joi.string()
     .valid(Providers.PHONE)
@@ -79,10 +77,8 @@ const updateUserSchema = Joi.object({
     }),
   
   role: Joi.string()
-    .valid(...Object.values(Role))
-    .messages({
-      'any.only': `Role must be one of: ${Object.values(Role).join(', ')}`
-    }),
+    .trim()
+    .lowercase(),
   
   isActive: Joi.boolean(),
   
@@ -166,12 +162,9 @@ const phoneParamSchema = Joi.object({
 
 const roleParamSchema = Joi.object({
   role: Joi.string()
-    .valid(...Object.values(Role))
+    .trim()
+    .lowercase()
     .required()
-    .messages({
-      'any.only': `Role must be one of: ${Object.values(Role).join(', ')}`,
-      'any.required': 'Role is required'
-    })
 });
 
 // Query validation schemas
@@ -253,7 +246,7 @@ const advancedSearchSchema = Joi.object({
   caseSensitive: Joi.boolean().default(false),
   dateFrom: Joi.date().iso().optional(),
   dateTo: Joi.date().iso().min(Joi.ref('dateFrom')).optional(),
-  role: Joi.string().valid(...Object.values(Role)).optional(),
+  role: Joi.string().trim().lowercase().optional(),
   provider: Joi.string().valid(...Object.values(Providers)).optional(),
   isActive: Joi.boolean().optional(),
   isVerified: Joi.boolean().optional()
@@ -268,7 +261,7 @@ const getAllUsersQuerySchema = Joi.object({
   sortBy: Joi.string().valid('createdAt', 'name', 'phone', 'lastLogin', 'updatedAt', 'role').default('createdAt'),
   sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
   search: Joi.string().trim().max(100).optional(),
-  role: Joi.string().valid(...Object.values(Role)).optional(),
+  role: Joi.string().trim().lowercase().optional(),
   provider: Joi.string().valid(...Object.values(Providers)).optional(),
   status: Joi.string().valid('true', 'false').optional(),
   isVerified: Joi.string().valid('true', 'false').optional(),

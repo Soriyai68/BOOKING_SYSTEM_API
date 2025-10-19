@@ -10,7 +10,8 @@ const router = express.Router();
 router.get(
   "/analytics",
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+
   middlewares.validator(theaterSchema.analyticsQuerySchema, "query"),
   TheaterController.getAnalytics
 );
@@ -19,7 +20,8 @@ router.get(
 router.get(
   "/deleted",
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+
   middlewares.validator(theaterSchema.paginationSchema, "query"),
   TheaterController.listDeleted
 );
@@ -54,7 +56,8 @@ router.get(
 router.put(
   "/:id/restore",
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+
   middlewares.validator(theaterSchema.theaterIdParamSchema, "params"),
   TheaterController.restore
 );
@@ -63,7 +66,8 @@ router.put(
 router.put(
   "/:id/status",
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+
   middlewares.validator(theaterSchema.theaterIdParamSchema, "params"),
   middlewares.validator(theaterSchema.updateStatusSchema),
   TheaterController.updateStatus
@@ -73,7 +77,8 @@ router.put(
 router.put(
   "/:id/location",
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+
   middlewares.validator(theaterSchema.theaterIdParamSchema, "params"),
   middlewares.validator(theaterSchema.updateLocationSchema),
   TheaterController.updateLocation
@@ -83,7 +88,8 @@ router.put(
 // router.post(
 //   "/:id/halls",
 //   middlewares.authenticate,
-//   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+//  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+
 //   middlewares.validator(theaterSchema.theaterIdParamSchema, "params"),
 //   middlewares.validator(theaterSchema.addHallSchema),
 //   TheaterController.addHall
@@ -93,7 +99,8 @@ router.put(
 // router.delete(
 //   "/:id/halls",
 //   middlewares.authenticate,
-//   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+//  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+
 //   middlewares.validator(theaterSchema.theaterIdParamSchema, "params"),
 //   middlewares.validator(theaterSchema.removeHallSchema),
 //   TheaterController.removeHall
@@ -104,6 +111,7 @@ router.delete(
   "/:id/force-delete",
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+
   middlewares.validator(theaterSchema.theaterIdParamSchema, "params"),
   TheaterController.forceDelete
 );
@@ -112,7 +120,7 @@ router.delete(
 router.get(
   "/",
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.USER),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.USER, Role.CASHIER),
   middlewares.validator(theaterSchema.getAllTheatersQuerySchema, "query"),
   TheaterController.getAll
 );
@@ -121,7 +129,8 @@ router.get(
 router.post(
   "/",
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+
   middlewares.validator(theaterSchema.createTheaterSchema),
   TheaterController.create
 );
@@ -138,7 +147,8 @@ router.get(
 router.put(
   "/:id",
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+
   middlewares.validator(theaterSchema.theaterIdParamSchema, "params"),
   middlewares.validator(theaterSchema.updateTheaterSchema),
   TheaterController.update
@@ -149,6 +159,7 @@ router.delete(
   "/:id",
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+
   middlewares.validator(theaterSchema.theaterIdParamSchema, "params"),
   TheaterController.delete
 );

@@ -72,7 +72,7 @@ router.delete('/:id/force-delete',
 // 1. GET ALL USERS - Get all users with pagination and filtering (Admin/SuperAdmin only)
 router.get('/',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.USER ),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.USER, Role.CASHIER),
   middlewares.validator(userSchema.getAllUsersQuerySchema, 'query'),
   UserController.getAll
 );
@@ -95,9 +95,9 @@ router.get('/:id',
 // 4. UPDATE USER - Update user by ID
 router.put('/:id',
   middlewares.authenticate,
-  // middlewares.validator(userSchema.userIdParamSchema, 'params'),
-  middlewares.validator(userSchema.updateUserSchema),
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.validator(userSchema.userIdParamSchema, 'params'),
+  middlewares.validator(userSchema.updateUserSchema),
   UserController.update
 );
 

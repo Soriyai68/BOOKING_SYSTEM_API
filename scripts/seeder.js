@@ -5,6 +5,7 @@ const { Role } = require('../data');
 const Providers = require('../data/providers');
 const connectDB = require('../config/db');
 
+
 const adminUsers = [
   {
     phone: '+85545678912',
@@ -30,6 +31,7 @@ async function createAdminUsers() {
   try {
     await connectDB();
 
+
     console.log('Creating admin users...');
 
     for (const userData of adminUsers) {
@@ -44,6 +46,8 @@ async function createAdminUsers() {
       await user.save();
       console.log(`Created ${userData.role}: ${userData.phone} (password: ${userData.password})`);
     }
+
+    console.log('Seeder completed successfully.');
   } catch (error) {
     console.error('Error creating admin users:', error);
   } finally {

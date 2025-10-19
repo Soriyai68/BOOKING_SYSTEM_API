@@ -9,14 +9,14 @@ const router = express.Router();
 // GET /api/halls/stats - Get hall statistics (Admin/SuperAdmin only)
 router.get('/stats',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   HallController.getStats
 );
 
 // GET /api/halls/deleted - Get deleted/deactivated halls (Admin/SuperAdmin only)
 router.get('/deleted',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(hallSchema.paginationSchema, 'query'),
   HallController.listDeleted
 );
@@ -45,7 +45,7 @@ router.get('/theater/:theaterId',
 // POST /api/halls/:id/layout - Generate seat layout for a hall (Admin/SuperAdmin only)
 router.post('/:id/layout',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(hallSchema.hallIdParamSchema, 'params'),
   middlewares.validator(hallSchema.generateLayoutSchema),
   HallController.generateSeatLayout
@@ -54,7 +54,7 @@ router.post('/:id/layout',
 // PUT /api/halls/:id/restore - Restore deleted hall (Admin/SuperAdmin only)
 router.put('/:id/restore',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(hallSchema.hallIdParamSchema, 'params'),
   HallController.restore
 );
@@ -62,7 +62,7 @@ router.put('/:id/restore',
 // PUT /api/halls/:id/status - Update hall status
 router.put('/:id/status',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(hallSchema.hallIdParamSchema, 'params'),
   middlewares.validator(hallSchema.updateStatusSchema),
   HallController.updateStatus
@@ -71,7 +71,7 @@ router.put('/:id/status',
 // PUT /api/halls/:id/capacity - Update hall capacity
 router.put('/:id/capacity',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(hallSchema.hallIdParamSchema, 'params'),
   middlewares.validator(hallSchema.updateCapacitySchema),
   HallController.updateCapacity
@@ -80,7 +80,7 @@ router.put('/:id/capacity',
 // DELETE /api/halls/:id/force-delete - Permanently delete hall (Admin/SuperAdmin only)
 router.delete('/:id/force-delete',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
   middlewares.validator(hallSchema.hallIdParamSchema, 'params'),
   HallController.forceDelete
 );
@@ -88,7 +88,7 @@ router.delete('/:id/force-delete',
 // 1. GET ALL HALLS - Get all halls with pagination and filtering
 router.get('/',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.USER),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(hallSchema.getAllHallsQuerySchema, 'query'),
   HallController.getAll
 );
@@ -96,7 +96,7 @@ router.get('/',
 // 2. CREATE HALL - Create new hall (Admin/SuperAdmin only)
 router.post('/',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(hallSchema.createHallSchema),
   HallController.create
 );
@@ -111,7 +111,7 @@ router.get('/:id',
 // 4. UPDATE HALL - Update hall by ID (Admin/SuperAdmin only)
 router.put('/:id',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(hallSchema.hallIdParamSchema, 'params'),
   middlewares.validator(hallSchema.updateHallSchema),
   HallController.update
@@ -120,7 +120,7 @@ router.put('/:id',
 // 5. SOFT DELETE - Deactivate hall (Admin/SuperAdmin only)
 router.delete('/:id',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
   middlewares.validator(hallSchema.hallIdParamSchema, 'params'),
   HallController.delete
 );

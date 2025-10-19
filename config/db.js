@@ -6,10 +6,7 @@ const connectDB = async () => {
   try {
     console.log(' > Initializing MongoDB.');
     
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    const conn = await mongoose.connect(process.env.MONGODB_URI);
     
     logger.info(`MongoDB Connected: ${conn.connection.host} Soriya Ninja Team`);
     logger.info(`Database: ${conn.connection.name}`);

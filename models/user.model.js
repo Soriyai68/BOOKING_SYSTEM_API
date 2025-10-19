@@ -22,14 +22,16 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: function() {
-      return this.role === Role.ADMIN || this.role === Role.SUPERADMIN;
+      // Require password for all roles except 'user'
+      return this.role && this.role.toLowerCase() !== 'user';
     },
     minlength: [6, 'Password must be at least 6 characters long'],
     select: false // Don't include password in queries by default
   },
   role: {
     type: String,
-    enum: Object.values(Role),
+    trim: true,
+    lowercase: true,
     default: Role.USER
   },
   provider: {
@@ -101,7 +103,7 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 
 // Method to check if user requires password authentication
 userSchema.methods.requiresPassword = function() {
-  return this.role === Role.ADMIN || this.role === Role.SUPERADMIN;
+  return this.role && this.role.toLowerCase() !== 'user';
 };
 
 // Instance method to soft delete user
@@ -156,7 +158,6 @@ userSchema.statics.findByRole = function(role) {
 };
 
 // Index for faster queries
-userSchema.index({ phone: 1 });
 userSchema.index({ role: 1 });
 userSchema.index({ deletedAt: 1 });
 userSchema.index({ isActive: 1, deletedAt: 1 });

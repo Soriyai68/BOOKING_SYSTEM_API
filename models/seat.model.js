@@ -11,12 +11,24 @@ const seatSchema = new mongoose.Schema(
       maxlength: 5,
     },
     seat_number: {
-      type: String,
+      type: mongoose.Schema.Types.Mixed, // Can be String or Array
       required: true,
-      trim: true,
-      uppercase: true,
-      minlength: 1,
-      maxlength: 10,
+      validate: {
+        validator: function(value) {
+          if (typeof value === 'string') {
+            return value.trim().length >= 1 && value.trim().length <= 10;
+          }
+          if (Array.isArray(value)) {
+            return value.length > 0 && value.every(seat => 
+              typeof seat === 'string' && 
+              seat.trim().length >= 1 && 
+              seat.trim().length <= 10
+            );
+          }
+          return false;
+        },
+        message: 'Seat number must be a string (1-10 chars) or array of strings (1-10 chars each)'
+      }
     },
     seat_type: {
       type: String,
@@ -83,8 +95,10 @@ const seatSchema = new mongoose.Schema(
   }
 );
 
-// Index for faster queries
-seatSchema.index({ hall_id: 1, row: 1, seat_number: 1 }, { unique: true });
+// Index for faster queries - Note: unique constraint will be handled in application logic for multi-seat
+seatSchema.index({ hall_id: 1, row: 1, seat_number: 1 });
+// Additional index for multi-seat queries
+seatSchema.index({ hall_id: 1, row: 1 });
 seatSchema.index({ seat_type: 1 });
 
 // Instance method to soft delete seat
@@ -114,11 +128,22 @@ seatSchema.statics.findByType = function (seatType) {
 
 // Virtual for full seat identifier
 seatSchema.virtual("seat_identifier").get(function () {
+  if (typeof this.seat_number === 'string') {
+    return `${this.row}${this.seat_number}`;
+  } else if (Array.isArray(this.seat_number)) {
+    return this.seat_number.map(seat => `${this.row}${seat}`).join(', ');
+  }
   return `${this.row}${this.seat_number}`;
 });
 
 // Virtual for seat display name
 seatSchema.virtual("display_name").get(function () {
+  if (typeof this.seat_number === 'string') {
+    return `Seat ${this.row}${this.seat_number} (${this.seat_type})`;
+  } else if (Array.isArray(this.seat_number)) {
+    const seatNumbers = this.seat_number.join(', ');
+    return `Seats ${this.row}${seatNumbers} (${this.seat_type})`;
+  }
   return `Seat ${this.row}${this.seat_number} (${this.seat_type})`;
 });
 
@@ -143,7 +168,11 @@ seatSchema.methods.updateStatus = function (newStatus, updatedBy = null) {
 // Pre-save middleware to ensure uppercase
 seatSchema.pre("save", function (next) {
   if (this.seat_number) {
-    this.seat_number = this.seat_number.toString().toUpperCase();
+    if (typeof this.seat_number === 'string') {
+      this.seat_number = this.seat_number.toString().toUpperCase();
+    } else if (Array.isArray(this.seat_number)) {
+      this.seat_number = this.seat_number.map(seat => seat.toString().toUpperCase());
+    }
   }
   if (this.row) {
     this.row = this.row.toString().toUpperCase();

@@ -11,14 +11,16 @@ const router = express.Router();
 // GET /api/showtimes/analytics - Get showtime analytics (Admin/SuperAdmin only)
 router.get('/analytics',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+ middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+
   ShowtimeController.getAnalytics
 );
 
 // GET /api/showtimes/deleted lists - Get deleted showtimes (Admin/SuperAdmin only)
 router.get('/deleted',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+ middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+
   middlewares.validator(showtimeSchema.paginationSchema, 'query'),
   ShowtimeController.listDeleted
 );
@@ -26,7 +28,8 @@ router.get('/deleted',
 // PUT /api/showtimes/:id/restore - Restore a deleted showtime (Admin/SuperAdmin only)
 router.put('/:id/restore',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+ middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+
   middlewares.validator(showtimeSchema.showtimeIdParamSchema, 'params'),
   ShowtimeController.restore
 );
@@ -34,7 +37,8 @@ router.put('/:id/restore',
 // PUT /api/showtimes/:id/status - Update showtime status (Admin/SuperAdmin only)
 router.put('/:id/status',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+ middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+
   middlewares.validator(showtimeSchema.showtimeIdParamSchema, 'params'),
   middlewares.validator(showtimeSchema.updateShowtimeStatusSchema),
   ShowtimeController.updateStatus
@@ -43,7 +47,8 @@ router.put('/:id/status',
 // DELETE /api/showtimes/:id/force-delete - Permanently delete a showtime (Admin/SuperAdmin only)
 router.delete('/:id/force-delete',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+ middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+
   middlewares.validator(showtimeSchema.showtimeIdParamSchema, 'params'),
   ShowtimeController.forceDelete
 );
@@ -55,7 +60,7 @@ router.delete('/:id/force-delete',
 router.get('/',
   middlewares.authenticate,
   // Allow all authenticated users to view showtimes
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.USER),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.USER, Role.CASHIER),
   middlewares.validator(showtimeSchema.getAllShowtimesQuerySchema, 'query'),
   ShowtimeController.getAll
 );
@@ -63,7 +68,8 @@ router.get('/',
 // POST /api/showtimes - Create a new showtime (Admin/SuperAdmin only)
 router.post('/',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+ middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+
   middlewares.validator(showtimeSchema.createShowtimeSchema),
   ShowtimeController.create
 );
@@ -78,7 +84,8 @@ router.get('/:id',
 // PUT /api/showtimes/:id - Update a showtime (Admin/SuperAdmin only)
 router.put('/:id',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+ middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+
   middlewares.validator(showtimeSchema.showtimeIdParamSchema, 'params'),
   middlewares.validator(showtimeSchema.updateShowtimeSchema),
   ShowtimeController.update
@@ -87,7 +94,8 @@ router.put('/:id',
 // DELETE /api/showtimes/:id - Soft delete a showtime (Admin/SuperAdmin only)
 router.delete('/:id',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+ middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+
   middlewares.validator(showtimeSchema.showtimeIdParamSchema, 'params'),
   ShowtimeController.delete
 );

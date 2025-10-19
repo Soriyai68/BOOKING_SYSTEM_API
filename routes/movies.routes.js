@@ -49,7 +49,7 @@ router.put('/:id/restore',
 // PUT /api/movies/:id/status - Update movie status (Admin/SuperAdmin only)
 router.put('/:id/status',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(movieSchema.movieIdParamSchema, 'params'),
   middlewares.validator(movieSchema.updateStatusSchema),
   MovieController.updateStatus
@@ -68,7 +68,7 @@ router.delete('/:id/force-delete',
 // GET /api/movies - Get all movies with pagination and filtering
 router.get('/',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.USER),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(movieSchema.getAllMoviesQuerySchema, 'query'),
   MovieController.getAll
 );
@@ -76,7 +76,7 @@ router.get('/',
 // POST /api/movies - Create new movie (Admin/SuperAdmin only)
 router.post('/',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(movieSchema.createMovieSchema),
   MovieController.create
 );
@@ -91,7 +91,7 @@ router.get('/:id',
 // PUT /api/movies/:id - Update movie by ID (Admin/SuperAdmin only)
 router.put('/:id',
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(movieSchema.movieIdParamSchema, 'params'),
   middlewares.validator(movieSchema.updateMovieSchema),
   MovieController.update
