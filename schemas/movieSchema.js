@@ -87,6 +87,12 @@ const createMovieSchema = Joi.object({
     "any.required": "Release date is required",
   }),
 
+  end_date: Joi.date().required().greater(Joi.ref('release_date')).messages({
+    "date.base": "End date must be a valid date",
+    "any.required": "End date is required",
+    "date.greater": "End date must be after release date",
+  }),
+
   rating: Joi.number().min(0).max(10).default(0).messages({
     "number.base": "Rating must be a number",
     "number.min": "Rating cannot be less than 0",
@@ -163,6 +169,11 @@ const updateMovieSchema = Joi.object({
   release_date: Joi.date().messages({
     "date.base": "Release date must be a valid date",
   }),
+
+  end_date: Joi.date().messages({
+    "date.base": "End date must be a valid date",
+  }),
+
   rating: Joi.number().min(0).max(10).messages({
     "number.base": "Rating must be a number",
     "number.min": "Rating cannot be less than 0",
@@ -227,6 +238,7 @@ const paginationSchema = Joi.object({
     .valid(
       "title",
       "release_date",
+      "end_date",
       "rating",
       "duration_minutes",
       "createdAt",
@@ -249,7 +261,7 @@ const getAllMoviesQuerySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(10),
   sortBy: Joi.string()
-    .valid("title", "release_date", "rating", "duration_minutes", "createdAt")
+    .valid("title", "release_date", "end_date", "rating", "duration_minutes", "createdAt")
     .default("release_date"),
   sortOrder: Joi.string().valid("asc", "desc").default("desc"),
   search: Joi.string().trim().allow("").optional(),

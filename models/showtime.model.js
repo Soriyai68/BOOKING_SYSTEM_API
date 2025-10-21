@@ -17,8 +17,14 @@ const showtimeSchema = new mongoose.Schema(
       ref: "Theater",
       required: true,
     },
-    start_time: { type: Date, required: true },
-    end_time: { type: Date, required: true },
+    start_times: {
+      type: [Date], // Each slot start time
+      required: true,
+    },
+    end_times: {
+      type: [Date], // Each slot end time
+      required: true,
+    },
     status: {
       type: String,
       enum: ["scheduled", "completed", "cancelled"],
@@ -138,9 +144,15 @@ showtimeSchema.statics.getAnalytics = async function (query = {}) {
             $group: {
               _id: null,
               totalShowtimes: { $sum: 1 },
-              scheduled: { $sum: { $cond: [{ $eq: ["$status", "scheduled"] }, 1, 0] } },
-              completed: { $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] } },
-              cancelled: { $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] } },
+              scheduled: {
+                $sum: { $cond: [{ $eq: ["$status", "scheduled"] }, 1, 0] },
+              },
+              completed: {
+                $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
+              },
+              cancelled: {
+                $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },
+              },
             },
           },
           {
@@ -157,16 +169,42 @@ showtimeSchema.statics.getAnalytics = async function (query = {}) {
         ],
         byMovie: [
           { $group: { _id: "$movie_id", count: { $sum: 1 } } },
-          { $lookup: { from: "movies", localField: "_id", foreignField: "_id", as: "movie" } },
+          {
+            $lookup: {
+              from: "movies",
+              localField: "_id",
+              foreignField: "_id",
+              as: "movie",
+            },
+          },
           { $unwind: { path: "$movie", preserveNullAndEmptyArrays: true } },
-          { $project: { _id: 0, movie: { $ifNull: ["$movie.title", "Unknown"] }, count: 1 } },
+          {
+            $project: {
+              _id: 0,
+              movie: { $ifNull: ["$movie.title", "Unknown"] },
+              count: 1,
+            },
+          },
           { $sort: { count: -1 } },
         ],
         byTheater: [
           { $group: { _id: "$theater_id", count: { $sum: 1 } } },
-          { $lookup: { from: "theaters", localField: "_id", foreignField: "_id", as: "theater" } },
+          {
+            $lookup: {
+              from: "theaters",
+              localField: "_id",
+              foreignField: "_id",
+              as: "theater",
+            },
+          },
           { $unwind: { path: "$theater", preserveNullAndEmptyArrays: true } },
-          { $project: { _id: 0, theater: { $ifNull: ["$theater.name", "Unknown"] }, count: 1 } },
+          {
+            $project: {
+              _id: 0,
+              theater: { $ifNull: ["$theater.name", "Unknown"] },
+              count: 1,
+            },
+          },
           { $sort: { count: -1 } },
         ],
       },
@@ -191,12 +229,14 @@ showtimeSchema.statics.getAnalytics = async function (query = {}) {
     },
   ]);
 
-  return analytics[0] || {
-    totalShowtimes: 0,
-    statusCounts: { scheduled: 0, completed: 0, cancelled: 0 },
-    showtimesByMovie: [],
-    showtimesByTheater: [],
-  };
+  return (
+    analytics[0] || {
+      totalShowtimes: 0,
+      statusCounts: { scheduled: 0, completed: 0, cancelled: 0 },
+      showtimesByMovie: [],
+      showtimesByTheater: [],
+    }
+  );
 };
 
 // Instance methods

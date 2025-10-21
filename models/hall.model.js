@@ -253,7 +253,7 @@ hallSchema.statics.getHallsWithSeatCounts = async function (query = {}) {
     {
       $lookup: {
         from: "seats",
-        let: { hallId: { $toString: "$_id" } },
+        let: { hallId: "$_id" },
         pipeline: [
           {
             $match: {
@@ -268,7 +268,15 @@ hallSchema.statics.getHallsWithSeatCounts = async function (query = {}) {
           {
             $group: {
               _id: "$seat_type",
-              count: { $sum: 1 },
+              count: {
+                $sum: {
+                  $cond: {
+                    if: { $isArray: "$seat_number" },
+                    then: { $size: "$seat_number" },
+                    else: 1,
+                  },
+                },
+              },
             },
           },
         ],
@@ -302,11 +310,31 @@ hallSchema.statics.updateTotalSeatsForHall = async function (hallId) {
   try {
     const Seat = mongoose.model("Seat");
 
-    // Count active seats for this hall
-    const seatCount = await Seat.countDocuments({
-      hall_id: hallId,
-      deletedAt: null,
-    });
+    // Aggregate to correctly count seats, including multi-seat documents
+    const result = await Seat.aggregate([
+      {
+        $match: {
+          hall_id: hallId,
+          deletedAt: null,
+        },
+      },
+      {
+        $group: {
+          _id: "$hall_id",
+          totalSeats: {
+            $sum: {
+              $cond: {
+                if: { $isArray: "$seat_number" },
+                then: { $size: "$seat_number" },
+                else: 1,
+              },
+            },
+          },
+        },
+      },
+    ]);
+
+    const seatCount = result.length > 0 ? result[0].totalSeats : 0;
 
     // Update the hall's total_seats field
     await this.findByIdAndUpdate(

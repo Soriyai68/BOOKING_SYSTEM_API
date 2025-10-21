@@ -214,10 +214,10 @@ class MovieController {
       const movieData = req.body;
 
       // Validate required fields
-      if (!movieData.title || !movieData.duration_minutes || !movieData.release_date) {
+      if (!movieData.title || !movieData.duration_minutes || !movieData.release_date || !movieData.end_date) {
         return res.status(400).json({
           success: false,
-          message: 'Title, duration, and release date are required'
+          message: 'Title, duration, release date and end date are required'
         });
       }
 
@@ -641,10 +641,7 @@ class MovieController {
         .skip(skip)
         .limit(limitNum);
 
-      const totalCount = await Movie.countDocuments({
-        status: 'now_showing',
-        deletedAt: null
-      });
+      const totalCount = await Movie.findNowShowing().countDocuments();
 
       logger.info(`Retrieved ${movies.length} now showing movies`);
 
@@ -682,10 +679,7 @@ class MovieController {
         .skip(skip)
         .limit(limitNum);
 
-      const totalCount = await Movie.countDocuments({
-        status: 'coming_soon',
-        deletedAt: null
-      });
+      const totalCount = await Movie.findComingSoon().countDocuments();
 
       logger.info(`Retrieved ${movies.length} coming soon movies`);
 
