@@ -2,9 +2,8 @@ const mongoose = require("mongoose");
 
 const showtimeSchema = new mongoose.Schema(
   {
-    movie_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Movie",
+    show_date: {
+      type: Date,
       required: true,
     },
     hall_id: {
@@ -12,26 +11,14 @@ const showtimeSchema = new mongoose.Schema(
       ref: "Hall",
       required: true,
     },
-    theater_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Theater",
+    start_time: {
+      type: String, // first start-time (can be dynamic depend on admin input)
       required: true,
     },
-    start_times: {
-      type: [Date], // Each slot start time
-      required: true,
-    },
-    end_times: {
-      type: [Date], // Each slot end time
-      required: true,
-    },
-    status: {
+    end_time: {
       type: String,
-      enum: ["scheduled", "completed", "cancelled"],
-      default: "scheduled",
+      required: true, // last end-time (always fixed value 19:00)
     },
-    language: { type: String, default: "Original" },
-    subtitle: { type: String, default: "Original" },
     // Soft delete
     deletedAt: { type: Date, default: null, index: true },
     deletedBy: {
