@@ -36,17 +36,24 @@ class ShowtimeController {
     if (filters.hall_id && mongoose.Types.ObjectId.isValid(filters.hall_id)) {
       query.hall_id = new mongoose.Types.ObjectId(filters.hall_id);
     }
-    if (
-      filters.theater_id &&
-      mongoose.Types.ObjectId.isValid(filters.theater_id)
-    ) {
-      query.theater_id = new mongoose.Types.ObjectId(filters.theater_id);
+
+    // Handle single date filter
+    if (filters.show_date) {
+      const day = new Date(filters.show_date);
+      day.setHours(0, 0, 0, 0); // Start of the day
+      const nextDay = new Date(day);
+      nextDay.setDate(day.getDate() + 1); // Start of the next day
+
+      query.show_date = {
+        $gte: day,
+        $lt: nextDay,
+      };
     }
-    // Date range
-    if (filters.dateFrom || filters.dateTo) {
-      query.start_time = {};
-      if (filters.dateFrom) query.start_time.$gte = new Date(filters.dateFrom);
-      if (filters.dateTo) query.start_time.$lte = new Date(filters.dateTo);
+    // Date range filter
+    else if (filters.dateFrom || filters.dateTo) {
+      query.show_date = {};
+      if (filters.dateFrom) query.show_date.$gte = new Date(filters.dateFrom);
+      if (filters.dateTo) query.show_date.$lte = new Date(filters.dateTo);
     }
     return query;
   }
@@ -61,6 +68,7 @@ class ShowtimeController {
         sortOrder = "asc",
         search,
         includeDeleted = false,
+        theater_id, // Extract theater_id to handle it separately
         ...filters
       } = req.query;
 
@@ -99,11 +107,11 @@ class ShowtimeController {
         },
         { $unwind: { path: "$hall", preserveNullAndEmptyArrays: true } },
 
-        // Lookup theater
+        // Lookup theater from hall
         {
           $lookup: {
             from: "theaters",
-            localField: "theater_id",
+            localField: "hall.theater_id",
             foreignField: "_id",
             as: "theater",
           },
@@ -111,15 +119,20 @@ class ShowtimeController {
         { $unwind: { path: "$theater", preserveNullAndEmptyArrays: true } },
       ];
 
-      // Optional search
+      // Filter by theater_id after lookup
+      if (theater_id && mongoose.Types.ObjectId.isValid(theater_id)) {
+        pipeline.push({
+          $match: {
+            "hall.theater_id": new mongoose.Types.ObjectId(theater_id),
+          },
+        });
+      }
+
+      // Optional search on movie title
       if (search) {
         pipeline.push({
           $match: {
-            $or: [
-              { language: { $regex: search, $options: "i" } },
-              { subtitle: { $regex: search, $options: "i" } },
-              { "movie.title": { $regex: search, $options: "i" } },
-            ],
+            "movie.title": { $regex: search, $options: "i" },
           },
         });
       }
@@ -139,13 +152,12 @@ class ShowtimeController {
       // Project
       pipeline.push({
         $project: {
-          movie: { _id: 1, title: 1, poster_url: 1 },
+          movie: { _id: 1, title: 1, poster_url: 1, duration_minutes: 1 },
           hall: { _id: 1, hall_name: 1, screen_type: 1 },
           theater: { _id: 1, name: 1, province: 1, city: 1 },
+          show_date: 1,
           start_time: 1,
           end_time: 1,
-          language: 1,
-          subtitle: 1,
           status: 1,
           createdAt: 1,
         },
@@ -217,11 +229,11 @@ class ShowtimeController {
         },
         { $unwind: { path: "$hall", preserveNullAndEmptyArrays: true } },
 
-        // Lookup theater
+        // Lookup theater from hall
         {
           $lookup: {
             from: "theaters",
-            localField: "theater_id",
+            localField: "hall.theater_id",
             foreignField: "_id",
             as: "theater",
           },
@@ -230,13 +242,12 @@ class ShowtimeController {
 
         {
           $project: {
-            movie: { _id: 1, title: 1, poster_url: 1 },
+            movie: { _id: 1, title: 1, poster_url: 1, duration_minutes: 1 },
             hall: { _id: 1, hall_name: 1, screen_type: 1 },
             theater: { _id: 1, name: 1, province: 1, city: 1 },
+            show_date: 1,
             start_time: 1,
             end_time: 1,
-            language: 1,
-            subtitle: 1,
             status: 1,
             createdAt: 1,
           },
@@ -267,23 +278,20 @@ class ShowtimeController {
   static async create(req, res) {
     try {
       const showTimeData = req.body;
-      const { movie_id, hall_id, theater_id, start_time, end_time } =
-        showTimeData;
+      const { movie_id, hall_id, show_date, start_time } = showTimeData;
 
       // Basic validation
-      if (!movie_id || !hall_id || !theater_id || !start_time || !end_time) {
+      if (!movie_id || !hall_id || !show_date || !start_time) {
         return res.status(400).json({
           success: false,
-          message:
-            "movie_id, hall_id, theater_id, start_time, and end_time are required.",
+          message: "movie_id, hall_id, show_date, and start_time are required.",
         });
       }
 
       // Check if referenced documents exist and are active
-      const [movie, hall, theater] = await Promise.all([
+      const [movie, hall] = await Promise.all([
         Movie.findOne({ _id: movie_id, deletedAt: null }),
         Hall.findOne({ _id: hall_id, deletedAt: null }),
-        Theater.findOne({ _id: theater_id, deletedAt: null }),
       ]);
 
       if (!movie) {
@@ -298,28 +306,9 @@ class ShowtimeController {
           message: "Hall not found or has been deleted.",
         });
       }
-      if (!theater) {
-        return res.status(404).json({
-          success: false,
-          message: "Theater not found or has been deleted.",
-        });
-      }
 
-      // Check for overlapping showtimes
-      const overlapping = await Showtime.findOverlappingShowtimes(
-        hall_id,
-        new Date(start_time),
-        new Date(end_time)
-      );
-
-      if (overlapping.length > 0) {
-        return res.status(409).json({
-          success: false,
-          message:
-            "This showtime overlaps with an existing showtime in the same hall.",
-          data: { overlappingShowtimes: overlapping },
-        });
-      }
+      // The overlap check is now handled by the pre-save middleware in the model
+      // which also calculates the end_time.
 
       // Prepare and save the new showtime
       const showtimeToCreate = { ...showTimeData };
@@ -339,6 +328,24 @@ class ShowtimeController {
         data: { showtime },
       });
     } catch (error) {
+      // Handle known validation errors from the model's pre-save hook
+      if (error.message.includes("cannot be in the past")) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Showtime cannot be in the past. Please choose a future date and time.",
+          errors: error.message,
+        });
+      }
+      if (error.message.includes("overlaps")) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Showtime conflict. The selected time overlaps with an existing showtime in this hall.",
+          errors: error.message,
+        });
+      }
+
       if (error.name === "ValidationError") {
         return res.status(400).json({
           success: false,
@@ -363,73 +370,49 @@ class ShowtimeController {
 
       ShowtimeController.validateObjectId(id);
 
-      // Sanitize update data
-      delete updateData._id;
-      delete updateData.createdAt;
-      delete updateData.updatedAt;
-      delete updateData.deletedAt;
-      delete updateData.deletedBy;
-      delete updateData.restoredAt;
-      delete updateData.restoredBy;
-
-      // Add updater info
-      if (req.user) {
-        updateData.updatedBy = req.user.userId;
-      }
-
-      // If timing or hall is changing, we must check for overlaps
-      const OverlapCheck =
-        updateData.start_time || updateData.end_time || updateData.hall_id;
-      if (OverlapCheck) {
-        const originalShowtime = await Showtime.findById(id).lean();
-        if (!originalShowtime) {
-          return res
-            .status(404)
-            .json({ success: false, message: "Showtime not found" });
-        }
-
-        const hallId = updateData.hall_id || originalShowtime.hall_id;
-        const startTime =
-          new Date(updateData.start_time) ||
-          new Date(originalShowtime.start_time);
-        const endTime =
-          new Date(updateData.end_time) || new Date(originalShowtime.end_time);
-
-        const overlapping = await Showtime.findOverlappingShowtimes(
-          hallId,
-          startTime,
-          endTime,
-          id
-        );
-        if (overlapping.length > 0) {
-          return res.status(409).json({
-            success: false,
-            message:
-              "The updated showtime overlaps with an existing showtime in the same hall.",
-            data: { overlappingShowtimes: overlapping },
-          });
-        }
-      }
-
-      const showtime = await Showtime.findByIdAndUpdate(id, updateData, {
-        new: true,
-        runValidators: true,
-      });
-
+      const showtime = await Showtime.findById(id);
       if (!showtime) {
         return res
           .status(404)
           .json({ success: false, message: "Showtime not found" });
       }
 
+      // Update fields
+      Object.assign(showtime, updateData);
+      if (req.user) {
+        showtime.updatedBy = req.user.userId;
+      }
+
+      // .save() will trigger the pre-save hook which handles end_time calculation and overlap validation
+      const updatedShowtime = await showtime.save();
+
       logger.info(`Updated showtime: ${id}`);
       res.status(200).json({
         success: true,
         message: "Showtime updated successfully",
-        data: { showtime },
+        data: { showtime: updatedShowtime },
       });
     } catch (error) {
+      // Handle known validation errors from the model's pre-save hook
+      if (error.message.includes("cannot be in the past")) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Showtime cannot be in the past. Please choose a future date and time.",
+          errors: error.message,
+        });
+      }
+      if (error.message.includes("overlaps")) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "Showtime conflict. The selected time overlaps with an existing showtime in this hall.",
+          errors: error.message,
+        });
+      }
+
       if (error.name === "ValidationError") {
+        // This will now catch Mongoose validation errors from .save()
         return res.status(400).json({
           success: false,
           message: "Validation failed",
@@ -526,9 +509,9 @@ class ShowtimeController {
       // When restoring, check for conflicts as if it were a new showtime
       const overlapping = await Showtime.findOverlappingShowtimes(
         showtime.hall_id,
+        showtime.show_date,
         showtime.start_time,
-        showtime.end_time,
-        showtime._id // Exclude itself from the check
+        showtime.end_time
       );
 
       if (overlapping.length > 0) {
@@ -723,7 +706,7 @@ class ShowtimeController {
       res.status(200).json({
         success: true,
         message: "Showtime status updated successfully",
-        data: { showtime: updatedShowtime },
+        data: { showtime },
       });
     } catch (error) {
       if (error.message === "Invalid showtime ID format") {
@@ -757,6 +740,248 @@ class ShowtimeController {
         success: false,
         message: "Failed to retrieve showtime analytics",
       });
+    }
+  }
+
+  // 11. BULK CREATE SHOWTIMES
+  static async createBulk(req, res) {
+    try {
+      const { showtimes } = req.body;
+
+      if (!showtimes || !Array.isArray(showtimes) || showtimes.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Request body must contain a non-empty array of showtimes.",
+        });
+      }
+
+      const createdShowtimes = [];
+      const errors = [];
+      const createdBy = req.user?.userId;
+
+      for (let i = 0; i < showtimes.length; i++) {
+        const showtimeData = showtimes[i];
+        try {
+          const showtime = new Showtime({ ...showtimeData, createdBy });
+          await showtime.save();
+          createdShowtimes.push(showtime);
+        } catch (error) {
+          errors.push({
+            index: i,
+            data: showtimeData,
+            error: error.message,
+          });
+        }
+      }
+
+      if (errors.length > 0) {
+        logger.error("Bulk create showtime encountered errors:", { errors });
+        return res.status(409).json({
+          success: false,
+          message: "Some showtimes could not be created.",
+          data: {
+            createdCount: createdShowtimes.length,
+            failedCount: errors.length,
+            createdShowtimes,
+            errors,
+          },
+        });
+      }
+
+      logger.info(`Bulk created ${createdShowtimes.length} showtimes.`);
+      res.status(201).json({
+        success: true,
+        message: "All showtimes created successfully.",
+        data: {
+          createdCount: createdShowtimes.length,
+          createdShowtimes,
+        },
+      });
+    } catch (error) {
+      logger.error("Bulk create showtime error:", error);
+      res.status(500).json({
+        success: false,
+        message: "An unexpected error occurred during bulk creation.",
+      });
+    }
+  }
+
+  // 12. BULK SOFT DELETE SHOWTIMES
+  static async deleteBulk(req, res) {
+    try {
+      const { showtimeIds } = req.body;
+
+      if (
+        !showtimeIds ||
+        !Array.isArray(showtimeIds) ||
+        showtimeIds.length === 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Request body must contain a non-empty array of showtime IDs.",
+        });
+      }
+
+      const deletedShowtimes = [];
+      const errors = [];
+      const deletedBy = req.user?.userId;
+
+      // Fetch all candidate showtimes at once to reduce DB calls
+      const validIds = showtimeIds.filter((id) => {
+        if (mongoose.Types.ObjectId.isValid(id)) {
+          return true;
+        }
+        errors.push({ id, error: "Invalid ID format." });
+        return false;
+      });
+
+      const showtimes = await Showtime.find({ _id: { $in: validIds } });
+      const showtimeMap = new Map(showtimes.map((s) => [s._id.toString(), s]));
+
+      for (const id of validIds) {
+        const showtime = showtimeMap.get(id);
+
+        if (!showtime) {
+          errors.push({ id, error: "Showtime not found." });
+          continue;
+        }
+
+        if (showtime.isDeleted()) {
+          errors.push({ id, error: "Showtime is already deactivated." });
+          continue;
+        }
+
+        await showtime.softDelete(deletedBy);
+        deletedShowtimes.push(id);
+      }
+
+      if (errors.length > 0) {
+        logger.warn("Bulk delete showtime encountered errors:", { errors });
+        return res.status(409).json({
+          success: false,
+          message: "Some showtimes could not be deactivated.",
+          data: {
+            deletedCount: deletedShowtimes.length,
+            failedCount: errors.length,
+            deletedShowtimeIds: deletedShowtimes,
+            errors,
+          },
+        });
+      }
+
+      logger.info(`Bulk deactivated ${deletedShowtimes.length} showtimes.`);
+      res.status(200).json({
+        success: true,
+        message: "All specified showtimes deactivated successfully.",
+        data: {
+          deletedCount: deletedShowtimes.length,
+          deletedShowtimeIds: deletedShowtimes,
+        },
+      });
+    } catch (error) {
+      logger.error("Bulk delete showtime error:", error);
+      res.status(500).json({
+        success: false,
+        message: "An unexpected error occurred during bulk deactivation.",
+      });
+    }
+  }
+
+  // 13. BULK DUPLICATE SHOWTIMES
+  static async duplicateBulk(req, res) {
+    try {
+        const { sourceShowtimeIds, newShowDate } = req.body;
+        const createdBy = req.user?.userId;
+
+        if (!sourceShowtimeIds || !Array.isArray(sourceShowtimeIds) || sourceShowtimeIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Request body must contain a non-empty array of sourceShowtimeIds.",
+            });
+        }
+        if (!newShowDate) {
+            return res.status(400).json({
+                success: false,
+                message: "Request body must contain a newShowDate.",
+            });
+        }
+
+        // Fail early if the target date is in the past
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (new Date(newShowDate) < today) {
+          return res.status(400).json({
+            success: false,
+            message: "The target date for duplication cannot be in the past.",
+          });
+        }
+
+        const createdShowtimes = [];
+        const errors = [];
+
+        const sourceShowtimes = await Showtime.find({ _id: { $in: sourceShowtimeIds } }).lean();
+        const sourceShowtimeMap = new Map(sourceShowtimes.map(s => [s._id.toString(), s]));
+
+        for (const id of sourceShowtimeIds) {
+            const sourceShowtime = sourceShowtimeMap.get(id);
+
+            if (!sourceShowtime) {
+                errors.push({ sourceId: id, error: "Source showtime not found." });
+                continue;
+            }
+
+            const newShowtimeData = {
+                movie_id: sourceShowtime.movie_id,
+                hall_id: sourceShowtime.hall_id,
+                show_date: newShowDate,
+                start_time: sourceShowtime.start_time,
+                createdBy: createdBy,
+            };
+
+            try {
+                const newShowtime = new Showtime(newShowtimeData);
+                await newShowtime.save();
+                createdShowtimes.push(newShowtime);
+            } catch (error) {
+                errors.push({
+                    sourceId: id,
+                    data: newShowtimeData,
+                    error: error.message,
+                });
+            }
+        }
+
+        if (errors.length > 0) {
+            logger.error("Bulk duplicate showtime encountered errors:", { errors });
+            return res.status(409).json({
+                success: false,
+                message: "Some showtimes could not be duplicated.",
+                data: {
+                    createdCount: createdShowtimes.length,
+                    failedCount: errors.length,
+                    createdShowtimes,
+                    errors,
+                },
+            });
+        }
+
+        logger.info(`Bulk duplicated ${createdShowtimes.length} showtimes.`);
+        res.status(201).json({
+            success: true,
+            message: "All specified showtimes duplicated successfully.",
+            data: {
+                createdCount: createdShowtimes.length,
+                createdShowtimes,
+            },
+        });
+
+    } catch (error) {
+        logger.error("Bulk duplicate showtime error:", error);
+        res.status(500).json({
+            success: false,
+            message: "An unexpected error occurred during bulk duplication.",
+        });
     }
   }
 }

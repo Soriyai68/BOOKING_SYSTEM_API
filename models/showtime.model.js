@@ -2,22 +2,30 @@ const mongoose = require("mongoose");
 
 const showtimeSchema = new mongoose.Schema(
   {
-    show_date: {
-      type: Date,
-      required: true,
-    },
     hall_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Hall",
       required: true,
     },
+    movie_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Movie",
+    },
+    show_date: {
+      type: Date,
+      required: true,
+    },
     start_time: {
-      type: String, // first start-time (can be dynamic depend on admin input)
+      type: String,
       required: true,
     },
     end_time: {
       type: String,
-      required: true, // last end-time (always fixed value 19:00)
+    },
+    status: {
+      type: String,
+      enum: ["scheduled", "completed", "cancelled"],
+      default: "scheduled",
     },
     // Soft delete
     deletedAt: { type: Date, default: null, index: true },
@@ -60,12 +68,14 @@ showtimeSchema.index({ createdAt: 1 });
 // Static methods
 showtimeSchema.statics.findOverlappingShowtimes = function (
   hallId,
+  showDate,
   startTime,
   endTime,
   showtimeId = null
 ) {
   const query = {
     hall_id: hallId,
+    show_date: showDate,
     start_time: { $lt: endTime },
     end_time: { $gt: startTime },
     deletedAt: null,
@@ -86,7 +96,7 @@ showtimeSchema.statics.findAvailableByMovie = function (movieId, date) {
 
   return this.find({
     movie_id: movieId,
-    start_time: { $gte: startOfDay, $lte: endOfDay },
+    show_date: { $gte: startOfDay, $lte: endOfDay },
     status: "scheduled",
     deletedAt: null,
   });
@@ -102,7 +112,7 @@ showtimeSchema.statics.findByHallAndDate = function (hallId, date) {
 
   return this.find({
     hall_id: hallId,
-    start_time: { $gte: startOfDay, $lte: endOfDay },
+    show_date: { $gte: startOfDay, $lte: endOfDay },
     deletedAt: null,
   }).sort("start_time");
 };
@@ -175,7 +185,16 @@ showtimeSchema.statics.getAnalytics = async function (query = {}) {
           { $sort: { count: -1 } },
         ],
         byTheater: [
-          { $group: { _id: "$theater_id", count: { $sum: 1 } } },
+          {
+            $lookup: {
+              from: "halls",
+              localField: "hall_id",
+              foreignField: "_id",
+              as: "hall",
+            },
+          },
+          { $unwind: { path: "$hall", preserveNullAndEmptyArrays: true } },
+          { $group: { _id: "$hall.theater_id", count: { $sum: 1 } } },
           {
             $lookup: {
               from: "theaters",
@@ -246,11 +265,17 @@ showtimeSchema.methods.isDeleted = function () {
 };
 
 showtimeSchema.methods.isUpcoming = function () {
-  return this.start_time > new Date();
+  const [hours, minutes] = this.start_time.split(":");
+  const showDateTime = new Date(this.show_date);
+  showDateTime.setHours(hours, minutes, 0, 0);
+  return showDateTime > new Date();
 };
 
 showtimeSchema.methods.isPast = function () {
-  return this.end_time < new Date();
+  const [hours, minutes] = this.end_time.split(":");
+  const showEndDateTime = new Date(this.show_date);
+  showEndDateTime.setHours(hours, minutes, 0, 0);
+  return showEndDateTime < new Date();
 };
 
 showtimeSchema.methods.updateStatus = function (newStatus, updateBy = null) {
@@ -272,16 +297,98 @@ showtimeSchema.pre(/^find/, function (next) {
   next();
 });
 
-// Pre-save: validate overlapping, auto-update status
+// Pre-save: auto-calculate end time, validate overlapping, auto-update status
 showtimeSchema.pre("save", async function (next) {
+  // Auto-calculate end_time from movie duration if not provided or if dependencies change
+  if (
+    this.isNew ||
+    this.isModified("start_time") ||
+    this.isModified("movie_id")
+  ) {
+    if (this.movie_id && this.start_time) {
+      try {
+        // Use mongoose.model() to avoid circular dependency issues
+        const Movie = mongoose.model("Movie");
+        const movie = await Movie.findById(this.movie_id);
+
+        if (movie && movie.duration_minutes) {
+          const showDate = new Date(this.show_date);
+          const year = showDate.getFullYear();
+          const month = showDate.getMonth();
+          const day = showDate.getDate();
+
+          const [startHours, startMinutes] = this.start_time
+            .split(":")
+            .map(Number);
+
+          const startDateTime = new Date(
+            year,
+            month,
+            day,
+            startHours,
+            startMinutes
+          );
+
+          // Add a 15-minute buffer/cleanup time after the movie
+          const bufferMinutes = 15;
+          const totalDuration = movie.duration_minutes + bufferMinutes;
+
+          const endDateTime = new Date(
+            startDateTime.getTime() + totalDuration * 60000
+          );
+
+          const endHours = String(endDateTime.getHours()).padStart(2, "0");
+          const endMinutes = String(endDateTime.getMinutes()).padStart(2, "0");
+
+          this.end_time = `${endHours}:${endMinutes}`;
+        }
+      } catch (error) {
+        return next(
+          new Error(`Failed to calculate end time: ${error.message}`)
+        );
+      }
+    }
+  }
+
+  // Ensure end_time is present before proceeding
+  if (!this.end_time) {
+    return next(
+      new Error(
+        "Showtime end_time is required but was not provided and could not be calculated."
+      )
+    );
+  }
+
+  // Validate that the showtime is not in the past.
+  if (
+    this.isNew ||
+    this.isModified("start_time") ||
+    this.isModified("show_date")
+  ) {
+    const showDate = new Date(this.show_date);
+    const year = showDate.getFullYear();
+    const month = showDate.getMonth();
+    const day = showDate.getDate();
+    const [startHours, startMinutes] = this.start_time.split(":").map(Number);
+    const startDateTime = new Date(year, month, day, startHours, startMinutes);
+
+    if (startDateTime < new Date()) {
+      return next(
+        new Error("Showtime start date and time cannot be in the past.")
+      );
+    }
+  }
+
   // Check for overlapping showtimes
   if (
     this.isNew ||
     this.isModified("start_time") ||
-    this.isModified("end_time")
+    this.isModified("end_time") ||
+    this.isModified("show_date")
   ) {
     const overlapping = await this.constructor.findOverlappingShowtimes(
       this.hall_id,
+      this.show_date,
       this.start_time,
       this.end_time,
       this._id
@@ -297,8 +404,14 @@ showtimeSchema.pre("save", async function (next) {
   }
 
   // Auto-update status if end_time passed
-  if (this.status === "scheduled" && this.end_time < new Date()) {
-    this.status = "completed";
+  if (this.status === "scheduled") {
+    const [hours, minutes] = this.end_time.split(":");
+    const showEndDateTime = new Date(this.show_date);
+    showEndDateTime.setHours(hours, minutes, 0, 0);
+
+    if (showEndDateTime < new Date()) {
+      this.status = "completed";
+    }
   }
 
   next();

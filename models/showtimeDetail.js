@@ -12,17 +12,18 @@ const showtimeDetailSchema = new mongoose.Schema(
       ref: "Movie",
       required: true,
     },
+    show_date: {
+      type: Date,
+      required: true,
+    },
     start_time: {
-      type: String, // start from start time till end time of the showtime's model
+      type: String,
       required: true,
     },
     end_time: {
       type: String, // auto-calculated based on movie duration
       required: true,
     },
-    language: { type: String, default: "Original" },
-    subtitle: { type: String, default: "Original" },
-
     status: {
       type: String,
       enum: ["scheduled", "completed", "cancelled"],

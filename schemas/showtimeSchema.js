@@ -26,58 +26,87 @@ const createShowtimeSchema = Joi.object({
   hall_id: objectId
     .required()
     .messages({ "any.required": "Hall ID is required" }),
-  theater_id: objectId
-    .required()
-    .messages({ "any.required": "Theater ID is required" }),
-  start_time: Joi.date().iso().min("now").required().messages({
-    "date.format": "Start time must be in ISO 8601 format",
-    "any.required": "Start time is required",
-    "date.min": "Start time cannot be in the past",
+  show_date: Joi.date().iso().required().messages({
+    "date.format": "Show date must be in ISO 8601 format",
+    "any.required": "Show date is required",
   }),
-  end_time: Joi.date()
-    .iso()
-    .greater(Joi.ref("start_time"))
+  start_time: Joi.string()
+    .pattern(/^([0-1]\d|2[0-3]):([0-5]\d)$/)
     .required()
     .messages({
-      "date.format": "End time must be in ISO 8601 format",
-      "date.greater": "End time must be after start time",
-      "any.required": "End time is required",
+      "string.pattern.base": "Start time must be in HH:MM format.",
+      "any.required": "Start time is required.",
     }),
-  language: Joi.string()
-    .trim()
+
+  end_time: Joi.string()
+    .pattern(/^([0-1]\d|2[0-3]):([0-5]\d)$/)
     .optional()
-    .messages({ "string.base": "Language must be a string" }),
-  subtitle: Joi.string()
-    .trim()
-    .optional()
-    .messages({ "string.base": "Subtitle must be a string" }),
+    .messages({
+      "string.pattern.base": "End time must be in HH:MM format.",
+    }),
   status: Joi.string()
     .valid(...SHOWTIME_STATUSES)
     .default("scheduled")
     .messages({
       "any.only": `Status must be one of: ${SHOWTIME_STATUSES.join(", ")}`,
     }),
+}).custom((value, helpers) => {
+  if (
+    value.start_time &&
+    value.end_time &&
+    value.end_time <= value.start_time
+  ) {
+    return helpers.message("End time must be after start time.");
+  }
+  return value;
+});
+// Bulk Create Showtime Schema
+const createBulkShowtimeSchema = Joi.object({
+  showtimes: Joi.array()
+    .items(createShowtimeSchema)
+    .min(1)
+    .max(100)
+    .required()
+    .messages({
+      "array.min": "At least one showtime must be provided",
+      "array.max": "Cannot create more than 100 showtimes at once",
+      "any.required": "Showtimes array is required",
+    }),
 });
 
 const updateShowtimeSchema = Joi.object({
   movie_id: objectId,
   hall_id: objectId,
-  theater_id: objectId,
-  start_time: Joi.date().iso(),
-  end_time: Joi.date()
-    .iso()
-    .when("start_time", {
-      is: Joi.exist(),
-      then: Joi.date().greater(Joi.ref("start_time")),
+  show_date: Joi.date().iso(),
+  start_time: Joi.string()
+    .pattern(/^([0-1]\d|2[0-3]):([0-5]\d)$/)
+    .required()
+    .messages({
+      "string.pattern.base": "Start time must be in HH:MM format.",
+      "any.required": "Start time is required.",
     }),
-  language: Joi.string().trim(),
-  subtitle: Joi.string().trim(),
+
+  end_time: Joi.string()
+    .pattern(/^([0-1]\d|2[0-3]):([0-5]\d)$/)
+    .optional()
+    .messages({
+      "string.pattern.base": "End time must be in HH:MM format.",
+    }),
   status: Joi.string().valid(...SHOWTIME_STATUSES),
 })
   .min(1)
+  .custom((value, helpers) => {
+    if (
+      value.start_time &&
+      value.end_time &&
+      value.end_time <= value.start_time
+    ) {
+      return helpers.message("End time must be after start time.");
+    }
+    return value;
+  })
   .messages({
     "object.min": "At least one field must be provided for update",
-    "date.greater": "End time must be after start time (when updating both)",
   });
 
 // Path Parameter
@@ -164,6 +193,18 @@ const batchDeleteSchema = Joi.object({
   permanent: Joi.boolean().default(false),
 });
 
+const duplicateBulkShowtimeSchema = Joi.object({
+  sourceShowtimeIds: Joi.array().items(objectId).min(1).max(100).required().messages({
+    "array.min": "At least one source showtime ID is required",
+    "array.max": "Cannot duplicate more than 100 showtimes at once",
+    "any.required": "sourceShowtimeIds array is required",
+  }),
+  newShowDate: Joi.date().iso().required().messages({
+    "date.format": "newShowDate must be in ISO 8601 format",
+    "any.required": "newShowDate is required",
+  }),
+});
+
 const batchUpdateStatusSchema = Joi.object({
   showtimeIds: Joi.array().items(objectId).min(1).max(100).required().messages({
     "array.min": "At least one showtime ID is required",
@@ -180,6 +221,7 @@ module.exports = {
   SHOWTIME_STATUSES,
 
   createShowtimeSchema,
+  createBulkShowtimeSchema,
   updateShowtimeSchema,
   showtimeIdParamSchema,
   getAllShowtimesQuerySchema,
@@ -192,4 +234,5 @@ module.exports = {
 
   analyticsQuerySchema,
   paginationSchema,
+  duplicateBulkShowtimeSchema,
 };
