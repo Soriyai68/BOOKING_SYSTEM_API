@@ -887,102 +887,93 @@ class ShowtimeController {
       });
     }
   }
-
-  // 13. BULK DUPLICATE SHOWTIMES
-  static async duplicateBulk(req, res) {
+  // 13. GET SHOWTIMES BY IDS
+  static async getByIds(req, res) {
     try {
-        const { sourceShowtimeIds, newShowDate } = req.body;
-        const createdBy = req.user?.userId;
+      const { showtimeIds } = req.body;
 
-        if (!sourceShowtimeIds || !Array.isArray(sourceShowtimeIds) || sourceShowtimeIds.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: "Request body must contain a non-empty array of sourceShowtimeIds.",
-            });
-        }
-        if (!newShowDate) {
-            return res.status(400).json({
-                success: false,
-                message: "Request body must contain a newShowDate.",
-            });
-        }
-
-        // Fail early if the target date is in the past
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (new Date(newShowDate) < today) {
-          return res.status(400).json({
-            success: false,
-            message: "The target date for duplication cannot be in the past.",
-          });
-        }
-
-        const createdShowtimes = [];
-        const errors = [];
-
-        const sourceShowtimes = await Showtime.find({ _id: { $in: sourceShowtimeIds } }).lean();
-        const sourceShowtimeMap = new Map(sourceShowtimes.map(s => [s._id.toString(), s]));
-
-        for (const id of sourceShowtimeIds) {
-            const sourceShowtime = sourceShowtimeMap.get(id);
-
-            if (!sourceShowtime) {
-                errors.push({ sourceId: id, error: "Source showtime not found." });
-                continue;
-            }
-
-            const newShowtimeData = {
-                movie_id: sourceShowtime.movie_id,
-                hall_id: sourceShowtime.hall_id,
-                show_date: newShowDate,
-                start_time: sourceShowtime.start_time,
-                createdBy: createdBy,
-            };
-
-            try {
-                const newShowtime = new Showtime(newShowtimeData);
-                await newShowtime.save();
-                createdShowtimes.push(newShowtime);
-            } catch (error) {
-                errors.push({
-                    sourceId: id,
-                    data: newShowtimeData,
-                    error: error.message,
-                });
-            }
-        }
-
-        if (errors.length > 0) {
-            logger.error("Bulk duplicate showtime encountered errors:", { errors });
-            return res.status(409).json({
-                success: false,
-                message: "Some showtimes could not be duplicated.",
-                data: {
-                    createdCount: createdShowtimes.length,
-                    failedCount: errors.length,
-                    createdShowtimes,
-                    errors,
-                },
-            });
-        }
-
-        logger.info(`Bulk duplicated ${createdShowtimes.length} showtimes.`);
-        res.status(201).json({
-            success: true,
-            message: "All specified showtimes duplicated successfully.",
-            data: {
-                createdCount: createdShowtimes.length,
-                createdShowtimes,
-            },
+      if (
+        !showtimeIds ||
+        !Array.isArray(showtimeIds) ||
+        showtimeIds.length === 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Request body must contain a non-empty array of showtimeIds.",
         });
+      }
 
+      const objectIds = showtimeIds.map(
+        (id) => new mongoose.Types.ObjectId(id)
+      );
+
+      const showtimes = await Showtime.aggregate([
+        { $match: { _id: { $in: objectIds }, deletedAt: null } },
+
+        // Lookup movie
+        {
+          $lookup: {
+            from: "movies",
+            localField: "movie_id",
+            foreignField: "_id",
+            as: "movie",
+          },
+        },
+        { $unwind: { path: "$movie", preserveNullAndEmptyArrays: true } },
+
+        // Lookup hall
+        {
+          $lookup: {
+            from: "halls",
+            localField: "hall_id",
+            foreignField: "_id",
+            as: "hall",
+          },
+        },
+        { $unwind: { path: "$hall", preserveNullAndEmptyArrays: true } },
+
+        // Lookup theater from hall
+        {
+          $lookup: {
+            from: "theaters",
+            localField: "hall.theater_id",
+            foreignField: "_id",
+            as: "theater",
+          },
+        },
+        { $unwind: { path: "$theater", preserveNullAndEmptyArrays: true } },
+
+        {
+          $project: {
+            movie: { _id: 1, title: 1, poster_url: 1, duration_minutes: 1 },
+            hall: { _id: 1, hall_name: 1, screen_type: 1 },
+            theater: { _id: 1, name: 1, province: 1, city: 1 },
+            show_date: 1,
+            start_time: 1,
+            end_time: 1,
+            status: 1,
+            createdAt: 1,
+          },
+        },
+      ]);
+
+      if (!showtimes || showtimes.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No showtimes found for the provided IDs.",
+        });
+      }
+
+      res.status(200).json({ success: true, data: showtimes });
     } catch (error) {
-        logger.error("Bulk duplicate showtime error:", error);
-        res.status(500).json({
-            success: false,
-            message: "An unexpected error occurred during bulk duplication.",
-        });
+      logger.error("Get showtimes by IDs error:", error);
+      res.status(500).json({
+        success: false,
+        message: "An unexpected error occurred while fetching showtimes.",
+      });
     }
   }
 }
+
 module.exports = ShowtimeController;

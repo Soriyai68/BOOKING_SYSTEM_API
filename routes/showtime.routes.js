@@ -81,7 +81,7 @@ router.post(
 );
 // POST /api/showtimes/bulk - Create multiple showtimes (Admin/SuperAdmin only)
 router.post(
-  "/bulk",
+  "/bulk/create",
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
   middlewares.validator(showtimeSchema.createBulkShowtimeSchema),
@@ -90,21 +90,22 @@ router.post(
 
 // DELETE /api/showtimes/bulk - Soft delete multiple showtimes (Admin/SuperAdmin only)
 router.delete(
-  "/bulk",
+  "/bulk/delete",
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
   middlewares.validator(showtimeSchema.batchDeleteSchema),
   ShowtimeController.deleteBulk
 );
 
-// POST /api/showtimes/bulk/duplicate - Duplicate multiple showtimes for a new date (Admin/SuperAdmin only)
+// POST /api/showtimes/bulk/get-by-ids - Get multiple showtimes by IDs (admin/superadmin only)
 router.post(
-  "/bulk/duplicate",
+  "/bulk/get-by-ids",
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
-  middlewares.validator(showtimeSchema.duplicateBulkShowtimeSchema),
-  ShowtimeController.duplicateBulk
+  middlewares.validator(showtimeSchema.getShowtimesByIdsSchema),
+  ShowtimeController.getByIds
 );
+
 // GET /api/showtimes/:id - Get a single showtime by ID
 router.get(
   "/:id",

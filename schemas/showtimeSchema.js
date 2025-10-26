@@ -193,15 +193,11 @@ const batchDeleteSchema = Joi.object({
   permanent: Joi.boolean().default(false),
 });
 
-const duplicateBulkShowtimeSchema = Joi.object({
-  sourceShowtimeIds: Joi.array().items(objectId).min(1).max(100).required().messages({
-    "array.min": "At least one source showtime ID is required",
-    "array.max": "Cannot duplicate more than 100 showtimes at once",
-    "any.required": "sourceShowtimeIds array is required",
-  }),
-  newShowDate: Joi.date().iso().required().messages({
-    "date.format": "newShowDate must be in ISO 8601 format",
-    "any.required": "newShowDate is required",
+const getShowtimesByIdsSchema = Joi.object({
+  showtimeIds: Joi.array().items(objectId).min(1).max(100).required().messages({
+    "array.min": "At least one showtime ID is required",
+    "array.max": "Cannot request more than 100 showtimes at once",
+    "any.required": "showtimeIds array is required",
   }),
 });
 
@@ -234,5 +230,5 @@ module.exports = {
 
   analyticsQuerySchema,
   paginationSchema,
-  duplicateBulkShowtimeSchema,
+  getShowtimesByIdsSchema,
 };
