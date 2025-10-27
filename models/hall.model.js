@@ -412,5 +412,24 @@ hallSchema.pre(
     }
   }
 );
+// After a hall is created or updated
+hallSchema.post("save", async function () {
+  const Theater = mongoose.model("Theater");
+  const theater = await Theater.findById(this.theater_id);
+  if (theater) {
+    await theater.updateTotalHalls();
+  }
+});
+
+// After a hall is deleted
+hallSchema.post("findOneAndDelete", async function (doc) {
+  if (doc) {
+    const Theater = mongoose.model("Theater");
+    const theater = await Theater.findById(doc.theater_id);
+    if (theater) {
+      await theater.updateTotalHalls();
+    }
+  }
+});
 
 module.exports = mongoose.model("Hall", hallSchema);

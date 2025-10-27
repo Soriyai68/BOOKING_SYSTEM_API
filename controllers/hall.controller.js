@@ -265,7 +265,7 @@ class HallController {
         try {
           const theater = await Theater.findById(hall.theater_id);
           if (theater) {
-            await theater.calculateTotalCapacity();
+            await theater.updateTotalHalls();
             logger.info(`Updated capacity for theater ${theater._id}`);
           }
         } catch (theaterError) {
@@ -494,7 +494,7 @@ class HallController {
         try {
           const theater = await Theater.findById(deletedHall.theater_id);
           if (theater) {
-            await theater.calculateTotalCapacity();
+            await theater.updateTotalHalls();
             logger.info(
               `Updated capacity for theater ${theater._id} after deleting hall ${deletedHall._id}`
             );
