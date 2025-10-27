@@ -887,91 +887,75 @@ class ShowtimeController {
       });
     }
   }
-  // 13. GET SHOWTIMES BY IDS
-  static async getByIds(req, res) {
+  //13. Duplicate multiple showtimes at once (edit & create new)
+  static async duplicateBulk(req, res, next) {
     try {
-      const { showtimeIds } = req.body;
+      const { showtimes } = req.body;
 
-      if (
-        !showtimeIds ||
-        !Array.isArray(showtimeIds) ||
-        showtimeIds.length === 0
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Request body must contain a non-empty array of showtimeIds.",
-        });
+      if (!Array.isArray(showtimes) || showtimes.length === 0) {
+        return res.status(400).json({ message: "No showtimes provided" });
       }
 
-      const objectIds = showtimeIds.map(
-        (id) => new mongoose.Types.ObjectId(id)
+      // Separate showtimes into two groups:
+      // 1. showtimes that already have an _id (existing showtimes to duplicate)
+      // 2. showtimes without an _id (new showtimes to create)
+      const showtimesToDuplicate = showtimes.filter((s) => s._id);
+      const showtimesToCreate = showtimes.filter((s) => !s._id);
+
+      // Get IDs of showtimes to duplicate
+      const duplicateIds = showtimesToDuplicate.map((s) => s._id);
+
+      // Fetch original showtimes from DB if there are IDs
+      let originalShowtimes = [];
+      if (duplicateIds.length > 0) {
+        originalShowtimes = await Showtime.find({ _id: { $in: duplicateIds } });
+      }
+
+      // Map original showtimes by their ID for quick lookup
+      const originalShowtimesMap = new Map(
+        originalShowtimes.map((showtime) => [
+          showtime._id.toString(),
+          showtime.toObject(),
+        ])
       );
 
-      const showtimes = await Showtime.aggregate([
-        { $match: { _id: { $in: objectIds }, deletedAt: null } },
+      // Create duplicated showtimes
+      const duplicatedShowtimes = showtimesToDuplicate
+        .map((submittedShowtime) => {
+          const original = originalShowtimesMap.get(submittedShowtime._id);
+          if (!original) return null; // skip if original not found
 
-        // Lookup movie
-        {
-          $lookup: {
-            from: "movies",
-            localField: "movie_id",
-            foreignField: "_id",
-            as: "movie",
-          },
-        },
-        { $unwind: { path: "$movie", preserveNullAndEmptyArrays: true } },
+          return {
+            ...original, // start with original showtime data
+            ...submittedShowtime, // overwrite with submitted data
+            _id: undefined, // ensure a new ID is created
+            __v: undefined,
+            createdAt: undefined,
+            updatedAt: undefined,
+          };
+        })
+        .filter(Boolean); // remove nulls
 
-        // Lookup hall
-        {
-          $lookup: {
-            from: "halls",
-            localField: "hall_id",
-            foreignField: "_id",
-            as: "hall",
-          },
-        },
-        { $unwind: { path: "$hall", preserveNullAndEmptyArrays: true } },
+      // Combine duplicated showtimes with the new ones to create
+      const showtimesToInsert = [...duplicatedShowtimes, ...showtimesToCreate];
 
-        // Lookup theater from hall
-        {
-          $lookup: {
-            from: "theaters",
-            localField: "hall.theater_id",
-            foreignField: "_id",
-            as: "theater",
-          },
-        },
-        { $unwind: { path: "$theater", preserveNullAndEmptyArrays: true } },
-
-        {
-          $project: {
-            movie: { _id: 1, title: 1, poster_url: 1, duration_minutes: 1 },
-            hall: { _id: 1, hall_name: 1, screen_type: 1 },
-            theater: { _id: 1, name: 1, province: 1, city: 1 },
-            show_date: 1,
-            start_time: 1,
-            end_time: 1,
-            status: 1,
-            createdAt: 1,
-          },
-        },
-      ]);
-
-      if (!showtimes || showtimes.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "No showtimes found for the provided IDs.",
-        });
+      if (showtimesToInsert.length === 0) {
+        return res
+          .status(400)
+          .json({ message: "No valid showtimes to create." });
       }
 
-      res.status(200).json({ success: true, data: showtimes });
-    } catch (error) {
-      logger.error("Get showtimes by IDs error:", error);
-      res.status(500).json({
-        success: false,
-        message: "An unexpected error occurred while fetching showtimes.",
+      // Insert all new showtimes into the database
+      const insertedShowtimes = await Showtime.insertMany(showtimesToInsert);
+
+      // Send response
+      res.status(201).json({
+        message: `${insertedShowtimes.length} showtimes created/duplicated successfully.`,
+        data: insertedShowtimes,
       });
+    } catch (err) {
+      console.error("Error in duplicateBulk:", err);
+      next(err);
     }
   }
 }

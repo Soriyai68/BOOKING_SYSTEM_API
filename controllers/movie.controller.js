@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Movie = require('../models/movie.model');
+const Showtime = require('../models/showtime.model'); // Import Showtime model
 const { Role } = require('../data');
 const logger = require('../utils/logger');
 
@@ -378,6 +379,22 @@ class MovieController {
         });
       }
 
+      // Check if movie has associated showtimes
+      const associatedShowtimes = await Showtime.countDocuments({
+        movie_id: id,
+        deletedAt: null, // Only count active showtimes
+      });
+
+      if (associatedShowtimes > 0) {
+        return res.status(409).json({
+          success: false,
+          message: `Cannot delete movie. It has ${associatedShowtimes} associated active showtime(s). Please delete or reassign the showtimes first.`,
+          data: {
+            associatedShowtimesCount: associatedShowtimes,
+          },
+        });
+      }
+
       const deletedMovie = await movie.softDelete(req.user?.userId);
 
       logger.info(`Soft deleted movie: ${id} (${deletedMovie.title})`);
@@ -486,6 +503,30 @@ class MovieController {
         return res.status(404).json({
           success: false,
           message: 'Movie not found'
+        });
+      }
+
+      // Check if movie has associated showtimes (even soft deleted ones)
+      const associatedShowtimes = await Showtime.find({
+        movie_id: id,
+      });
+
+      if (associatedShowtimes.length > 0) {
+        const activeShowtimes = associatedShowtimes.filter((showtime) => !showtime.deletedAt);
+        const deletedShowtimes = associatedShowtimes.filter((showtime) => showtime.deletedAt);
+
+        return res.status(409).json({
+          success: false,
+          message: `Cannot permanently delete movie. It has ${associatedShowtimes.length} associated showtime(s) (${activeShowtimes.length} active, ${deletedShowtimes.length} deleted). Please permanently delete all showtimes first.`,
+          data: {
+            totalShowtimes: associatedShowtimes.length,
+            activeShowtimes: activeShowtimes.length,
+            deletedShowtimes: deletedShowtimes.length,
+            showtimeIds: associatedShowtimes.map((showtime) => ({
+              id: showtime._id,
+              status: showtime.deletedAt ? "deleted" : "active",
+            })),
+          },
         });
       }
 

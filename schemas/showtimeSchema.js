@@ -193,12 +193,50 @@ const batchDeleteSchema = Joi.object({
   permanent: Joi.boolean().default(false),
 });
 
-const getShowtimesByIdsSchema = Joi.object({
-  showtimeIds: Joi.array().items(objectId).min(1).max(100).required().messages({
-    "array.min": "At least one showtime ID is required",
-    "array.max": "Cannot request more than 100 showtimes at once",
-    "any.required": "showtimeIds array is required",
-  }),
+// Duplicate showtimes schema
+const duplicateShowtimesSchema = Joi.object({
+  showtimes: Joi.array()
+    .items(
+      Joi.object({
+        movie_id: objectId.required().messages({
+          "any.required": "Movie ID is required",
+        }),
+        hall_id: objectId.required().messages({
+          "any.required": "Hall ID is required",
+        }),
+        show_date: Joi.date().iso().required().messages({
+          "date.format": "Show date must be in ISO 8601 format",
+          "any.required": "Show date is required",
+        }),
+        start_time: Joi.string()
+          .pattern(/^([0-1]\d|2[0-3]):([0-5]\d)$/)
+          .optional()
+          .messages({
+            "string.pattern.base": `"start_time" must be in HH:mm format`,
+          }),
+        end_time: Joi.string()
+          .pattern(/^([0-1]\d|2[0-3]):([0-5]\d)$/)
+          .optional()
+          .messages({
+            "string.pattern.base": `"end_time" must be in HH:mm format`,
+          }),
+        status: Joi.string()
+          .valid(...SHOWTIME_STATUSES)
+          .default("scheduled")
+          .messages({
+            "any.only": `Status must be one of: ${SHOWTIME_STATUSES.join(
+              ", "
+            )}`,
+          }),
+      })
+    )
+    .min(1)
+    .required()
+    .messages({
+      "array.base": `"showtimes" must be an array`,
+      "array.min": `"showtimes" must contain at least one item`,
+      "any.required": `"showtimes" field is required`,
+    }),
 });
 
 const batchUpdateStatusSchema = Joi.object({
@@ -230,5 +268,5 @@ module.exports = {
 
   analyticsQuerySchema,
   paginationSchema,
-  getShowtimesByIdsSchema,
+  duplicateShowtimesSchema,
 };

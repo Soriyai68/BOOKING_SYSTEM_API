@@ -97,13 +97,13 @@ router.delete(
   ShowtimeController.deleteBulk
 );
 
-// POST /api/showtimes/bulk/get-by-ids - Get multiple showtimes by IDs (admin/superadmin only)
+// POST /api/showtimes/bulk/duplicate - Duplicate multiple showtimes (Admin/SuperAdmin only)
 router.post(
-  "/bulk/get-by-ids",
+  "/bulk/duplicate",
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
-  middlewares.validator(showtimeSchema.getShowtimesByIdsSchema),
-  ShowtimeController.getByIds
+  middlewares.validator(showtimeSchema.duplicateShowtimesSchema),
+  ShowtimeController.duplicateBulk
 );
 
 // GET /api/showtimes/:id - Get a single showtime by ID

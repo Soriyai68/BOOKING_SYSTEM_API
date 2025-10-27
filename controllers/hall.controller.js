@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Hall = require("../models/hall.model");
+const Showtime = require("../models/showtime.model"); // Import Showtime model
 const { Role } = require("../data");
 const logger = require("../utils/logger");
 
@@ -661,6 +662,30 @@ class HallController {
               identifier:
                 seat.seat_identifier || `${seat.row}${seat.seat_number}`,
               status: seat.deletedAt ? "deleted" : "active",
+            })),
+          },
+        });
+      }
+
+      // Check if hall has associated showtimes (even soft deleted ones)
+      const associatedShowtimes = await Showtime.find({
+        hall_id: id,
+      });
+
+      if (associatedShowtimes.length > 0) {
+        const activeShowtimes = associatedShowtimes.filter((showtime) => !showtime.deletedAt);
+        const deletedShowtimes = associatedShowtimes.filter((showtime) => showtime.deletedAt);
+
+        return res.status(409).json({
+          success: false,
+          message: `Cannot permanently delete hall. It has ${associatedShowtimes.length} associated showtime(s) (${activeShowtimes.length} active, ${deletedShowtimes.length} deleted). Please permanently delete all showtimes first.`,
+          data: {
+            totalShowtimes: associatedShowtimes.length,
+            activeShowtimes: activeShowtimes.length,
+            deletedShowtimes: deletedShowtimes.length,
+            showtimeIds: associatedShowtimes.map((showtime) => ({
+              id: showtime._id,
+              status: showtime.deletedAt ? "deleted" : "active",
             })),
           },
         });

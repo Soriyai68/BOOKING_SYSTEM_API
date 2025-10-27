@@ -416,4 +416,39 @@ showtimeSchema.pre("save", async function (next) {
 
   next();
 });
+
+// Auto-update status on find operations
+showtimeSchema.post(/^find/, async function (result, next) {
+  try {
+    if (!result) {
+      return next();
+    }
+
+    const docs = Array.isArray(result) ? result : [result];
+    const now = new Date();
+    const updates = [];
+
+    for (const doc of docs) {
+      if (doc && doc.status === "scheduled" && doc.end_time && doc.show_date) {
+        const [hours, minutes] = doc.end_time.split(":");
+        const showEndDateTime = new Date(doc.show_date);
+        showEndDateTime.setHours(hours, minutes, 0, 0);
+
+        if (showEndDateTime < now) {
+          doc.status = "completed";
+          updates.push(doc.save()); // This will trigger a save and its own middleware
+        }
+      }
+    }
+
+    if (updates.length > 0) {
+      await Promise.all(updates);
+    }
+  } catch (error) {
+    console.error("Error in post-find hook for showtime status update:", error);
+    // We call next() anyway to not break the query for the client
+  }
+  next();
+});
+
 module.exports = mongoose.model("Showtime", showtimeSchema);

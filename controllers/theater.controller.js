@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Theater = require('../models/theater.model');
 const Hall = require('../models/hall.model');
+const Showtime = require('../models/showtime.model'); // Import Showtime model
 const { Role } = require('../data');
 
 /**
@@ -430,10 +431,26 @@ class TheaterController {
       if (associatedHalls.length > 0) {
         return res.status(409).json({
           success: false,
-          // message: `Cannot delete theater. It has ${associatedHalls.length} associated hall(s). Please delete or reassign the halls first.`,
+          message: `Cannot delete theater. It has ${associatedHalls.length} associated hall(s). Please delete or reassign the halls first.`,
           data: {
             associatedHallsCount: associatedHalls.length,
             hallNames: associatedHalls.map((hall) => hall.hall_name),
+          },
+        });
+      }
+
+      // Check if theater has associated showtimes
+      const associatedShowtimes = await Showtime.countDocuments({
+        theater_id: id,
+        deletedAt: null, // Only count active showtimes
+      });
+
+      if (associatedShowtimes > 0) {
+        return res.status(409).json({
+          success: false,
+          message: `Cannot delete theater. It has ${associatedShowtimes} associated active showtime(s). Please delete or reassign the showtimes first.`,
+          data: {
+            associatedShowtimesCount: associatedShowtimes,
           },
         });
       }
@@ -575,6 +592,30 @@ class TheaterController {
             hallNames: associatedHalls.map((hall) => ({
               name: hall.hall_name,
               status: hall.deletedAt ? "deleted" : "active",
+            })),
+          },
+        });
+      }
+
+      // Check if theater has associated showtimes (even soft deleted ones)
+      const associatedShowtimes = await Showtime.find({
+        theater_id: id,
+      });
+
+      if (associatedShowtimes.length > 0) {
+        const activeShowtimes = associatedShowtimes.filter((showtime) => !showtime.deletedAt);
+        const deletedShowtimes = associatedShowtimes.filter((showtime) => showtime.deletedAt);
+
+        return res.status(409).json({
+          success: false,
+          message: `Cannot permanently delete theater. It has ${associatedShowtimes.length} associated showtime(s) (${activeShowtimes.length} active, ${deletedShowtimes.length} deleted). Please permanently delete all showtimes first.`,
+          data: {
+            totalShowtimes: associatedShowtimes.length,
+            activeShowtimes: activeShowtimes.length,
+            deletedShowtimes: deletedShowtimes.length,
+            showtimeIds: associatedShowtimes.map((showtime) => ({
+              id: showtime._id,
+              status: showtime.deletedAt ? "deleted" : "active",
             })),
           },
         });
