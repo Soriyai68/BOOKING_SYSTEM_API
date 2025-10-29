@@ -766,19 +766,31 @@ class ShowtimeController {
           await showtime.save();
           createdShowtimes.push(showtime);
         } catch (error) {
+          let errorMessage = error.message;
+          if (error.message.includes("cannot be in the past")) {
+            errorMessage =
+              "Showtime start date and time cannot be in the past.";
+          } else if (error.message.includes("overlaps")) {
+            errorMessage =
+              "Showtime overlaps with an existing showtime in the same hall.";
+          }
           errors.push({
             index: i,
             data: showtimeData,
-            error: error.message,
+            error: errorMessage,
           });
         }
       }
 
       if (errors.length > 0) {
         logger.error("Bulk create showtime encountered errors:", { errors });
+        let message = "Some showtimes could not be created.";
+        if (errors.length === 1) {
+          message = errors[0].error;
+        }
         return res.status(409).json({
           success: false,
-          message: "Some showtimes could not be created.",
+          message,
           data: {
             createdCount: createdShowtimes.length,
             failedCount: errors.length,
@@ -1015,22 +1027,16 @@ class ShowtimeController {
         return res.status(400).json({ message: "No showtimes provided" });
       }
 
-      // Separate showtimes into two groups:
-      // 1. showtimes that already have an _id (existing showtimes to duplicate)
-      // 2. showtimes without an _id (new showtimes to create)
       const showtimesToDuplicate = showtimes.filter((s) => s._id);
       const showtimesToCreate = showtimes.filter((s) => !s._id);
 
-      // Get IDs of showtimes to duplicate
       const duplicateIds = showtimesToDuplicate.map((s) => s._id);
 
-      // Fetch original showtimes from DB if there are IDs
       let originalShowtimes = [];
       if (duplicateIds.length > 0) {
         originalShowtimes = await Showtime.find({ _id: { $in: duplicateIds } });
       }
 
-      // Map original showtimes by their ID for quick lookup
       const originalShowtimesMap = new Map(
         originalShowtimes.map((showtime) => [
           showtime._id.toString(),
@@ -1038,24 +1044,22 @@ class ShowtimeController {
         ])
       );
 
-      // Create duplicated showtimes
       const duplicatedShowtimes = showtimesToDuplicate
         .map((submittedShowtime) => {
           const original = originalShowtimesMap.get(submittedShowtime._id);
-          if (!original) return null; // skip if original not found
+          if (!original) return null;
 
           return {
-            ...original, // start with original showtime data
-            ...submittedShowtime, // overwrite with submitted data
-            _id: undefined, // ensure a new ID is created
+            ...original,
+            ...submittedShowtime,
+            _id: undefined,
             __v: undefined,
             createdAt: undefined,
             updatedAt: undefined,
           };
         })
-        .filter(Boolean); // remove nulls
+        .filter(Boolean);
 
-      // Combine duplicated showtimes with the new ones to create
       const showtimesToInsert = [...duplicatedShowtimes, ...showtimesToCreate];
 
       if (showtimesToInsert.length === 0) {
@@ -1064,13 +1068,63 @@ class ShowtimeController {
           .json({ message: "No valid showtimes to create." });
       }
 
-      // Insert all new showtimes into the database
-      const insertedShowtimes = await Showtime.insertMany(showtimesToInsert);
+      const createdShowtimes = [];
+      const errors = [];
+      const createdBy = req.user?.userId;
 
-      // Send response
+      for (let i = 0; i < showtimesToInsert.length; i++) {
+        const showtimeData = showtimesToInsert[i];
+        try {
+          const showtime = new Showtime({ ...showtimeData, createdBy });
+          await showtime.save();
+          createdShowtimes.push(showtime);
+        } catch (error) {
+          let errorMessage = error.message;
+          if (error.message.includes("cannot be in the past")) {
+            errorMessage =
+              "Showtime start date and time cannot be in the past.";
+          } else if (error.message.includes("overlaps")) {
+            errorMessage =
+              "Showtime overlaps with an existing showtime in the same hall.";
+          }
+          errors.push({
+            index: i,
+            data: showtimeData,
+            error: errorMessage,
+          });
+        }
+      }
+
+      if (errors.length > 0) {
+        logger.error("Bulk duplicate showtime encountered errors:", {
+          errors,
+        });
+        let message = "Some showtimes could not be created/duplicated.";
+        if (errors.length === 1) {
+          message = errors[0].error;
+        }
+        return res.status(409).json({
+          success: false,
+          message,
+          data: {
+            createdCount: createdShowtimes.length,
+            failedCount: errors.length,
+            createdShowtimes,
+            errors,
+          },
+        });
+      }
+
+      logger.info(
+        `Bulk duplicated/created ${createdShowtimes.length} showtimes.`
+      );
       res.status(201).json({
-        message: `${insertedShowtimes.length} showtimes created/duplicated successfully.`,
-        data: insertedShowtimes,
+        success: true,
+        message: "All showtimes created/duplicated successfully.",
+        data: {
+          createdCount: createdShowtimes.length,
+          createdShowtimes,
+        },
       });
     } catch (err) {
       console.error("Error in duplicateBulk:", err);
