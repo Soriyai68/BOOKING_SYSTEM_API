@@ -21,36 +21,24 @@ const createSeatSchema = Joi.object({
       "any.required": "Row is required",
     }),
 
-  seat_number: Joi.alternatives()
-    .try(
-      // Single seat number as string
+  seat_number: Joi.array()
+    .items(
       Joi.string()
         .trim()
         .uppercase()
         .min(1)
         .max(10)
-        .pattern(/^[A-Z0-9]+$/),
-      // Multiple seat numbers as array
-      Joi.array()
-        .items(
-          Joi.string()
-            .trim()
-            .uppercase()
-            .min(1)
-            .max(10)
-            .pattern(/^[A-Z0-9]+$/)
-        )
-        .min(1)
-        .max(10) // Limit to 10 seats per entry
-        .unique()
+        .pattern(/^[A-Z0-9]+$/)
     )
+    .min(1)
+    .max(10) // Limit to 10 seats per entry
+    .unique()
     .required()
     .messages({
-      "alternatives.match": "Seat number must be a string (1-10 chars) or array of strings (1-10 chars each)",
-      "string.empty": "Seat number is required",
       "string.min": "Each seat number must be at least 1 character",
       "string.max": "Each seat number cannot exceed 10 characters",
       "string.pattern.base": "Each seat number must contain only letters and numbers",
+      "array.base": "Seat number must be an array",
       "array.min": "At least one seat number is required",
       "array.max": "Cannot have more than 10 seat numbers per entry",
       "array.unique": "Duplicate seat numbers are not allowed",
@@ -94,34 +82,23 @@ const updateSeatSchema = Joi.object({
         "Row must start with a letter and contain only letters and numbers",
     }),
 
-  seat_number: Joi.alternatives()
-    .try(
-      // Single seat number as string
+  seat_number: Joi.array()
+    .items(
       Joi.string()
         .trim()
         .uppercase()
         .min(1)
         .max(10)
-        .pattern(/^[A-Z0-9]+$/),
-      // Multiple seat numbers as array
-      Joi.array()
-        .items(
-          Joi.string()
-            .trim()
-            .uppercase()
-            .min(1)
-            .max(10)
-            .pattern(/^[A-Z0-9]+$/)
-        )
-        .min(1)
-        .max(10)
-        .unique()
+        .pattern(/^[A-Z0-9]+$/)
     )
+    .min(1)
+    .max(10)
+    .unique()
     .messages({
-      "alternatives.match": "Seat number must be a string (1-10 chars) or array of strings (1-10 chars each)",
       "string.min": "Each seat number must be at least 1 character",
       "string.max": "Each seat number cannot exceed 10 characters",
       "string.pattern.base": "Each seat number must contain only letters and numbers",
+      "array.base": "Seat number must be an array",
       "array.min": "At least one seat number is required",
       "array.max": "Cannot have more than 10 seat numbers per entry",
       "array.unique": "Duplicate seat numbers are not allowed",

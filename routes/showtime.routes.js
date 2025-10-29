@@ -27,6 +27,15 @@ router.get(
   ShowtimeController.listDeleted
 );
 
+// DELETE /api/showtimes/bulk/force-delete - Permanently delete multiple showtimes (Admin/SuperAdmin only)
+// Place BEFORE "/:id/force-delete" to avoid route shadowing
+router.delete(
+  "/bulk/force-delete",
+  middlewares.authenticate,
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  ShowtimeController.forceDeleteBulk
+);
+
 // PUT /api/showtimes/:id/restore - Restore a deleted showtime (Admin/SuperAdmin only)
 router.put(
   "/:id/restore",
@@ -88,7 +97,7 @@ router.post(
   ShowtimeController.createBulk
 );
 
-// DELETE /api/showtimes/bulk - Soft delete multiple showtimes (Admin/SuperAdmin only)
+// DELETE /api/showtimes/bulk/delete - Soft delete multiple showtimes (Admin/SuperAdmin only)
 router.delete(
   "/bulk/delete",
   middlewares.authenticate,
@@ -96,6 +105,7 @@ router.delete(
   middlewares.validator(showtimeSchema.batchDeleteSchema),
   ShowtimeController.deleteBulk
 );
+
 
 // POST /api/showtimes/bulk/duplicate - Duplicate multiple showtimes (Admin/SuperAdmin only)
 router.post(

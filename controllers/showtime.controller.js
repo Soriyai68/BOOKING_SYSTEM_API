@@ -584,7 +584,7 @@ class ShowtimeController {
       await Showtime.findByIdAndDelete(id);
 
       logger.warn(
-        `⚠️ PERMANENT DELETION: Showtime permanently deleted by ${req.user.role} ${req.user.userId}`,
+        `PERMANENT DELETION: Showtime permanently deleted by ${req.user.role} ${req.user.userId}`,
         {
           deletedShowtime: {
             id: showtime._id,
@@ -887,7 +887,126 @@ class ShowtimeController {
       });
     }
   }
-  //13. Duplicate multiple showtimes at once (edit & create new)
+
+  // 13. BULK FORCE DELETE SHOWTIMES (Permanent)
+  static async forceDeleteBulk(req, res) {
+    try {
+      logger.info("Force delete bulk request received", { body: req.body });
+      const { showtimeIds } = req.body;
+
+      // Validate input
+      if (
+        !showtimeIds ||
+        !Array.isArray(showtimeIds) ||
+        showtimeIds.length === 0
+      ) {
+        logger.warn("Invalid showtime IDs array", { showtimeIds });
+        return res.status(400).json({
+          success: false,
+          message:
+            "Request body must contain a non-empty array of showtime IDs.",
+        });
+      }
+
+      // Authorization check
+      if (req.user?.role !== Role.ADMIN && req.user?.role !== Role.SUPERADMIN) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "Forbidden: Only Admins or SuperAdmins can permanently delete showtimes.",
+        });
+      }
+
+      const deletedShowtimes = [];
+      const errors = [];
+
+      // Validate all IDs
+      const validIds = showtimeIds.filter((id) => {
+        if (mongoose.Types.ObjectId.isValid(id)) {
+          return true;
+        }
+        errors.push({ id, error: "Invalid ID format." });
+        return false;
+      });
+
+      // Find all showtimes (including soft-deleted ones)
+      const showtimes = await Showtime.collection.find({
+        _id: { $in: validIds.map((id) => new mongoose.Types.ObjectId(id)) },
+      }).toArray();
+
+      const showtimeMap = new Map(
+        showtimes.map((s) => [s._id.toString(), s])
+      );
+
+      // Process each showtime for permanent deletion
+      for (const id of validIds) {
+        const showtime = showtimeMap.get(id);
+
+        if (!showtime) {
+          errors.push({ id, error: "Showtime not found." });
+          continue;
+        }
+
+        // Permanently delete the showtime
+        await Showtime.findByIdAndDelete(id);
+        deletedShowtimes.push(id);
+
+        logger.warn(
+          `PERMANENT DELETION: Showtime permanently deleted by ${req.user.role} ${req.user.userId}`,
+          {
+            deletedShowtime: {
+              id: showtime._id,
+              movie_id: showtime.movie_id,
+              hall_id: showtime.hall_id,
+              start_time: showtime.start_time,
+            },
+            deletedBy: req.user.userId,
+            deletedAt: new Date().toISOString(),
+          }
+        );
+      }
+
+      if (errors.length > 0) {
+        logger.warn(
+          "Bulk force delete showtime encountered errors:",
+          { errors }
+        );
+        return res.status(409).json({
+          success: false,
+          message: "Some showtimes could not be permanently deleted.",
+          data: {
+            deletedCount: deletedShowtimes.length,
+            failedCount: errors.length,
+            deletedShowtimeIds: deletedShowtimes,
+            errors,
+            warning: "These actions are irreversible.",
+          },
+        });
+      }
+
+      logger.info(
+        `Bulk permanently deleted ${deletedShowtimes.length} showtimes.`
+      );
+      res.status(200).json({
+        success: true,
+        message: "All specified showtimes permanently deleted.",
+        data: {
+          deletedCount: deletedShowtimes.length,
+          deletedShowtimeIds: deletedShowtimes,
+          warning: "These actions are irreversible.",
+        },
+      });
+    } catch (error) {
+      logger.error("Bulk force delete showtime error:", error);
+      res.status(500).json({
+        success: false,
+        message:
+          "An unexpected error occurred during bulk permanent deletion.",
+      });
+    }
+  }
+
+  //14. Duplicate multiple showtimes at once (edit & create new)
   static async duplicateBulk(req, res, next) {
     try {
       const { showtimes } = req.body;

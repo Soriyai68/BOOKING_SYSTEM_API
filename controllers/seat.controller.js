@@ -16,14 +16,13 @@ class SeatController {
     }
   }
 
-  // Helper method to build search query - handles both string and array seat_number
+  // Helper method to build search query - seat_number is always array
   static buildSearchQuery(search) {
     if (!search) return {};
 
     return {
       $or: [
         { row: { $regex: search, $options: "i" } },
-        { seat_number: { $regex: search, $options: "i" } }, // For string seat_number
         { seat_number: { $in: [new RegExp(search, "i")] } }, // For array seat_number
         { seat_type: { $regex: search, $options: "i" } },
         { notes: { $regex: search, $options: "i" } },
@@ -245,9 +244,9 @@ class SeatController {
       // ✅ Automatically assign theater_id based on the hall
       seatData.theater_id = hall.theater_id;
 
-      // ✅ Handle multi-seat validation
+      // ✅ Ensure seat_number is always an array
       let seatNumbers = seatData.seat_number;
-      if (typeof seatNumbers === 'string') {
+      if (!Array.isArray(seatNumbers)) {
         seatNumbers = [seatNumbers];
       }
       
@@ -268,12 +267,9 @@ class SeatController {
       
       const conflictingSeats = [];
       for (const existingSeat of existingSeats) {
-        const existingNumbers = Array.isArray(existingSeat.seat_number) 
-          ? existingSeat.seat_number 
-          : [existingSeat.seat_number];
-        
+        // seat_number is always an array now
         for (const newSeatNumber of uniqueSeatNumbers) {
-          if (existingNumbers.includes(newSeatNumber.toUpperCase())) {
+          if (existingSeat.seat_number.includes(newSeatNumber.toUpperCase())) {
             conflictingSeats.push(newSeatNumber);
           }
         }
@@ -286,11 +282,11 @@ class SeatController {
         });
       }
 
-      // ✅ Create new seat with multi-seat support
+      // ✅ Create new seat - seat_number is always stored as array
       const processedSeatData = {
         ...seatData,
         row: seatData.row.toUpperCase(),
-        seat_number: uniqueSeatNumbers.length === 1 ? uniqueSeatNumbers[0] : uniqueSeatNumbers,
+        seat_number: uniqueSeatNumbers,
       };
       
       const newSeat = await Seat.create(processedSeatData);
@@ -367,10 +363,10 @@ class SeatController {
       if (updateData.seat_number)
         // updateData.seat_number = updateData.seat_number.toUpperCase();
 
-      // Validate unique constraint for multi-seat if row/seat_number or hall changes
+      // Validate unique constraint if row/seat_number or hall changes
       if (updateData.row || updateData.seat_number || updateData.hall_id) {
         let newSeatNumbers = updateData.seat_number || currentSeat.seat_number;
-        if (typeof newSeatNumbers === 'string') {
+        if (!Array.isArray(newSeatNumbers)) {
           newSeatNumbers = [newSeatNumbers];
         }
         
@@ -392,12 +388,9 @@ class SeatController {
         
         const conflictingSeats = [];
         for (const existingSeat of existingSeats) {
-          const existingNumbers = Array.isArray(existingSeat.seat_number) 
-            ? existingSeat.seat_number 
-            : [existingSeat.seat_number];
-          
+          // seat_number is always an array now
           for (const newSeatNumber of uniqueNewSeatNumbers) {
-            if (existingNumbers.includes(newSeatNumber)) {
+            if (existingSeat.seat_number.includes(newSeatNumber)) {
               conflictingSeats.push(newSeatNumber);
             }
           }
@@ -410,9 +403,9 @@ class SeatController {
           });
         }
         
-        // Update seat_number to be single string or array based on count
+        // seat_number is always stored as array
         if (updateData.seat_number) {
-          updateData.seat_number = uniqueNewSeatNumbers.length === 1 ? uniqueNewSeatNumbers[0] : uniqueNewSeatNumbers;
+          updateData.seat_number = uniqueNewSeatNumbers;
         }
       }
 

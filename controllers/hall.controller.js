@@ -1219,7 +1219,7 @@ class HallController {
           seatsToCreate.push({
             hall_id: id,
             row: row.row.toUpperCase(),
-            seat_number: i.toString(),
+            seat_number: [i.toString()], // Always store as array
             seat_type: row.type || 'standard',
             price: row.price !== undefined ? row.price : defaultPrice || 0,
             status: 'active',
