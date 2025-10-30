@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Seat = require("../models/seat.model");
 const Hall = require("../models/hall.model");
-const { Role } = require("../data");
+const {Role} = require("../data");
 const logger = require("../utils/logger");
 
 /**
@@ -9,947 +9,1138 @@ const logger = require("../utils/logger");
  * Handles: getById, getAll, create, update, delete (soft), restore, forceDelete, listDeleted, updateStatus
  */
 class SeatController {
-  // Helper method to validate ObjectId
-  static validateObjectId(id) {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error("Invalid seat ID format");
-    }
-  }
-
-  // Helper method to build search query - seat_number is always array
-  static buildSearchQuery(search) {
-    if (!search) return {};
-
-    return {
-      $or: [
-        { row: { $regex: search, $options: "i" } },
-        { seat_number: { $in: [new RegExp(search, "i")] } }, // For array seat_number
-        { seat_type: { $regex: search, $options: "i" } },
-        { notes: { $regex: search, $options: "i" } },
-      ],
-    };
-  }
-
-  // Helper method to build filter query
-  static async buildFilterQuery(filters) {
-    const query = {};
-    // Handle seat by row
-    if (filters.row) {
-      query.row = filters.row;
-    }
-    // Handle seat type filter
-    if (filters.seat_type) {
-      query.seat_type = filters.seat_type;
-    }
-
-    // Handle status filter
-    if (filters.status) {
-      query.status = filters.status;
-    }
-
-    // Handle filter by hall_id and theater_id
-    if (filters.hall_id) {
-      query.hall_id = new mongoose.Types.ObjectId(filters.hall_id);
-    } else if (filters.theater_id) {
-      const hallsInTheater = await Hall.find({
-        theater_id: filters.theater_id,
-      }).select("_id");
-      const hallIds = hallsInTheater.map((h) => h._id);
-      query.hall_id = { $in: hallIds };
-    }
-
-    // Handle price range filters
-    if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
-      query.price = {};
-      if (filters.priceMin !== undefined) {
-        query.price.$gte = parseFloat(filters.priceMin);
-      }
-      if (filters.priceMax !== undefined) {
-        query.price.$lte = parseFloat(filters.priceMax);
-      }
-    }
-
-    // Handle date range filters
-    if (filters.dateFrom || filters.dateTo) {
-      query.createdAt = {};
-      if (filters.dateFrom) {
-        query.createdAt.$gte = new Date(filters.dateFrom);
-      }
-      if (filters.dateTo) {
-        query.createdAt.$lte = new Date(filters.dateTo);
-      }
-    }
-
-    return query;
-  }
-
-  // 1. GET ALL SEATS - with pagination, filtering, and sorting
-  static async getAll(req, res) {
-    try {
-      const {
-        page = 1,
-        limit = 10,
-        sortBy = "row",
-        sortOrder = "asc",
-        search,
-        includeDeleted = false,
-        ...filters
-      } = req.query;
-
-      // Convert and validate pagination
-      const pageNum = Math.max(1, parseInt(page));
-      const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
-      const skip = (pageNum - 1) * limitNum;
-
-      // Build query
-      let query = {};
-
-      // Handle search
-      if (search) {
-        query = { ...query, ...SeatController.buildSearchQuery(search) };
-      }
-
-      // Handle filters
-      query = { ...query, ...(await SeatController.buildFilterQuery(filters)) };
-
-      // Handle soft deleted records
-      if (!includeDeleted || includeDeleted === "false") {
-        query.deletedAt = null; // Only get non-deleted seats
-      }
-
-      // Build sort object
-      const sortObj = {};
-      sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
-
-      // Execute queries
-      const [seats, totalCount] = await Promise.all([
-        Seat.find(query)
-          .sort(sortObj)
-          .skip(skip)
-          .limit(limitNum)
-          .populate({
-            path: "hall_id",
-            select: "hall_name theater_id",
-            populate: { path: "theater_id", select: "name" },
-          })
-          .lean(),
-        Seat.countDocuments(query),
-      ]);
-
-      // Calculate pagination info
-      const totalPages = Math.ceil(totalCount / limitNum);
-      const hasNextPage = pageNum < totalPages;
-      const hasPrevPage = pageNum > 1;
-
-      logger.info(`Retrieved ${seats.length} seats`);
-
-      res.status(200).json({
-        success: true,
-        data: {
-          seats,
-          pagination: {
-            currentPage: pageNum,
-            totalPages,
-            totalCount,
-            limit: limitNum,
-            hasNextPage,
-            hasPrevPage,
-            nextPage: hasNextPage ? pageNum + 1 : null,
-            prevPage: hasPrevPage ? pageNum - 1 : null,
-          },
-        },
-      });
-    } catch (error) {
-      logger.error("Get all seats error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to retrieve seats",
-      });
-    }
-  }
-
-  // 2. GET SEAT BY ID
-  static async getById(req, res) {
-    try {
-      const { id } = req.params;
-
-      if (!id) {
-        return res.status(400).json({
-          success: false,
-          message: "Seat ID is required",
-        });
-      }
-
-      SeatController.validateObjectId(id);
-
-      const seat = await Seat.findById(id)
-        .populate({
-          path: "hall_id",
-          select: "hall_name theater_id",
-          populate: { path: "theater_id", select: "name" },
-        })
-        .lean();
-
-      if (!seat) {
-        return res.status(404).json({
-          success: false,
-          message: "Seat not found",
-        });
-      }
-
-      logger.info(`Retrieved seat by ID: ${id}`);
-
-      res.status(200).json({
-        success: true,
-        data: { seat },
-      });
-    } catch (error) {
-      if (error.message === "Invalid seat ID format") {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      }
-
-      logger.error("Get seat by ID error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to retrieve seat",
-      });
-    }
-  }
-
-  // 3. CREATE SEAT
-  static async create(req, res) {
-    try {
-      const seatData = req.body;
-
-      // ✅ Validate required fields
-      if (!seatData.hall_id || !seatData.row || !seatData.seat_number) {
-        return res.status(400).json({
-          success: false,
-          message: "Hall, row, and seat number are required",
-        });
-      }
-
-      // ✅ Find hall to get its theater_id
-      const hall = await Hall.findById(seatData.hall_id);
-      if (!hall) {
-        return res.status(404).json({
-          success: false,
-          message: "Hall not found",
-        });
-      }
-
-      // ✅ Automatically assign theater_id based on the hall
-      seatData.theater_id = hall.theater_id;
-
-      // ✅ Ensure seat_number is always an array
-      let seatNumbers = seatData.seat_number;
-      if (!Array.isArray(seatNumbers)) {
-        seatNumbers = [seatNumbers];
-      }
-      
-      // Check for duplicates in the input
-      const uniqueSeatNumbers = [...new Set(seatNumbers.map(s => s.toUpperCase()))];
-      if (uniqueSeatNumbers.length !== seatNumbers.length) {
-        return res.status(400).json({
-          success: false,
-          message: "Duplicate seat numbers are not allowed in the same entry",
-        });
-      }
-      
-      // Check if any seat number already exists in the same hall and row
-      const existingSeats = await Seat.find({
-        hall_id: seatData.hall_id,
-        row: seatData.row.toUpperCase(),
-      });
-      
-      const conflictingSeats = [];
-      for (const existingSeat of existingSeats) {
-        // seat_number is always an array now
-        for (const newSeatNumber of uniqueSeatNumbers) {
-          if (existingSeat.seat_number.includes(newSeatNumber.toUpperCase())) {
-            conflictingSeats.push(newSeatNumber);
-          }
+    // Helper method to validate ObjectId
+    static validateObjectId(id) {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            throw new Error("Invalid seat ID format");
         }
-      }
-      
-      if (conflictingSeats.length > 0) {
-        return res.status(400).json({
-          success: false,
-          message: `Seat(s) ${conflictingSeats.join(', ')} already exist(s) in row ${seatData.row} of this hall`,
-        });
-      }
-
-      // ✅ Create new seat - seat_number is always stored as array
-      const processedSeatData = {
-        ...seatData,
-        row: seatData.row.toUpperCase(),
-        seat_number: uniqueSeatNumbers,
-      };
-      
-      const newSeat = await Seat.create(processedSeatData);
-
-      return res.status(201).json({
-        success: true,
-        message: "Seat created successfully",
-        data: newSeat,
-      });
-    } catch (error) {
-      console.error("Error creating seat:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to create seat",
-        error: error.message,
-      });
     }
-  }
-  // 4. UPDATE SEAT
-  static async update(req, res) {
-    try {
-      const { id } = req.params;
-      const updateData = req.body;
 
-      if (!id) {
-        return res.status(400).json({
-          success: false,
-          message: "Seat ID is required",
-        });
-      }
+    // Helper method to build search query
+    static buildSearchQuery(search) {
+        if (!search) return {};
 
-      SeatController.validateObjectId(id);
+        const searchConditions = [
+            {row: {$regex: search, $options: "i"}},
+            {seat_type: {$regex: search, $options: "i"}},
+            {notes: {$regex: search, $options: "i"}},
+        ];
 
-      // Remove sensitive fields that shouldn't be updated directly
-      delete updateData._id;
-      delete updateData.createdAt;
-      delete updateData.updatedAt;
-      delete updateData.deletedAt;
-      delete updateData.deletedBy;
-      delete updateData.restoredAt;
-      delete updateData.restoredBy;
-
-      // Find current seat
-      const currentSeat = await Seat.findById(id);
-      if (!currentSeat) {
-        return res.status(404).json({
-          success: false,
-          message: "Seat not found",
-        });
-      }
-
-      // Add updater info
-      if (req.user) {
-        updateData.updatedBy = req.user.userId;
-      }
-
-      // Handle hall change: sync theater_id
-      if (
-        updateData.hall_id &&
-        updateData.hall_id !== currentSeat.hall_id.toString()
-      ) {
-        const newHall = await Hall.findById(updateData.hall_id).lean();
-        if (!newHall) {
-          return res.status(404).json({
-            success: false,
-            message: "New hall not found",
-          });
+        if (!isNaN(search)) {
+            searchConditions.push({seat_number: Number(search)});
         }
-        updateData.theater_id = newHall.theater_id;
-      }
 
-      // Ensure uppercase row and seat_number
-      if (updateData.row) updateData.row = updateData.row.toUpperCase();
-      if (updateData.seat_number)
-        // updateData.seat_number = updateData.seat_number.toUpperCase();
+        return {
+            $or: searchConditions,
+        };
+    }
 
-      // Validate unique constraint if row/seat_number or hall changes
-      if (updateData.row || updateData.seat_number || updateData.hall_id) {
-        let newSeatNumbers = updateData.seat_number || currentSeat.seat_number;
-        if (!Array.isArray(newSeatNumbers)) {
-          newSeatNumbers = [newSeatNumbers];
+    // Helper method to build filter query
+    static async buildFilterQuery(filters) {
+        const query = {};
+        // Handle seat by row
+        if (filters.row) {
+            query.row = filters.row;
         }
-        
-        // Check for duplicates in the input
-        const uniqueNewSeatNumbers = [...new Set(newSeatNumbers.map(s => s.toString().toUpperCase()))];
-        if (uniqueNewSeatNumbers.length !== newSeatNumbers.length) {
-          return res.status(400).json({
-            success: false,
-            message: "Duplicate seat numbers are not allowed in the same entry",
-          });
+        // Handle seat type filter
+        if (filters.seat_type) {
+            query.seat_type = filters.seat_type;
         }
-        
-        // Check existing seats in the same hall and row
-        const existingSeats = await Seat.find({
-          hall_id: updateData.hall_id || currentSeat.hall_id,
-          row: updateData.row || currentSeat.row,
-          _id: { $ne: id },
-        });
-        
-        const conflictingSeats = [];
-        for (const existingSeat of existingSeats) {
-          // seat_number is always an array now
-          for (const newSeatNumber of uniqueNewSeatNumbers) {
-            if (existingSeat.seat_number.includes(newSeatNumber)) {
-              conflictingSeats.push(newSeatNumber);
+
+        // Handle status filter
+        if (filters.status) {
+            query.status = filters.status;
+        }
+
+        // Handle filter by hall_id and theater_id
+        if (filters.hall_id) {
+            query.hall_id = new mongoose.Types.ObjectId(filters.hall_id);
+        } else if (filters.theater_id) {
+            const hallsInTheater = await Hall.find({
+                theater_id: filters.theater_id,
+            }).select("_id");
+            const hallIds = hallsInTheater.map((h) => h._id);
+            query.hall_id = {$in: hallIds};
+        }
+
+        // Handle price range filters
+        if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
+            query.price = {};
+            if (filters.priceMin !== undefined) {
+                query.price.$gte = parseFloat(filters.priceMin);
             }
-          }
+            if (filters.priceMax !== undefined) {
+                query.price.$lte = parseFloat(filters.priceMax);
+            }
         }
-        
-        if (conflictingSeats.length > 0) {
-          return res.status(409).json({
-            success: false,
-            message: `Seat(s) ${conflictingSeats.join(', ')} already exist(s) in row ${updateData.row || currentSeat.row} of this hall`,
-          });
+
+        // Handle date range filters
+        if (filters.dateFrom || filters.dateTo) {
+            query.createdAt = {};
+            if (filters.dateFrom) {
+                query.createdAt.$gte = new Date(filters.dateFrom);
+            }
+            if (filters.dateTo) {
+                query.createdAt.$lte = new Date(filters.dateTo);
+            }
         }
-        
-        // seat_number is always stored as array
-        if (updateData.seat_number) {
-          updateData.seat_number = uniqueNewSeatNumbers;
-        }
-      }
 
-      // Update seat
-      const seat = await Seat.findByIdAndUpdate(id, updateData, {
-        new: true,
-        runValidators: true,
-        context: "query",
-      })
-        .populate({
-          path: "hall_id",
-          select: "hall_name theater_id",
-          populate: { path: "theater_id", select: "name" },
-        })
-        .lean();
-
-      res.status(200).json({
-        success: true,
-        message: "Seat updated successfully",
-        data: { seat },
-      });
-    } catch (error) {
-      if (error.message === "Invalid seat ID format") {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      }
-
-      if (error.name === "ValidationError") {
-        return res.status(400).json({
-          success: false,
-          message: "Validation error",
-          errors: Object.values(error.errors).map((err) => err.message),
-        });
-      }
-
-      console.error("Update seat error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to update seat",
-      });
+        return query;
     }
-  }
 
-  // 5. SOFT DELETE SEAT (Deactivate)
-  static async delete(req, res) {
-    try {
-      const { id } = req.params;
-
-      if (!id) {
-        return res.status(400).json({
-          success: false,
-          message: "Seat ID is required",
-        });
-      }
-
-      SeatController.validateObjectId(id);
-
-      // Find the seat first
-      const seat = await Seat.findById(id);
-
-      if (!seat) {
-        return res.status(404).json({
-          success: false,
-          message: "Seat not found",
-        });
-      }
-
-      // Check if seat is already soft deleted
-      if (seat.isDeleted()) {
-        return res.status(409).json({
-          success: false,
-          message: "Seat is already deactivated",
-        });
-      }
-
-      // Soft delete using model method
-      const deletedSeat = await seat.softDelete(req.user?.userId);
-
-      // Update hall's total_seats count
-      if (deletedSeat.hall_id) {
+    // 1. GET ALL SEATS - with pagination, filtering, and sorting
+    static async getAll(req, res) {
         try {
-          await Hall.updateTotalSeatsForHall(deletedSeat.hall_id);
-          logger.info(`Updated total_seats for hall ${deletedSeat.hall_id}`);
-        } catch (hallError) {
-          logger.error(
-            `Failed to update total_seats for hall ${deletedSeat.hall_id}: ${hallError.message}`
-          );
-          // Don't fail the seat deletion, just log the error
+            const {
+                page = 1,
+                limit = 10,
+                sortBy = "row",
+                sortOrder = "asc",
+                search,
+                includeDeleted = false,
+                ...filters
+            } = req.query;
+
+            // Convert and validate pagination
+            const pageNum = Math.max(1, parseInt(page));
+            const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+            const skip = (pageNum - 1) * limitNum;
+
+            // Build query
+            let query = {};
+
+            // Handle search
+            if (search) {
+                query = {...query, ...SeatController.buildSearchQuery(search)};
+            }
+
+            // Handle filters
+            query = {...query, ...(await SeatController.buildFilterQuery(filters))};
+
+            // Handle soft deleted records
+            if (!includeDeleted || includeDeleted === "false") {
+                query.deletedAt = null; // Only get non-deleted seats
+            }
+
+            // Build sort object
+            const sortObj = {};
+            sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+            // Execute queries
+            const [seats, totalCount] = await Promise.all([
+                Seat.find(query)
+                    .sort(sortObj)
+                    .skip(skip)
+                    .limit(limitNum)
+                    .populate({
+                        path: "hall_id",
+                        select: "hall_name theater_id",
+                        populate: {path: "theater_id", select: "name"},
+                    })
+                    .lean(),
+                Seat.countDocuments(query),
+            ]);
+
+            // Calculate pagination info
+            const totalPages = Math.ceil(totalCount / limitNum);
+            const hasNextPage = pageNum < totalPages;
+            const hasPrevPage = pageNum > 1;
+
+            logger.info(`Retrieved ${seats.length} seats`);
+
+            res.status(200).json({
+                success: true,
+                data: {
+                    seats,
+                    pagination: {
+                        currentPage: pageNum,
+                        totalPages,
+                        totalCount,
+                        limit: limitNum,
+                        hasNextPage,
+                        hasPrevPage,
+                        nextPage: hasNextPage ? pageNum + 1 : null,
+                        prevPage: hasPrevPage ? pageNum - 1 : null,
+                    },
+                },
+            });
+        } catch (error) {
+            logger.error("Get all seats error:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to retrieve seats",
+            });
         }
-      }
-
-      logger.info(
-        `Soft deleted seat: ${id} (${deletedSeat.row}${deletedSeat.seat_number})`
-      );
-
-      res.status(200).json({
-        success: true,
-        message: "Seat deactivated successfully",
-        data: { seat: deletedSeat },
-      });
-    } catch (error) {
-      if (error.message === "Invalid seat ID format") {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      }
-
-      logger.error("Delete seat error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to deactivate seat",
-      });
     }
-  }
 
-  // 6. RESTORE SEAT (Reactivate)
-  static async restore(req, res) {
-    try {
-      const { id } = req.params;
-
-      if (!id) {
-        return res.status(400).json({
-          success: false,
-          message: "Seat ID is required",
-        });
-      }
-
-      SeatController.validateObjectId(id);
-
-      // Find the seat first
-      const seat = await Seat.findById(id);
-
-      if (!seat) {
-        return res.status(404).json({
-          success: false,
-          message: "Seat not found",
-        });
-      }
-
-      // Check if seat is not deleted (already active)
-      if (!seat.isDeleted()) {
-        return res.status(409).json({
-          success: false,
-          message: "Seat is already active",
-        });
-      }
-
-      // Restore using model method
-      const restoredSeat = await seat.restore(req.user?.userId);
-
-      // Update hall's total_seats count
-      if (restoredSeat.hall_id) {
+    // 2. GET SEAT BY ID
+    static async getById(req, res) {
         try {
-          await Hall.updateTotalSeatsForHall(restoredSeat.hall_id);
-          logger.info(`Updated total_seats for hall ${restoredSeat.hall_id}`);
-        } catch (hallError) {
-          logger.error(
-            `Failed to update total_seats for hall ${restoredSeat.hall_id}: ${hallError.message}`
-          );
-          // Don't fail the seat restoration, just log the error
+            const {id} = req.params;
+
+            if (!id) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Seat ID is required",
+                });
+            }
+
+            SeatController.validateObjectId(id);
+
+            const seat = await Seat.findById(id)
+                .populate({
+                    path: "hall_id",
+                    select: "hall_name theater_id",
+                    populate: {path: "theater_id", select: "name"},
+                })
+                .lean();
+
+            if (!seat) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Seat not found",
+                });
+            }
+
+            logger.info(`Retrieved seat by ID: ${id}`);
+
+            res.status(200).json({
+                success: true,
+                data: {seat},
+            });
+        } catch (error) {
+            if (error.message === "Invalid seat ID format") {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message,
+                });
+            }
+
+            logger.error("Get seat by ID error:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to retrieve seat",
+            });
         }
-      }
-
-      logger.info(
-        `Restored seat: ${id} (${restoredSeat.row}${restoredSeat.seat_number})`
-      );
-
-      res.status(200).json({
-        success: true,
-        message: "Seat restored successfully",
-        data: { seat: restoredSeat },
-      });
-    } catch (error) {
-      if (error.message === "Invalid seat ID format") {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      }
-
-      logger.error("Restore seat error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to restore seat",
-      });
     }
-  }
 
-  // 7. FORCE DELETE SEAT (Permanent deletion - Admin/SuperAdmin only)
-  static async forceDelete(req, res) {
-    try {
-      const { id } = req.params;
-
-      if (!id) {
-        return res.status(400).json({
-          success: false,
-          message: "Seat ID is required",
-        });
-      }
-
-      // Enforce Admin/SuperAdmin access
-      if (req.user?.role !== Role.ADMIN && req.user?.role !== Role.SUPERADMIN) {
-        return res.status(403).json({
-          success: false,
-          message: "Only Admin or SuperAdmin can permanently delete seats",
-        });
-      }
-
-      SeatController.validateObjectId(id);
-
-      // Find the seat first
-      const seat = await Seat.findById(id);
-
-      if (!seat) {
-        return res.status(404).json({
-          success: false,
-          message: "Seat not found",
-        });
-      }
-
-      // Store seat info for logging before deletion
-      const seatInfo = {
-        id: seat._id,
-        row: seat.row,
-        seat_number: seat.seat_number,
-        seat_type: seat.seat_type,
-        wasDeleted: seat.isDeleted(),
-        hall_id: seat.hall_id,
-      };
-
-      // Update hall's total_seats count before deletion
-      if (seatInfo.hall_id) {
+    // 3. CREATE SEAT
+    static async create(req, res) {
         try {
-          await Hall.updateTotalSeatsForHall(seatInfo.hall_id);
-          logger.info(`Updated total_seats for hall ${seatInfo.hall_id}`);
-        } catch (hallError) {
-          logger.error(
-            `Failed to update total_seats for hall ${seatInfo.hall_id}: ${hallError.message}`
-          );
-          // Don't fail the seat deletion, just log the error
+            const seatData = req.body;
+
+            // ✅ Validate required fields
+            if (!seatData.hall_id || !seatData.row || !seatData.seat_number) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Hall, row, and seat number are required",
+                });
+            }
+
+            // ✅ Find hall to get its theater_id
+            const hall = await Hall.findById(seatData.hall_id);
+            if (!hall) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Hall not found",
+                });
+            }
+
+            // ✅ Automatically assign theater_id based on the hall
+            seatData.theater_id = hall.theater_id;
+
+            // Check if seat number already exists in the same hall and row
+            const existingSeat = await Seat.findOne({
+                hall_id: seatData.hall_id,
+                row: seatData.row.toUpperCase(),
+                seat_number: seatData.seat_number,
+            });
+
+            if (existingSeat) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Seat ${seatData.seat_number} already exists in row ${seatData.row} of this hall`,
+                });
+            }
+
+            // ✅ Create new seat
+            const processedSeatData = {
+                ...seatData,
+                row: seatData.row.toUpperCase(),
+            };
+
+            const newSeat = await Seat.create(processedSeatData);
+
+            return res.status(201).json({
+                success: true,
+                message: "Seat created successfully",
+                data: newSeat,
+            });
+        } catch (error) {
+            console.error("Error creating seat:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Failed to create seat",
+                error: error.message,
+            });
         }
-      }
+    }
 
-      // Perform permanent deletion
-      await Seat.findByIdAndDelete(id);
+    // 4. UPDATE SEAT
+    static async update(req, res) {
+        try {
+            const {id} = req.params;
+            const updateData = req.body;
 
-      logger.warn(
-        `⚠️  PERMANENT DELETION: Seat permanently deleted by ${req.user.role} ${req.user.userId}`,
-        {
-          deletedSeat: seatInfo,
-          deletedBy: req.user.userId,
-          deletedAt: new Date().toISOString(),
-          action: "FORCE_DELETE_SEAT",
+            if (!id) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Seat ID is required",
+                });
+            }
+
+            SeatController.validateObjectId(id);
+
+            // Remove sensitive fields that shouldn't be updated directly
+            delete updateData._id;
+            delete updateData.createdAt;
+            delete updateData.updatedAt;
+            delete updateData.deletedAt;
+            delete updateData.deletedBy;
+            delete updateData.restoredAt;
+            delete updateData.restoredBy;
+
+            // Find current seat
+            const currentSeat = await Seat.findById(id);
+            if (!currentSeat) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Seat not found",
+                });
+            }
+
+            // Add updater info
+            if (req.user) {
+                updateData.updatedBy = req.user.userId;
+            }
+
+            // Handle hall change: sync theater_id
+            if (
+                updateData.hall_id &&
+                updateData.hall_id !== currentSeat.hall_id.toString()
+            ) {
+                const newHall = await Hall.findById(updateData.hall_id).lean();
+                if (!newHall) {
+                    return res.status(404).json({
+                        success: false,
+                        message: "New hall not found",
+                    });
+                }
+                updateData.theater_id = newHall.theater_id;
+            }
+
+            // Ensure uppercase row
+            if (updateData.row) updateData.row = updateData.row.toUpperCase();
+
+            // Validate unique constraint if row/seat_number or hall changes
+            if (updateData.row || updateData.seat_number || updateData.hall_id) {
+                const query = {
+                    hall_id: updateData.hall_id || currentSeat.hall_id,
+                    row: updateData.row || currentSeat.row,
+                    seat_number: updateData.seat_number || currentSeat.seat_number,
+                    _id: {$ne: id},
+                };
+                const existingSeat = await Seat.findOne(query);
+
+                if (existingSeat) {
+                    return res.status(409).json({
+                        success: false,
+                        message: `Seat ${query.seat_number} already exists in row ${query.row} of this hall`,
+                    });
+                }
+            }
+
+            // Update seat
+            const seat = await Seat.findByIdAndUpdate(id, updateData, {
+                new: true,
+                runValidators: true,
+                context: "query",
+            })
+                .populate({
+                    path: "hall_id",
+                    select: "hall_name theater_id",
+                    populate: {path: "theater_id", select: "name"},
+                })
+                .lean();
+
+            res.status(200).json({
+                success: true,
+                message: "Seat updated successfully",
+                data: {seat},
+            });
+        } catch (error) {
+            if (error.message === "Invalid seat ID format") {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message,
+                });
+            }
+
+            if (error.name === "ValidationError") {
+                return res.status(400).json({
+                    success: false,
+                    message: "Validation error",
+                    errors: Object.values(error.errors).map((err) => err.message),
+                });
+            }
+
+            console.error("Update seat error:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to update seat",
+            });
         }
-      );
-
-      res.status(200).json({
-        success: true,
-        message: "Seat permanently deleted",
-        data: {
-          deletedSeat: {
-            id: seatInfo.id,
-            row: seatInfo.row,
-            seat_number: seatInfo.seat_number,
-            seat_type: seatInfo.seat_type,
-          },
-          warning: "This action is irreversible",
-        },
-      });
-    } catch (error) {
-      if (error.message === "Invalid seat ID format") {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      }
-
-      logger.error("Force delete seat error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to permanently delete seat",
-      });
     }
-  }
 
-  // 8. LIST DELETED SEATS
-  static async listDeleted(req, res) {
-    try {
-      const {
-        page = 1,
-        limit = 10,
-        sortBy = "deletedAt",
-        sortOrder = "desc",
-      } = req.query;
+    // 5. SOFT DELETE SEAT (Deactivate)
+    static async delete(req, res) {
+        try {
+            const {id} = req.params;
 
-      const pageNum = Math.max(1, parseInt(page));
-      const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
-      const skip = (pageNum - 1) * limitNum;
+            if (!id) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Seat ID is required",
+                });
+            }
 
-      // Query for soft deleted seats only
-      const query = { deletedAt: { $ne: null } };
-      const sortObj = {};
-      sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
+            SeatController.validateObjectId(id);
 
-      const [seats, totalCount] = await Promise.all([
-        Seat.find(query).sort(sortObj).skip(skip).limit(limitNum).lean(),
-        Seat.countDocuments(query),
-      ]);
+            // Find the seat first
+            const seat = await Seat.findById(id);
 
-      // Add delete info to each seat
-      const seatsWithDeleteInfo = seats.map((seat) => ({
-        ...seat,
-        deleteInfo: {
-          deletedAt: seat.deletedAt,
-          deletedBy: seat.deletedBy,
-          daysSinceDeleted: seat.deletedAt
-            ? Math.floor(
-                (Date.now() - new Date(seat.deletedAt)) / (1000 * 60 * 60 * 24)
-              )
-            : null,
-        },
-        restoreInfo: {
-          restoredAt: seat.restoredAt,
-          restoredBy: seat.restoredBy,
-        },
-      }));
+            if (!seat) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Seat not found",
+                });
+            }
 
-      const totalPages = Math.ceil(totalCount / limitNum);
+            // Check if seat is already soft deleted
+            if (seat.isDeleted()) {
+                return res.status(409).json({
+                    success: false,
+                    message: "Seat is already deactivated",
+                });
+            }
 
-      logger.info(`Retrieved ${seats.length} deleted seats`);
+            // Soft delete using model method
+            const deletedSeat = await seat.softDelete(req.user?.userId);
 
-      res.status(200).json({
-        success: true,
-        data: {
-          seats: seatsWithDeleteInfo,
-          pagination: {
-            currentPage: pageNum,
-            totalPages,
-            totalCount,
-            limit: limitNum,
-            hasNextPage: pageNum < totalPages,
-            hasPrevPage: pageNum > 1,
-          },
-        },
-      });
-    } catch (error) {
-      logger.error("Get deleted seats error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to retrieve deleted seats",
-      });
+            // Update hall's total_seats count
+            if (deletedSeat.hall_id) {
+                try {
+                    await Hall.updateTotalSeatsForHall(deletedSeat.hall_id);
+                    logger.info(`Updated total_seats for hall ${deletedSeat.hall_id}`);
+                } catch (hallError) {
+                    logger.error(
+                        `Failed to update total_seats for hall ${deletedSeat.hall_id}: ${hallError.message}`
+                    );
+                    // Don't fail the seat deletion, just log the error
+                }
+            }
+
+            logger.info(
+                `Soft deleted seat: ${id} (${deletedSeat.row}${deletedSeat.seat_number})`
+            );
+
+            res.status(200).json({
+                success: true,
+                message: "Seat deactivated successfully",
+                data: {seat: deletedSeat},
+            });
+        } catch (error) {
+            if (error.message === "Invalid seat ID format") {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message,
+                });
+            }
+
+            logger.error("Delete seat error:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to deactivate seat",
+            });
+        }
     }
-  }
 
-  // 9. UPDATE SEAT STATUS
-  static async updateStatus(req, res) {
-    try {
-      const { id } = req.params;
-      const { status } = req.body;
+    // 6. RESTORE SEAT (Reactivate)
+    static async restore(req, res) {
+        try {
+            const {id} = req.params;
 
-      if (!id) {
-        return res.status(400).json({
-          success: false,
-          message: "Seat ID is required",
-        });
-      }
+            if (!id) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Seat ID is required",
+                });
+            }
 
-      if (!status) {
-        return res.status(400).json({
-          success: false,
-          message: "Status is required",
-        });
-      }
+            SeatController.validateObjectId(id);
 
-      SeatController.validateObjectId(id);
+            // Find the seat first
+            const seat = await Seat.findById(id);
 
-      // Find the seat first
-      const seat = await Seat.findById(id);
+            if (!seat) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Seat not found",
+                });
+            }
 
-      if (!seat) {
-        return res.status(404).json({
-          success: false,
-          message: "Seat not found",
-        });
-      }
+            // Check if seat is not deleted (already active)
+            if (!seat.isDeleted()) {
+                return res.status(409).json({
+                    success: false,
+                    message: "Seat is already active",
+                });
+            }
 
-      // Check if seat is deleted
-      if (seat.isDeleted()) {
-        return res.status(409).json({
-          success: false,
-          message:
-            "Cannot update status of deleted seat. Please restore it first.",
-        });
-      }
+            // Restore using model method
+            const restoredSeat = await seat.restore(req.user?.userId);
 
-      // Update status using model method
-      const updatedSeat = await seat.updateStatus(status, req.user?.userId);
+            // Update hall's total_seats count
+            if (restoredSeat.hall_id) {
+                try {
+                    await Hall.updateTotalSeatsForHall(restoredSeat.hall_id);
+                    logger.info(`Updated total_seats for hall ${restoredSeat.hall_id}`);
+                } catch (hallError) {
+                    logger.error(
+                        `Failed to update total_seats for hall ${restoredSeat.hall_id}: ${hallError.message}`
+                    );
+                    // Don't fail the seat restoration, just log the error
+                }
+            }
 
-      logger.info(
-        `Updated seat status: ${id} (${seat.row}${seat.seat_number}) to ${status}`
-      );
+            logger.info(
+                `Restored seat: ${id} (${restoredSeat.row}${restoredSeat.seat_number})`
+            );
 
-      res.status(200).json({
-        success: true,
-        message: "Seat status updated successfully",
-        data: { seat: updatedSeat },
-      });
-    } catch (error) {
-      if (error.message === "Invalid seat ID format") {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      }
+            res.status(200).json({
+                success: true,
+                message: "Seat restored successfully",
+                data: {seat: restoredSeat},
+            });
+        } catch (error) {
+            if (error.message === "Invalid seat ID format") {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message,
+                });
+            }
 
-      if (error.message === "Invalid status provided") {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      }
-
-      logger.error("Update seat status error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to update seat status",
-      });
+            logger.error("Restore seat error:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to restore seat",
+            });
+        }
     }
-  }
 
-  // Additional utility methods
+    // 7. FORCE DELETE SEAT (Permanent deletion - Admin/SuperAdmin only)
+    static async forceDelete(req, res) {
+        try {
+            const {id} = req.params;
 
-  // Get seat statistics
-  static async getStats(req, res) {
-    try {
-      const stats = await Promise.all([
-        Seat.countDocuments({}), // Total seats
-        Seat.countDocuments({ deletedAt: null }), // Active seats
-        Seat.countDocuments({ deletedAt: { $ne: null } }), // Deleted seats
-        Seat.countDocuments({ seat_type: "standard", deletedAt: null }),
-        Seat.countDocuments({ seat_type: "premium", deletedAt: null }),
-        Seat.countDocuments({ seat_type: "vip", deletedAt: null }),
-        Seat.countDocuments({ seat_type: "wheelchair", deletedAt: null }),
-        Seat.countDocuments({ seat_type: "recliner", deletedAt: null }),
-        Seat.countDocuments({ status: "active", deletedAt: null }),
-        Seat.countDocuments({ status: "maintenance", deletedAt: null }),
-        Seat.countDocuments({ status: "out_of_order", deletedAt: null }),
-        Seat.countDocuments({ status: "reserved", deletedAt: null }),
-      ]);
+            if (!id) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Seat ID is required",
+                });
+            }
 
-      const [
-        total,
-        active,
-        deleted,
-        standard,
-        premium,
-        vip,
-        wheelchair,
-        recliner,
-        activeStatus,
-        maintenance,
-        outOfOrder,
-        reserved,
-      ] = stats;
+            // Enforce Admin/SuperAdmin access
+            if (req.user?.role !== Role.ADMIN && req.user?.role !== Role.SUPERADMIN) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Only Admin or SuperAdmin can permanently delete seats",
+                });
+            }
 
-      res.status(200).json({
-        success: true,
-        data: {
-          total,
-          active,
-          deleted,
-          seatTypes: {
-            standard,
-            premium,
-            vip,
-            wheelchair,
-            recliner,
-          },
-          statuses: {
-            active: activeStatus,
-            maintenance,
-            outOfOrder,
-            reserved,
-          },
-          percentageActive: total > 0 ? Math.round((active / total) * 100) : 0,
-        },
-      });
-    } catch (error) {
-      logger.error("Get seat stats error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to retrieve seat statistics",
-      });
+            SeatController.validateObjectId(id);
+
+            // Find the seat first
+            const seat = await Seat.findById(id);
+
+            if (!seat) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Seat not found",
+                });
+            }
+
+            // Store seat info for logging before deletion
+            const seatInfo = {
+                id: seat._id,
+                row: seat.row,
+                seat_number: seat.seat_number,
+                seat_type: seat.seat_type,
+                wasDeleted: seat.isDeleted(),
+                hall_id: seat.hall_id,
+            };
+
+            // Update hall's total_seats count before deletion
+            if (seatInfo.hall_id) {
+                try {
+                    await Hall.updateTotalSeatsForHall(seatInfo.hall_id);
+                    logger.info(`Updated total_seats for hall ${seatInfo.hall_id}`);
+                } catch (hallError) {
+                    logger.error(
+                        `Failed to update total_seats for hall ${seatInfo.hall_id}: ${hallError.message}`
+                    );
+                    // Don't fail the seat deletion, just log the error
+                }
+            }
+
+            // Perform permanent deletion
+            await Seat.findByIdAndDelete(id);
+
+            logger.warn(
+                `⚠️  PERMANENT DELETION: Seat permanently deleted by ${req.user.role} ${req.user.userId}`,
+                {
+                    deletedSeat: seatInfo,
+                    deletedBy: req.user.userId,
+                    deletedAt: new Date().toISOString(),
+                    action: "FORCE_DELETE_SEAT",
+                }
+            );
+
+            res.status(200).json({
+                success: true,
+                message: "Seat permanently deleted",
+                data: {
+                    deletedSeat: {
+                        id: seatInfo.id,
+                        row: seatInfo.row,
+                        seat_number: seatInfo.seat_number,
+                        seat_type: seatInfo.seat_type,
+                    },
+                    warning: "This action is irreversible",
+                },
+            });
+        } catch (error) {
+            if (error.message === "Invalid seat ID format") {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message,
+                });
+            }
+
+            logger.error("Force delete seat error:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to permanently delete seat",
+            });
+        }
     }
-  }
 
-  // Get seats by type
-  static async getSeatsByType(req, res) {
-    try {
-      const { type } = req.params;
-      const { page = 1, limit = 10, activeOnly = true } = req.query;
+    // 8. LIST DELETED SEATS
+    static async listDeleted(req, res) {
+        try {
+            const {
+                page = 1,
+                limit = 10,
+                sortBy = "deletedAt",
+                sortOrder = "desc",
+            } = req.query;
 
-      const pageNum = Math.max(1, parseInt(page));
-      const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
-      const skip = (pageNum - 1) * limitNum;
+            const pageNum = Math.max(1, parseInt(page));
+            const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+            const skip = (pageNum - 1) * limitNum;
 
-      const query = { seat_type: type };
-      if (activeOnly === "true") {
-        query.deletedAt = null;
-      }
+            // Query for soft deleted seats only
+            const query = {deletedAt: {$ne: null}};
+            const sortObj = {};
+            sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
 
-      const [seats, totalCount] = await Promise.all([
-        Seat.find(query)
-          .sort({ row: 1, seat_number: 1 })
-          .skip(skip)
-          .limit(limitNum)
-          .lean(),
-        Seat.countDocuments(query),
-      ]);
+            const [seats, totalCount] = await Promise.all([
+                Seat.find(query).sort(sortObj).skip(skip).limit(limitNum).lean(),
+                Seat.countDocuments(query),
+            ]);
 
-      res.status(200).json({
-        success: true,
-        data: {
-          seats,
-          seatType: type,
-          pagination: {
-            currentPage: pageNum,
-            totalPages: Math.ceil(totalCount / limitNum),
-            totalCount,
-            limit: limitNum,
-          },
-        },
-      });
-    } catch (error) {
-      logger.error("Get seats by type error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to retrieve seats by type",
-      });
+            // Add delete info to each seat
+            const seatsWithDeleteInfo = seats.map((seat) => ({
+                ...seat,
+                deleteInfo: {
+                    deletedAt: seat.deletedAt,
+                    deletedBy: seat.deletedBy,
+                    daysSinceDeleted: seat.deletedAt
+                        ? Math.floor(
+                            (Date.now() - new Date(seat.deletedAt)) / (1000 * 60 * 60 * 24)
+                        )
+                        : null,
+                },
+                restoreInfo: {
+                    restoredAt: seat.restoredAt,
+                    restoredBy: seat.restoredBy,
+                },
+            }));
+
+            const totalPages = Math.ceil(totalCount / limitNum);
+
+            logger.info(`Retrieved ${seats.length} deleted seats`);
+
+            res.status(200).json({
+                success: true,
+                data: {
+                    seats: seatsWithDeleteInfo,
+                    pagination: {
+                        currentPage: pageNum,
+                        totalPages,
+                        totalCount,
+                        limit: limitNum,
+                        hasNextPage: pageNum < totalPages,
+                        hasPrevPage: pageNum > 1,
+                    },
+                },
+            });
+        } catch (error) {
+            logger.error("Get deleted seats error:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to retrieve deleted seats",
+            });
+        }
     }
-  }
+
+    // 9. UPDATE SEAT STATUS
+    static async updateStatus(req, res) {
+        try {
+            const {id} = req.params;
+            const {status} = req.body;
+
+            if (!id) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Seat ID is required",
+                });
+            }
+
+            if (!status) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Status is required",
+                });
+            }
+
+            SeatController.validateObjectId(id);
+
+            // Find the seat first
+            const seat = await Seat.findById(id);
+
+            if (!seat) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Seat not found",
+                });
+            }
+
+            // Check if seat is deleted
+            if (seat.isDeleted()) {
+                return res.status(409).json({
+                    success: false,
+                    message:
+                        "Cannot update status of deleted seat. Please restore it first.",
+                });
+            }
+
+            // Update status using model method
+            const updatedSeat = await seat.updateStatus(status, req.user?.userId);
+
+            logger.info(
+                `Updated seat status: ${id} (${seat.row}${seat.seat_number}) to ${status}`
+            );
+
+            res.status(200).json({
+                success: true,
+                message: "Seat status updated successfully",
+                data: {seat: updatedSeat},
+            });
+        } catch (error) {
+            if (error.message === "Invalid seat ID format") {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message,
+                });
+            }
+
+            if (error.message === "Invalid status provided") {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message,
+                });
+            }
+
+            logger.error("Update seat status error:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to update seat status",
+            });
+        }
+    }
+
+    // Additional utility methods
+
+    // Get seat statistics
+    static async getStats(req, res) {
+        try {
+            const stats = await Promise.all([
+                Seat.countDocuments({}), // Total seats
+                Seat.countDocuments({deletedAt: null}), // Active seats
+                Seat.countDocuments({deletedAt: {$ne: null}}), // Deleted seats
+                Seat.countDocuments({seat_type: "standard", deletedAt: null}),
+                Seat.countDocuments({seat_type: "premium", deletedAt: null}),
+                Seat.countDocuments({seat_type: "vip", deletedAt: null}),
+                Seat.countDocuments({seat_type: "wheelchair", deletedAt: null}),
+                Seat.countDocuments({seat_type: "recliner", deletedAt: null}),
+                Seat.countDocuments({status: "active", deletedAt: null}),
+                Seat.countDocuments({status: "maintenance", deletedAt: null}),
+                Seat.countDocuments({status: "out_of_order", deletedAt: null}),
+                Seat.countDocuments({status: "reserved", deletedAt: null}),
+            ]);
+
+            const [
+                total,
+                active,
+                deleted,
+                standard,
+                premium,
+                vip,
+                wheelchair,
+                recliner,
+                activeStatus,
+                maintenance,
+                outOfOrder,
+                reserved,
+            ] = stats;
+
+            res.status(200).json({
+                success: true,
+                data: {
+                    total,
+                    active,
+                    deleted,
+                    seatTypes: {
+                        standard,
+                        premium,
+                        vip,
+                        wheelchair,
+                        recliner,
+                    },
+                    statuses: {
+                        active: activeStatus,
+                        maintenance,
+                        outOfOrder,
+                        reserved,
+                    },
+                    percentageActive: total > 0 ? Math.round((active / total) * 100) : 0,
+                },
+            });
+        } catch (error) {
+            logger.error("Get seat stats error:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to retrieve seat statistics",
+            });
+        }
+    }
+
+    // Get seats by type
+    static async getSeatsByType(req, res) {
+        try {
+            const {type} = req.params;
+            const {page = 1, limit = 10, activeOnly = true} = req.query;
+
+            const pageNum = Math.max(1, parseInt(page));
+            const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+            const skip = (pageNum - 1) * limitNum;
+
+            const query = {seat_type: type};
+            if (activeOnly === "true") {
+                query.deletedAt = null;
+            }
+
+            const [seats, totalCount] = await Promise.all([
+                Seat.find(query)
+                    .sort({row: 1, seat_number: 1})
+                    .skip(skip)
+                    .limit(limitNum)
+                    .lean(),
+                Seat.countDocuments(query),
+            ]);
+
+            res.status(200).json({
+                success: true,
+                data: {
+                    seats,
+                    seatType: type,
+                    pagination: {
+                        currentPage: pageNum,
+                        totalPages: Math.ceil(totalCount / limitNum),
+                        totalCount,
+                        limit: limitNum,
+                    },
+                },
+            });
+        } catch (error) {
+            logger.error("Get seats by type error:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to retrieve seats by type",
+            });
+        }
+    }
+
+    // bulk create for insert multiple seats
+    static async bulkCreateSeats(req, res) {
+        try {
+            const {hall_id, row, range, seat_type, price} = req.body;
+            const createdBy = req.user?.userId;
+
+            if (!hall_id || !row || !range?.start || !range?.end) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Missing required fields: hall_id, row, and range are required.",
+                });
+            }
+
+            // Find hall to get its theater_id and validate it
+            const hall = await Hall.findById(hall_id);
+            if (!hall) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Hall not found",
+                });
+            }
+            const theater_id = hall.theater_id;
+
+            const start = parseInt(range?.start);
+            const end = parseInt(range?.end);
+
+            if (isNaN(start) || isNaN(end) || start > end) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid range provided.",
+                });
+            }
+
+            const seatCount = end - start + 1;
+            if (seatCount > 15) {
+                return res
+                    .status(400)
+                    .json({message: `Seat range is limited to 15 per request. You tried to create ${seatCount}.`});
+            }
+            // const seatNumbers = [];
+            // for (let i = start; i < start + seatCount; i++) {
+            //   seatNumbers.push(i);
+            // }
+            const seatNumbers = Array.from({length: seatCount}, (_, i) => start + i);
+
+            const existingSeats = await Seat.find({
+                row: row.toUpperCase(),
+                seat_number: {$in: seatNumbers},
+                hall_id,
+                deletedAt: null, // Only check against active seats
+            }).select("seat_number row");
+
+            if (existingSeats.length > 0) {
+                return res.status(409).json({
+                    success: false,
+                    message: "Some of the seats you are trying to create already exist.",
+                    existingSeats: existingSeats.map(
+                        (s) => `${s.row}${s.seat_number}`
+                    ),
+                });
+            }
+
+            const newSeats = seatNumbers.map((num) => ({
+                hall_id,
+                theater_id, // Assign theater_id from hall
+                row: row.toUpperCase(),
+                seat_number: num,
+                seat_type: seat_type || "standard", // Default to 'standard'
+                price: price || 0,
+                status: "active", // Default status
+                createdBy,
+            }));
+
+            const createdSeats = await Seat.insertMany(newSeats, {lean: true});
+
+            // Update hall's total_seats count
+            if (createdSeats.length > 0) {
+                try {
+                    await Hall.updateTotalSeatsForHall(hall_id);
+                    logger.info(`Updated total_seats for hall ${hall_id} after bulk creation.`);
+                } catch (hallError) {
+                    logger.error(
+                        `Failed to update total_seats for hall ${hall_id} after bulk creation: ${hallError.message}`
+                    );
+                    // This is not a critical failure, so just log it.
+                }
+            }
+
+            logger.info(`Bulk created ${createdSeats.length} seats for hall ${hall_id}.`);
+
+            return res.status(201).json({ // Changed to 201 for resource creation
+                success: true,
+                message: `${createdSeats.length} seats created successfully in row ${row.toUpperCase()}.`,
+                data: {
+                    count: createdSeats.length,
+                    seats: createdSeats,
+                }
+            });
+        } catch (error) {
+            logger.error("Bulk seat creation failed:", error);
+            return res.status(500).json({
+                success: false,
+                message: "An unexpected server error occurred during bulk seat creation.",
+                error: error.message,
+            });
+        }
+    }
+
+    // bulk force delete seats
+    static async bulkForceDeleteSeats(req, res) {
+        try {
+            const {seatIds} = req.body;
+
+            // 1. Validate input
+            if (!seatIds || !Array.isArray(seatIds) || seatIds.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Request body must contain a non-empty array of seat IDs.",
+                });
+            }
+
+            // 2. Authorization check
+            if (req.user?.role !== Role.ADMIN && req.user?.role !== Role.SUPERADMIN) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Forbidden: Only Admins or SuperAdmins can permanently delete seats.",
+                });
+            }
+
+            const deletedSeatIds = [];
+            const errors = [];
+
+            // 3. Validate all IDs
+            const validIds = seatIds.filter((id) => {
+                if (mongoose.Types.ObjectId.isValid(id)) {
+                    return true;
+                }
+                errors.push({id, error: "Invalid ID format."});
+                return false;
+            });
+
+            if (validIds.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "No valid seat IDs provided.",
+                    data: {errors}
+                });
+            }
+
+            // 4. Find all seats to get their hall_ids before deletion
+            const seatsToDelete = await Seat.find({
+                _id: {$in: validIds.map(id => new mongoose.Types.ObjectId(id))}
+            }).select('_id hall_id').lean();
+
+            const seatMap = new Map(seatsToDelete.map(seat => [seat._id.toString(), seat]));
+            const hallIdsToUpdate = new Set();
+
+            // 5. Process each seat for permanent deletion
+            for (const id of validIds) {
+                const seat = seatMap.get(id);
+
+                if (!seat) {
+                    errors.push({id, error: "Seat not found."});
+                    continue;
+                }
+
+                const result = await Seat.findByIdAndDelete(id);
+
+                if (result) {
+                    deletedSeatIds.push(id);
+                    if (seat.hall_id) {
+                        hallIdsToUpdate.add(seat.hall_id.toString());
+                    }
+                } else {
+                    // This case is unlikely if findByIdAndDelete is used right after find, but good for safety
+                    errors.push({id, error: "Seat found but failed to delete."});
+                }
+            }
+
+            // 6. Update total_seats count for affected halls
+            if (hallIdsToUpdate.size > 0) {
+                logger.info(`Updating total_seats for halls: ${[...hallIdsToUpdate].join(', ')}`);
+                for (const hallId of hallIdsToUpdate) {
+                    try {
+                        await Hall.updateTotalSeatsForHall(hallId);
+                    } catch (hallError) {
+                        logger.error(`Failed to update total_seats for hall ${hallId}: ${hallError.message}`);
+                        // Log error but don't fail the entire operation
+                    }
+                }
+            }
+
+            // 7. Log the bulk operation
+            if (deletedSeatIds.length > 0) {
+                logger.warn(
+                    `PERMANENT DELETION: ${deletedSeatIds.length} seats permanently deleted by ${req.user.role} ${req.user.userId}`,
+                    {
+                        deletedSeatIds,
+                        deletedBy: req.user.userId,
+                        deletedAt: new Date().toISOString(),
+                        action: "BULK_FORCE_DELETE_SEATS",
+                    }
+                );
+            }
+
+            // 8. Send response
+            if (errors.length > 0) {
+                logger.warn("Bulk force delete seats encountered errors:", {errors});
+                return res.status(409).json({
+                    success: false,
+                    message: "Some seats could not be permanently deleted.",
+                    data: {
+                        deletedCount: deletedSeatIds.length,
+                        failedCount: errors.length,
+                        deletedSeatIds,
+                        errors,
+                        warning: "These actions are irreversible.",
+                    },
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: `All ${deletedSeatIds.length} specified seats permanently deleted.`,
+                data: {
+                    deletedCount: deletedSeatIds.length,
+                    deletedSeatIds,
+                    warning: "These actions are irreversible.",
+                },
+            });
+
+        } catch (error) {
+            logger.error("Bulk force delete seats error:", error);
+            res.status(500).json({
+                success: false,
+                message: "An unexpected error occurred during bulk permanent deletion.",
+            });
+        }
+    }
 }
 
 module.exports = SeatController;
