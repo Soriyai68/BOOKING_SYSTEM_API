@@ -115,11 +115,20 @@ const checkPermission = async (req, res) => {
  */
 const getAllPermissions = async (req, res) => {
   try {
-    const { module, isActive } = req.query;
+    const { module, isActive, search } = req.query;
     
     const filter = {};
     if (module) filter.module = module;
     if (isActive !== undefined) filter.isActive = isActive === 'true';
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      filter.$or = [
+        { name: searchRegex },
+        { displayName: searchRegex },
+        { description: searchRegex },
+        { module: searchRegex }
+      ];
+    }
 
     const permissions = await Permission.find(filter)
       .sort({ module: 1, name: 1 });
