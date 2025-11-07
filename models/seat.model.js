@@ -26,11 +26,6 @@ const seatSchema = new mongoose.Schema(
             enum: ["active", "maintenance", "out_of_order", "reserved", "closed"],
             default: "active",
         },
-        price: {
-            type: Number,
-            default: 0,
-            min: 0,
-        },
         notes: {
             type: String,
             maxlength: 500,

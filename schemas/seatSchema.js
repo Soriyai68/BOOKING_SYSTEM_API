@@ -59,10 +59,6 @@ const createSeatSchema = Joi.object({
             "any.only": `Status must be one of: ${SEAT_STATUSES.join(", ")}`,
         }),
 
-    price: Joi.number().min(0).precision(2).default(0).messages({
-        "number.min": "Price cannot be negative",
-    }),
-
     notes: Joi.string().trim().max(500).allow("").optional().messages({
         "string.max": "Notes cannot exceed 500 characters",
     }),
@@ -132,9 +128,7 @@ const bulkCreateSeatsSchema = Joi.object({
             "any.only": `Status must be one of: ${SEAT_STATUSES.join(", ")}`,
         }),
 
-    price: Joi.number().min(0).precision(2).default(0).messages({
-        "number.min": "Price cannot be negative",
-    }),
+
 
     notes: Joi.string().trim().max(500).allow("").optional().messages({
         "string.max": "Notes cannot exceed 500 characters",
@@ -195,9 +189,6 @@ const updateSeatSchema = Joi.object({
             "any.only": `Status must be one of: ${SEAT_STATUSES.join(", ")}`,
         }),
 
-    price: Joi.number().min(0).precision(2).messages({
-        "number.min": "Price cannot be negative",
-    }),
 
     notes: Joi.string().trim().max(500).allow("").optional().messages({
         "string.max": "Notes cannot exceed 500 characters",
@@ -255,7 +246,6 @@ const getAllSeatsQuerySchema = Joi.object({
             "seat_number",
             "seat_type",
             "status",
-            "price",
             "updatedAt"
         )
         .default("row"),
@@ -314,7 +304,6 @@ const advancedSearchSchema = Joi.object({
             "seat_number",
             "seat_type",
             "status",
-            "price",
             "updatedAt"
         )
         .default("row"),

@@ -62,18 +62,6 @@ class SeatController {
             const hallIds = hallsInTheater.map((h) => h._id);
             query.hall_id = {$in: hallIds};
         }
-
-        // Handle price range filters
-        if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
-            query.price = {};
-            if (filters.priceMin !== undefined) {
-                query.price.$gte = parseFloat(filters.priceMin);
-            }
-            if (filters.priceMax !== undefined) {
-                query.price.$lte = parseFloat(filters.priceMax);
-            }
-        }
-
         // Handle date range filters
         if (filters.dateFrom || filters.dateTo) {
             query.createdAt = {};
@@ -905,7 +893,7 @@ class SeatController {
     // bulk create for insert multiple seats
     static async bulkCreateSeats(req, res) {
         try {
-            const {hall_id, row, range, seat_type, price} = req.body;
+            const {hall_id, row, range, seat_type} = req.body;
             const createdBy = req.user?.userId;
 
             if (!hall_id || !row || !range?.start || !range?.end) {
@@ -970,7 +958,6 @@ class SeatController {
                 row: row.toUpperCase(),
                 seat_number: num,
                 seat_type: seat_type || "standard", // Default to 'standard'
-                price: price || 0,
                 status: "active", // Default status
                 createdBy,
             }));
