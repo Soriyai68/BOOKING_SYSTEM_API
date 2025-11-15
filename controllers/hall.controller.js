@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
-const Hall = require("../models/hall.model");
-const Showtime = require("../models/showtime.model"); // Import Showtime model
+const { Hall, Showtime } = require("../models")
 const { Role } = require("../data");
 const logger = require("../utils/logger");
+
 
 /**
  * HallController - Comprehensive CRUD operations for hall management
@@ -792,8 +792,8 @@ class HallController {
           deletedBy: hall.deletedBy,
           daysSinceDeleted: hall.deletedAt
             ? Math.floor(
-                (Date.now() - new Date(hall.deletedAt)) / (1000 * 60 * 60 * 24)
-              )
+              (Date.now() - new Date(hall.deletedAt)) / (1000 * 60 * 60 * 24)
+            )
             : null,
         },
         restoreInfo: {
@@ -1206,7 +1206,7 @@ class HallController {
 
       for (const row of rows) {
         if (!row.row || !row.count) {
-            continue; // skip invalid row definitions
+          continue; // skip invalid row definitions
         }
         for (let i = 1; i <= row.count; i++) {
           const identifier = `${row.row.toUpperCase()}${i}`;
@@ -1237,23 +1237,23 @@ class HallController {
       if (!replaceExisting) {
         const existingSeats = await Seat.find({ hall_id: id }).select('seat_identifier');
         const existingSeatSet = new Set(existingSeats.map(s => s.seat_identifier));
-        
+
         const newSeats = seatsToCreate.filter(s => !existingSeatSet.has(s.seat_identifier));
 
         if (newSeats.length === 0) {
-            return res.status(409).json({ success: false, message: "All specified seats already exist in this hall." });
+          return res.status(409).json({ success: false, message: "All specified seats already exist in this hall." });
         }
-        
+
         const createdSeats = await Seat.insertMany(newSeats);
         await Hall.updateTotalSeatsForHall(id);
 
         return res.status(201).json({
-            success: true,
-            message: `Successfully created ${createdSeats.length} new seats. Skipped ${seatsToCreate.length - newSeats.length} existing seats.`,
-            data: {
-                createdCount: createdSeats.length,
-                skippedCount: seatsToCreate.length - newSeats.length
-            }
+          success: true,
+          message: `Successfully created ${createdSeats.length} new seats. Skipped ${seatsToCreate.length - newSeats.length} existing seats.`,
+          data: {
+            createdCount: createdSeats.length,
+            skippedCount: seatsToCreate.length - newSeats.length
+          }
         });
       }
 

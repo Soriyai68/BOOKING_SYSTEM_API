@@ -56,6 +56,27 @@ const permissions = [
   { name: 'bookings.delete', displayName: 'Delete Bookings', description: 'Can delete bookings', module: 'bookings' },
   { name: 'bookings.manage', displayName: 'Manage Bookings', description: 'Full booking management access', module: 'bookings' },
 
+  // Booking Detail Management
+  { name: 'bookingdetails.view', displayName: 'View Booking Details', description: 'Can view booking details', module: 'bookingdetails' },
+  { name: 'bookingdetails.create', displayName: 'Create Booking Details', description: 'Can create new booking details', module: 'bookingdetails' },
+  { name: 'bookingdetails.edit', displayName: 'Edit Booking Details', description: 'Can edit booking detail information', module: 'bookingdetails' },
+  { name: 'bookingdetails.delete', displayName: 'Delete Booking Details', description: 'Can delete booking details', module: 'bookingdetails' },
+  { name: 'bookingdetails.manage', displayName: 'Manage Booking Details', description: 'Full booking detail management access', module: 'bookingdetails' },
+
+  // Invoice Management
+  { name: 'invoices.view', displayName: 'View Invoices', description: 'Can view invoices list and details', module: 'invoices' },
+  { name: 'invoices.create', displayName: 'Create Invoices', description: 'Can create new invoices', module: 'invoices' },
+  { name: 'invoices.edit', displayName: 'Edit Invoices', description: 'Can edit invoice information', module: 'invoices' },
+  { name: 'invoices.delete', displayName: 'Delete Invoices', description: 'Can delete invoices', module: 'invoices' },
+  { name: 'invoices.manage', displayName: 'Manage Invoices', description: 'Full invoice management access', module: 'invoices' },
+
+  // Payment Management
+  { name: 'payments.view', displayName: 'View Payments', description: 'Can view payments list and details', module: 'payments' },
+  { name: 'payments.create', displayName: 'Create Payments', description: 'Can create new payments', module: 'payments' },
+  { name: 'payments.edit', displayName: 'Edit Payments', description: 'Can edit payment information', module: 'payments' },
+  { name: 'payments.delete', displayName: 'Delete Payments', description: 'Can delete payments', module: 'payments' },
+  { name: 'payments.manage', displayName: 'Manage Payments', description: 'Full payment management access', module: 'payments' },
+
   // Dashboard & Analytics
   { name: 'dashboard.view', displayName: 'View Dashboard', description: 'Can access admin dashboard', module: 'dashboard' },
   { name: 'analytics.view', displayName: 'View Analytics', description: 'Can view system analytics and reports', module: 'analytics' },
@@ -127,6 +148,27 @@ const rolePermissions = {
     'bookings.delete',
     'bookings.manage',
 
+    // Booking Detail Management
+    'bookingdetails.view',
+    'bookingdetails.create',
+    'bookingdetails.edit',
+    'bookingdetails.delete',
+    'bookingdetails.manage',
+
+    // Invoice Management
+    'invoices.view',
+    'invoices.create',
+    'invoices.edit',
+    'invoices.delete',
+    'invoices.manage',
+
+    // Payment Management
+    'payments.view',
+    'payments.create',
+    'payments.edit',
+    'payments.delete',
+    'payments.manage',
+
     // Settings (view only)
     'settings.view',
   ],
@@ -148,6 +190,8 @@ const rolePermissions = {
     'theaters.manage',
 
     // Hall Management (no delete)
+
+
     'halls.view',
     'halls.create',
     'halls.edit',
@@ -176,6 +220,24 @@ const rolePermissions = {
     'bookings.create',
     'bookings.edit',
     'bookings.manage',
+
+    // Booking Detail Management (no delete)
+    'bookingdetails.view',
+    'bookingdetails.create',
+    'bookingdetails.edit',
+    'bookingdetails.manage',
+
+    // Invoice Management (no delete)
+    'invoices.view',
+    'invoices.create',
+    'invoices.edit',
+    'invoices.manage',
+
+    // Payment Management (no delete)
+    'payments.view',
+    'payments.create',
+    'payments.edit',
+    'payments.manage',
 
     // Settings (view only)
     'settings.view',

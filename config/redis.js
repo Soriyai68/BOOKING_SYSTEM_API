@@ -6,7 +6,7 @@ let redisClient = null;
 
 exports.connectRedis = async () => {
   try {
-    console.log(' > Initializing Redis.');
+    console.log('🥷  Initializing Redis.');
 
     const options = {
       socket: {
@@ -26,7 +26,7 @@ exports.connectRedis = async () => {
 
     // Handle connection events
     redisClient.on('connect', () => {
-      console.log('Redis client connected.');
+      console.log('🥷  Redis client connected.');
     });
 
     redisClient.on('ready', () => {

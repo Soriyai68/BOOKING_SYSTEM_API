@@ -9,5 +9,8 @@ module.exports = {
     BookingDetails: require('./booking.controller'),
     Payment: require('./payment.controller'),
     Invoice: require('./invoice.controller'),
+    MovieController: require('./movie.controller'),
+    ShowtimeController: require('./showtime.controller'),
+    UploadController: require('./upload.controller'),
 };
 

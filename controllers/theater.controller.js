@@ -112,7 +112,6 @@ class TheaterController {
   }
 
   // 1. GET ALL THEATERS - with pagination, filtering, and sorting
-  // 1. GET ALL THEATERS
   static async getAll(req, res) {
     try {
       const {
