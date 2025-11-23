@@ -16,6 +16,7 @@
   "description": "",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.888.0",
+    "bakong-khqr": "^1.0.20",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.7.0",
     "connect-mongo": "^5.1.0",
@@ -31,6 +32,7 @@
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
+    "node-cron": "^4.2.1",
     "otp-generator": "^4.0.1",
     "path": "^0.12.7",
     "plasgate": "^1.1.3",

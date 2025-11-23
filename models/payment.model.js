@@ -8,7 +8,6 @@ const paymentSchema = new mongoose.Schema({
     },
     amount: {
         type: Number,
-        required: true,
         min: 0,
     },
     payment_method: {
@@ -20,6 +19,11 @@ const paymentSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+    qr_method: {
+        type: String,
+        enum: ["KHQR", "USD"],
+        default: "KHQR"
+    },
     currency: {
         type: String,
         enum: ['USD', 'KHR'],
@@ -30,10 +34,35 @@ const paymentSchema = new mongoose.Schema({
         enum: ['Pending', 'Completed', 'Failed', 'Refunded'],
         default: 'Pending',
     },
+    qr: {
+        type: String
+    },
+    md5: {
+        type: String
+    },
+    bakongHash: {
+        type: String
+    },
+    fromAccount_id: {
+        type: String
+    },
+    toAccount_id: {
+        type: String
+    },
     transaction_id: {
         type: String,
         unique: true,
         sparse: true,
+    },
+    paid: {
+        type: Boolean,
+        default: false
+    },
+    paidAt: {
+        type: Date
+    },
+    expiration: {
+        type: Number
     },
     description: {
         type: String,
@@ -48,12 +77,61 @@ const paymentSchema = new mongoose.Schema({
 });
 
 // Indexes
-paymentSchema.index({ bookingId: 1 });
-paymentSchema.index({ transaction_id: 1 });
-paymentSchema.index({ status: 1 });
-paymentSchema.index({ payment_method: 1 });
-paymentSchema.index({ deletedAt: 1 });
-paymentSchema.index({ createdAt: -1 });
+paymentSchema.index({bookingId: 1});
+paymentSchema.index({transaction_id: 1});
+paymentSchema.index({status: 1});
+paymentSchema.index({payment_method: 1});
+paymentSchema.index({deletedAt: 1});
+paymentSchema.index({createdAt: -1});
+
+// Instance methods
+paymentSchema.methods.markAsPaid = function (transactionDetails) {
+    this.status = 'Completed';
+    this.paid = true;
+    this.paidAt = new Date();
+    this.transaction_id = transactionDetails.transactionId;
+    this.bakongHash = transactionDetails.bakongHash;
+    this.fromAccount_id = transactionDetails.fromAccountId;
+    this.toAccount_id = transactionDetails.toAccountId;
+    return this.save();
+};
+
+paymentSchema.methods.markAsFailed = function (reason = 'Payment failed') {
+    this.status = 'Failed';
+    this.description = reason;
+    return this.save();
+};
+
+paymentSchema.methods.isExpired = function () {
+    if (!this.expiration) {
+        return false;
+    }
+    return this.expiration < Date.now();
+};
+
+// Middleware
+paymentSchema.pre('save', async function (next) {
+    // 'this' refers to the payment document
+    if (this.isModified('status')) {
+        const Booking = mongoose.model('Booking'); // Get Booking model
+        try {
+            const booking = await Booking.findById(this.bookingId);
+            if (booking) {
+                if (this.status === 'Completed' && booking.payment_status !== 'Completed') {
+                    await booking.markAsCompleted(this._id);
+                } else if (this.status === 'Failed' && booking.payment_status !== 'Failed') {
+                    booking.payment_status = 'Failed';
+                    await booking.save();
+                }
+            }
+        } catch (error) {
+            console.error('Error updating booking from payment middleware:', error);
+            // Decide if the payment should still save if the booking update fails
+            // For now, we'll let it save but log the error.
+        }
+    }
+    next();
+});
 
 const Payment = mongoose.model('Payment', paymentSchema);
 

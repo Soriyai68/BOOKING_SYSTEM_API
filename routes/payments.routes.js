@@ -8,6 +8,13 @@ const router = express.Router();
 
 // === Special Routes (before /:id) ===
 
+// POST /api/payments/check-payment - Check the status of a Bakong payment
+router.post(
+  "/check-payment",
+  middlewares.authenticate,
+  PaymentController.checkPayment
+);
+
 // GET /api/payments/analytics - Get payment analytics (Admin/SuperAdmin/Cashier only)
 router.get(
   "/analytics",

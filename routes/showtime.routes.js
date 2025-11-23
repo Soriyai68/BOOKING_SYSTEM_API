@@ -67,6 +67,13 @@ router.delete(
   ShowtimeController.forceDelete
 );
 
+// GET /api/showtimes/:id/seats - Get seat status for a showtime (Public)
+router.get(
+    "/:id/seats",
+    middlewares.validator(showtimeSchema.showtimeIdParamSchema, "params"),
+    ShowtimeController.getShowtimeSeatStatus
+);
+
 // === Standard CRUD Routes ===
 
 // GET /api/showtimes - Get all showtimes

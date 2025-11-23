@@ -38,10 +38,9 @@ const createPaymentSchema = Joi.object({
     }),
   amount: Joi.number()
     .min(0)
-    .required()
+    .optional()
     .messages({
       "number.min": "Amount must be a positive number",
-      "any.required": "Amount is required",
     }),
   payment_method: Joi.string()
     .valid("Bakong", "Cash", "Card", "Mobile Banking", "Bank Transfer")

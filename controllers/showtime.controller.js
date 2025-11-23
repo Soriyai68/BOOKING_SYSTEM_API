@@ -1131,6 +1131,63 @@ class ShowtimeController {
       next(err);
     }
   }
+
+  // 15. GET SEAT STATUS FOR A SHOWTIME
+  static async getShowtimeSeatStatus(req, res) {
+    try {
+      const { id } = req.params;
+      ShowtimeController.validateObjectId(id);
+
+      const showtime = await Showtime.findById(id).populate('hall_id');
+      if (!showtime) {
+        return res.status(404).json({ success: false, message: "Showtime not found" });
+      }
+
+      const hall = showtime.hall_id;
+      if (!hall) {
+        return res.status(404).json({ success: false, message: "Hall for this showtime not found" });
+      }
+
+      // Get all seats for the hall
+      const allSeats = await mongoose.model('Seat').find({ hall_id: hall._id, deletedAt: null });
+
+      // Get all active bookings for the showtime
+      const activeBookings = await mongoose.model('Booking').findActiveBookingsByShowtime(id);
+
+      // Get a flat list of all booked seat numbers
+      const bookedSeatNumbers = activeBookings.flatMap(booking => booking.seats);
+
+      // Map seat status
+      const seatsWithStatus = allSeats.map(seat => {
+        const seatObj = seat.toObject();
+        const isBooked = bookedSeatNumbers.includes(seatObj.seat_number);
+        return {
+          ...seatObj,
+          status: isBooked ? 'booked' : 'available',
+        };
+      });
+
+      res.status(200).json({
+        success: true,
+        data: {
+          showtime: {
+            _id: showtime._id,
+            show_date: showtime.show_date,
+            start_time: showtime.start_time,
+          },
+          hall: {
+            _id: hall._id,
+            hall_name: hall.hall_name,
+            screen_type: hall.screen_type,
+          },
+          seats: seatsWithStatus,
+        },
+      });
+    } catch (error) {
+      logger.error("Get showtime seat status error:", error);
+      res.status(500).json({ success: false, message: "Failed to retrieve seat status" });
+    }
+  }
 }
 
 module.exports = ShowtimeController;

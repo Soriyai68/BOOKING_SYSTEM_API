@@ -43,6 +43,17 @@ router.delete(
   BookingController.forceDelete
 );
 
+// === User-Specific Routes ===
+
+// PATCH /api/bookings/my-bookings/:id/cancel - Cancel a booking made by the user
+router.patch(
+  "/my-bookings/:id/cancel",
+  middlewares.authenticate,
+  middlewares.authorize(Role.USER), // Ensure only users can access
+  middlewares.validator(bookingSchema.bookingIdParamSchema, "params"),
+  BookingController.cancelUserBooking
+);
+
 // === Standard CRUD Routes ===
 
 // GET /api/bookings - Get all bookings
@@ -82,13 +93,13 @@ router.put(
   BookingController.update
 );
 
-// DELETE /api/bookings/:id - Soft delete a booking
-router.delete(
-  "/:id",
+// PATCH /api/bookings/:id/cancel - Cancel a booking (soft delete)
+router.patch(
+  "/:id/cancel",
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(bookingSchema.bookingIdParamSchema, "params"),
-  BookingController.delete
+  BookingController.cancel
 );
 
 module.exports = router;
