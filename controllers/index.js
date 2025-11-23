@@ -12,5 +12,5 @@ module.exports = {
     MovieController: require('./movie.controller'),
     ShowtimeController: require('./showtime.controller'),
     UploadController: require('./upload.controller'),
+    PromotionController: require('./promotion.controller'),
 };
-

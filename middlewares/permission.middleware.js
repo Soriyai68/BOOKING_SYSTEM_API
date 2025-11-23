@@ -23,15 +23,15 @@ function requirePermission(requiredPermissions, options = {}) {
       }
 
       const userRole = req.user.role;
-      
+
       // SuperAdmin always has access
       if (userRole === Role.SUPERADMIN) {
         return next();
       }
 
       // Normalize permissions to array
-      const permissions = Array.isArray(requiredPermissions) 
-        ? requiredPermissions 
+      const permissions = Array.isArray(requiredPermissions)
+        ? requiredPermissions
         : [requiredPermissions];
 
       // Check if role has required permissions
@@ -82,7 +82,7 @@ async function checkRolePermissions(role, permissions, requireAll = false) {
     }
 
     // Use the static method from RolePermission model
-    const checkPromises = permissions.map(permission => 
+    const checkPromises = permissions.map(permission =>
       RolePermission.hasPermission(role, permission)
     );
 
@@ -126,7 +126,7 @@ const loadUserPermissions = async (req, res, next) => {
     }
 
     const userRole = req.user.role;
-    
+
     // SuperAdmin gets a special marker
     if (userRole === Role.SUPERADMIN) {
       req.userPermissions = { isSuperAdmin: true };
@@ -159,7 +159,7 @@ const loadUserPermissions = async (req, res, next) => {
  */
 function hasPermission(req, permissions, requireAll = false) {
   if (!req.user) return false;
-  
+
   const userRole = req.user.role;
   if (userRole === Role.SUPERADMIN) return true;
 
@@ -223,6 +223,13 @@ const PERMISSIONS = {
   BOOKINGS_EDIT: 'bookings.edit',
   BOOKINGS_DELETE: 'bookings.delete',
   BOOKINGS_MANAGE: 'bookings.manage',
+
+  // Promotions
+  PROMOTIONS_VIEW: 'promotions.view',
+  PROMOTIONS_CREATE: 'promotions.create',
+  PROMOTIONS_EDIT: 'promotions.edit',
+  PROMOTIONS_DELETE: 'promotions.delete',
+  PROMOTIONS_MANAGE: 'promotions.manage',
 
   // System
   DASHBOARD_VIEW: 'dashboard.view',

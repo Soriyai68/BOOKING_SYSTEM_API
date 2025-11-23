@@ -77,6 +77,13 @@ const permissions = [
   { name: 'payments.delete', displayName: 'Delete Payments', description: 'Can delete payments', module: 'payments' },
   { name: 'payments.manage', displayName: 'Manage Payments', description: 'Full payment management access', module: 'payments' },
 
+  // Promotion Management
+  { name: 'promotions.view', displayName: 'View Promotions', description: 'Can view promotions list and details', module: 'promotions' },
+  { name: 'promotions.create', displayName: 'Create Promotions', description: 'Can create new promotions', module: 'promotions' },
+  { name: 'promotions.edit', displayName: 'Edit Promotions', description: 'Can edit promotions information', module: 'promotions' },
+  { name: 'promotions.delete', displayName: 'Delete Promotions', description: 'Can delete promotions', module: 'promotions' },
+  { name: 'promotions.manage', displayName: 'Manage Promotions', description: 'Full promotions management access', module: 'promotions' },
+
   // Dashboard & Analytics
   { name: 'dashboard.view', displayName: 'View Dashboard', description: 'Can access admin dashboard', module: 'dashboard' },
   { name: 'analytics.view', displayName: 'View Analytics', description: 'Can view system analytics and reports', module: 'analytics' },
@@ -169,6 +176,13 @@ const rolePermissions = {
     'payments.delete',
     'payments.manage',
 
+    // Promotions Management
+    'promotions.view',
+    'promotions.create',
+    'promotions.edit',
+    'promotions.delete',
+    'promotions.manage',
+
     // Settings (view only)
     'settings.view',
   ],
@@ -190,7 +204,6 @@ const rolePermissions = {
     'theaters.manage',
 
     // Hall Management (no delete)
-
 
     'halls.view',
     'halls.create',
@@ -216,6 +229,7 @@ const rolePermissions = {
     'showtimes.manage',
 
     // Booking Management (no delete)
+
     'bookings.view',
     'bookings.create',
     'bookings.edit',
@@ -238,6 +252,12 @@ const rolePermissions = {
     'payments.create',
     'payments.edit',
     'payments.manage',
+
+    // Promotions Management (no delete)
+    'promotions.view',
+    'promotions.create',
+    'promotions.edit',
+    'promotions.manage',
 
     // Settings (view only)
     'settings.view',
