@@ -1,0 +1,485 @@
+const mongoose = require("mongoose");
+const {Showtime, Seat, SeatBooking} = require("../models");
+const logger = require("../utils/logger");
+
+class SeatBookingController {
+    // Helper method to validate ObjectId
+    static validateObjectId(id) {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            throw new Error("Invalid ID format");
+        }
+    }
+
+    // Helper method for search and filter
+    static filterBuilder(query) {
+        const filter = {};
+        const {showtimeId, seatId, bookingId, status} = query;
+
+        if (showtimeId) {
+            SeatBookingController.validateObjectId(showtimeId);
+            filter.showtimeId = new mongoose.Types.ObjectId(showtimeId);
+        }
+        if (filter.seat_type) {
+            matchConditions['seatId.seat_type'] = filter.seat_type;
+        }
+
+        if (bookingId) {
+            SeatBookingController.validateObjectId(bookingId);
+            filter.bookingId = new mongoose.Types.ObjectId(bookingId);
+        }
+        if (status) {
+            filter.status = status;
+        }
+        return filter;
+    }
+
+    static searchBuilder(query) {
+        const {search} = query;
+        if (!search) {
+            return {};
+        }
+
+        const searchConditions = [];
+        // Search in movie title (via showtime)
+        searchConditions.push({
+            'showtimeId.movie_id.title': {$regex: search, $options: 'i'}
+        });
+        // Search in seat identifier (concatenation of row and number)
+        searchConditions.push({
+            'seatId.seat_identifier': {$regex: search, $options: 'i'},
+        });
+        // Search in seat number
+        // searchConditions.push({
+        //     'seatId.seat_number': {$regex: search, $options: 'i'},
+        // });
+        // Search in booking reference code
+        searchConditions.push({
+            'bookingId.reference_code': {$regex: search, $options: 'i'}
+        });
+
+        // If the search term is a valid ObjectId, search by IDs directly
+        if (mongoose.Types.ObjectId.isValid(search)) {
+            const objectId = new mongoose.Types.ObjectId(search);
+            searchConditions.push({'showtimeId._id': objectId});
+            searchConditions.push({'seatId._id': objectId});
+            searchConditions.push({'bookingId._id': objectId});
+        }
+
+        return {$or: searchConditions};
+    }
+
+    // 1. GET ALL SEAT BOOKINGS
+    static async getAll(req, res) {
+        try {
+            const {
+                page = 1,
+                limit = 10,
+                sortBy = "createdAt",
+                sortOrder = "desc",
+                search,
+                ...filterParams // Capture all other query parameters for filtering
+            } = req.query;
+
+            const pageNum = Math.max(1, parseInt(page));
+            const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+            const skip = (pageNum - 1) * limitNum;
+            const sort = {[sortBy]: sortOrder === "desc" ? -1 : 1};
+
+            const initialFilter = SeatBookingController.filterBuilder(filterParams);
+            const searchFilter = SeatBookingController.searchBuilder({search});
+
+            const pipeline = [
+                // Apply initial filters first on the original document fields
+                {$match: initialFilter},
+
+                // Lookup Showtime
+                {
+                    $lookup: {
+                        from: 'showtimes',
+                        localField: 'showtimeId',
+                        foreignField: '_id',
+                        as: 'showtimeId'
+                    }
+                },
+                {$unwind: {path: '$showtimeId', preserveNullAndEmptyArrays: true}},
+
+                // Lookup Movie from Showtime
+                {
+                    $lookup: {
+                        from: 'movies',
+                        localField: 'showtimeId.movie_id',
+                        foreignField: '_id',
+                        as: 'showtimeId.movie_id'
+                    }
+                },
+                {$unwind: {path: '$showtimeId.movie_id', preserveNullAndEmptyArrays: true}},
+
+                // Lookup Seat
+                {
+                    $lookup: {
+                        from: 'seats',
+                        localField: 'seatId',
+                        foreignField: '_id',
+                        as: 'seatId'
+                    }
+                },
+                {$unwind: {path: '$seatId', preserveNullAndEmptyArrays: true}},
+
+                // Lookup Booking
+                {
+                    $lookup: {
+                        from: 'bookings',
+                        localField: 'bookingId',
+                        foreignField: '_id',
+                        as: 'bookingId'
+                    }
+                },
+                {$unwind: {path: '$bookingId', preserveNullAndEmptyArrays: true}},
+
+                // Lookup User from Booking
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'bookingId.userId',
+                        foreignField: '_id',
+                        as: 'bookingId.userId'
+                    }
+                },
+                {$unwind: {path: '$bookingId.userId', preserveNullAndEmptyArrays: true}},
+
+                // Add seat_identifier for searching and display
+                {
+                    $addFields: {
+                        'seatId.seat_identifier': {
+                            $concat: [
+                                {$toString: '$seatId.row'},
+                                {$toString: '$seatId.seat_number'}
+                            ]
+                        }
+                    }
+                },
+            ];
+
+            if (search) {
+                pipeline.push({$match: searchFilter});
+            }
+
+            const [seatBookings, totalCountResult] = await Promise.all([
+                SeatBooking.aggregate([
+                    ...pipeline,
+                    {$sort: sort},
+                    {$skip: skip},
+                    {$limit: limitNum},
+                    // Project to shape the output similar to populate for consistency if needed
+                    {
+                        $project: {
+                            _id: 1,
+                            status: 1,
+                            locked_until: 1,
+                            createdAt: 1,
+                            updatedAt: 1,
+                            showtimeId: {
+                                _id: '$showtimeId._id',
+                                show_date: '$showtimeId.show_date',
+                                start_time: '$showtimeId.start_time',
+                                end_time: '$showtimeId.end_time',
+                                status: '$showtimeId.status',
+                                movie_id: {
+                                    _id: '$showtimeId.movie_id._id',
+                                    title: '$showtimeId.movie_id.title'
+                                }
+                            },
+                            seatId: {
+                                _id: '$seatId._id',
+                                row: '$seatId.row',
+                                seat_number: '$seatId.seat_number',
+                                seat_type: '$seatId.seat_type',
+                                seat_identifier: '$seatId.seat_identifier'
+                            },
+                            bookingId: {
+                                _id: '$bookingId._id',
+                                reference_code: '$bookingId.reference_code',
+                                status: '$bookingId.status',
+                                userId: {
+                                    _id: '$bookingId.userId._id',
+                                    name: '$bookingId.userId.name',
+                                    phone: '$bookingId.userId.phone',
+                                }
+                            }
+                        }
+                    }
+                ]),
+                SeatBooking.aggregate([
+                    ...pipeline,
+                    {$count: 'total'}
+                ])
+            ]);
+
+            const totalCount = totalCountResult.length > 0 ? totalCountResult[0].total : 0;
+            const totalPages = Math.ceil(totalCount / limitNum);
+            const hasNextPage = pageNum < totalPages;
+            const hasPrevPage = pageNum > 1;
+
+            res.status(200).json({
+                success: true,
+                data: {
+                    seatBookings: seatBookings, // Aggregation already returns desired structure
+                    pagination: {
+                        currentPage: pageNum,
+                        totalPages,
+                        totalCount,
+                        limit: limitNum,
+                        hasNextPage,
+                        hasPrevPage,
+                        nextPage: hasNextPage ? pageNum + 1 : null,
+                        prevPage: hasPrevPage ? pageNum - 1 : null,
+                    },
+                },
+            });
+
+        } catch (error) {
+            logger.error("Get all seat bookings error:", error);
+            res.status(500).json({success: false, message: "Failed to retrieve seat bookings"});
+        }
+    }
+
+    // 2. GET SEAT STATUS FOR A SHOWTIME
+    static async getShowtimeSeatStatus(req, res) {
+        try {
+            const {id} = req.params;
+            SeatBookingController.validateObjectId(id);
+
+            const showtime = await Showtime.findById(id).populate('hall_id');
+            if (!showtime) {
+                return res.status(404).json({success: false, message: "Showtime not found"});
+            }
+
+            const hall = showtime.hall_id;
+            if (!hall) {
+                return res.status(404).json({success: false, message: "Hall for this showtime not found"});
+            }
+
+            // 1. Get all seats for the hall
+            const allSeats = await Seat.find({hall_id: hall._id, deletedAt: null}).lean();
+
+            // 2. Get all seat bookings for the showtime
+            const seatBookings = await SeatBooking.find({showtimeId: id}).lean();
+
+            // 3. Create a map of seatId -> status for quick lookup
+            const seatStatusMap = new Map(seatBookings.map(sb => [sb.seatId.toString(), sb.status]));
+
+            // 4. Map final status to each seat
+            const seatsWithStatus = allSeats.map(seat => {
+                const physicalSeatStatus = seat.status;
+                const bookingStatus = seatStatusMap.get(seat._id.toString());
+
+                let finalStatus = 'available';
+
+                if (physicalSeatStatus !== 'active') {
+                    finalStatus = physicalSeatStatus;
+                } else if (bookingStatus) {
+                    finalStatus = bookingStatus;
+                }
+
+                return {
+                    ...seat,
+                    status: finalStatus,
+                };
+            });
+
+            res.status(200).json({
+                success: true,
+                data: {
+                    showtime: {
+                        _id: showtime._id,
+                        show_date: showtime.show_date,
+                        start_time: showtime.start_time,
+                        // UPGRADE: Add a flag to indicate if booking is still possible
+                        isBookable: showtime.isActiveForBooking(),
+                    },
+                    hall: {
+                        _id: hall._id,
+                        hall_name: hall.hall_name,
+                        screen_type: hall.screen_type,
+                    },
+                    seats: seatsWithStatus,
+                },
+            });
+        } catch (error) {
+            logger.error("Get showtime seat status error:", error);
+            res.status(500).json({success: false, message: "Failed to retrieve seat status"});
+        }
+    }
+
+    // 3. GET RAW SEAT BOOKINGS FOR A SHOWTIME (Admin only)
+    static async getSeatBookingsForShowtime(req, res) {
+        try {
+            const {id} = req.params;
+            SeatBookingController.validateObjectId(id);
+
+            const seatBookings = await SeatBooking.find({showtimeId: id})
+                .populate({
+                    path: 'seatId',
+                    select: 'row seat_number seat_type',
+                    options: {virtuals: true}
+                })
+                .populate({
+                    path: 'bookingId',
+                    select: 'reference_code userId',
+                    populate: {
+                        path: 'userId',
+                        select: 'name phone'
+                    }
+                })
+                .lean();
+
+            if (!seatBookings || seatBookings.length === 0) {
+                return res.status(404).json({success: false, message: "No seat bookings found for this showtime."});
+            }
+
+            res.status(200).json({
+                success: true,
+                data: {
+                    count: seatBookings.length,
+                    seatBookings,
+                },
+            });
+
+        } catch (error) {
+            logger.error("Get seat bookings for showtime error:", error);
+            res.status(500).json({success: false, message: "Failed to retrieve seat bookings"});
+        }
+    }
+
+    // 4. LOCK SEATS FOR BOOKING (Non-Transactional)
+    static async lockSeatsForBooking(req, res) {
+        try {
+            const {showtimeId, seatIds} = req.body;
+
+            if (!showtimeId || !Array.isArray(seatIds) || seatIds.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Showtime ID and an array of seat IDs are required."
+                });
+            }
+
+            // 1. Validate showtime
+            const showtime = await Showtime.findById(showtimeId);
+            if (!showtime) {
+                return res.status(404).json({success: false, message: "Showtime not found."});
+            }
+            if (!showtime.isActiveForBooking()) {
+                return res.status(400).json({
+                    success: false,
+                    message: "This showtime is no longer available for booking."
+                });
+            }
+
+            // 2. Validate seats
+            const seats = await Seat.find({_id: {$in: seatIds}, hall_id: showtime.hall_id, deletedAt: null});
+            if (seats.length !== seatIds.length) {
+                return res.status(404).json({
+                    success: false,
+                    message: "One or more seats not found or do not belong to the correct hall."
+                });
+            }
+            const unavailablePhysicalSeats = seats.filter(seat => seat.status !== 'active');
+            if (unavailablePhysicalSeats.length > 0) {
+                const seatIdentifiers = unavailablePhysicalSeats.map(s => s.seat_identifier).join(', ');
+                return res.status(409).json({
+                    success: false,
+                    message: `The following seats are not available: ${seatIdentifiers}.`
+                });
+            }
+
+            // 3. Check for existing bookings (note: race condition exists here, handled by DB unique index)
+            const existingSeatBookings = await SeatBooking.find({showtimeId, seatId: {$in: seatIds}});
+            if (existingSeatBookings.length > 0) {
+                return res.status(409).json({
+                    success: false,
+                    message: "One or more selected seats are already booked or locked."
+                });
+            }
+
+            // 4. Create seat lock documents
+            const lockUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes lock
+            const seatBookingDocs = seatIds.map(seatId => ({
+                showtimeId,
+                seatId,
+                status: 'locked',
+                locked_until: lockUntil,
+            }));
+
+            const newSeatBookings = await SeatBooking.insertMany(seatBookingDocs);
+
+            res.status(201).json({
+                success: true,
+                message: "Seats locked successfully.",
+                data: {
+                    lockedUntil: lockUntil.toISOString(),
+                    lockedSeats: newSeatBookings,
+                },
+            });
+
+        } catch (error) {
+            // Handle potential race condition caught by unique index
+            if (error.code === 11000) { // Duplicate key error
+                logger.warn("Seat lock race condition detected:", error.message);
+                return res.status(409).json({
+                    success: false,
+                    message: "One or more selected seats were just booked by another user. Please try again."
+                });
+            }
+            logger.error("Lock seats error:", error);
+            res.status(500).json({success: false, message: "Failed to lock seats."});
+        }
+    }
+
+    // 5. EXTEND SEAT LOCK (Non-Transactional)
+    static async extendSeatLock(req, res) {
+        try {
+            const {seatBookingIds} = req.body;
+
+            if (!Array.isArray(seatBookingIds) || seatBookingIds.length === 0) {
+                return res.status(400).json({success: false, message: "An array of seatBookingIds is required."});
+            }
+
+            const seatBookings = await SeatBooking.find({
+                _id: {$in: seatBookingIds},
+                status: 'locked'
+            });
+
+            if (seatBookings.length !== seatBookingIds.length) {
+                return res.status(404).json({
+                    success: false,
+                    message: "One or more seat locks not found, have expired, or are already booked."
+                });
+            }
+
+            const newLockUntil = new Date(Date.now() + 15 * 60 * 1000); // Extend for another 15 minutes
+
+            // This update is not atomic for all documents, but it's acceptable for this feature.
+            const updatePromises = seatBookings.map(sb => {
+                sb.locked_until = newLockUntil;
+                return sb.save();
+            });
+
+            await Promise.all(updatePromises);
+
+            res.status(200).json({
+                success: true,
+                message: "Seat locks extended successfully.",
+                data: {
+                    lockedUntil: newLockUntil.toISOString(),
+                    seatBookingIds,
+                },
+            });
+
+        } catch (error) {
+            logger.error("Extend seat lock error:", error);
+            res.status(500).json({success: false, message: "Failed to extend seat locks."});
+        }
+    }
+}
+
+module.exports = SeatBookingController;
