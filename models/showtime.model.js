@@ -357,39 +357,23 @@ showtimeSchema.pre("save", async function (next) {
         }
     }
 
-    // If status has been changed to 'completed' (either manually or automatically), release the seats.
+    // If status has been changed to 'completed' (either manually or automatically),
+    // we clean up the seat booking records for this showtime.
     if (this.isModified('status') && this.status === 'completed') {
-        const Booking = mongoose.model('Booking');
-        const Seat = mongoose.model('Seat');
+        const SeatBooking = mongoose.model('SeatBooking');
         const logger = require('../utils/logger');
 
         try {
-            logger.info(`Showtime ${this._id} completed. Releasing associated seats.`);
-            const bookings = await Booking.find({
-                showtimeId: this._id,
-                booking_status: {$ne: 'Cancelled'}
-            }).select('seats');
-
-            if (bookings.length > 0) {
-                const seatIdsToRelease = bookings.flatMap(b => b.seats.map(id => id.toString()));
-                const uniqueSeatIds = [...new Set(seatIdsToRelease)];
-
-                if (uniqueSeatIds.length > 0) {
-                    const {modifiedCount} = await Seat.updateMany(
-                        {_id: {$in: uniqueSeatIds}, status: 'reserved'},
-                        {$set: {status: 'active'}}
-                    );
-                    logger.info(`Released ${modifiedCount} seats for completed showtime ${this._id}.`);
-                }
-            } else {
-                logger.info(`No bookings found for showtime ${this._id}. No seats to release.`);
-            }
+            logger.info(`Showtime ${this._id} completed. Deleting associated seat bookings.`);
+            const { deletedCount } = await SeatBooking.deleteMany({ showtimeId: this._id });
+            logger.info(`Deleted ${deletedCount} seat bookings for completed showtime ${this._id}.`);
         } catch (error) {
-            logger.error(`Error releasing seats for showtime ${this._id}: ${error.message}`);
+            logger.error(`Error deleting seat bookings for showtime ${this._id}: ${error.message}`);
         }
     }
 
     // If status has been changed to 'cancelled', cancel all associated bookings.
+    // The updated booking.cancelBooking() method will handle deleting SeatBooking entries.
     if (this.isModified('status') && this.status === 'cancelled') {
         const Booking = mongoose.model('Booking');
         const logger = require('../utils/logger');

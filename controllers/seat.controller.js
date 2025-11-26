@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
-const Seat = require("../models/seat.model");
-const Hall = require("../models/hall.model");
+const {Seat, Hall, SeatBooking} = require("../models");
 const {Role} = require("../data");
 const logger = require("../utils/logger");
 
@@ -592,6 +591,10 @@ class SeatController {
             }
 
             // Perform permanent deletion
+            // // Delete associated SeatBooking records
+            // await seatBooking.deleteMany({seatId: id});
+            // logger.info(`Deleted SeatBooking records for permanently deleted seat ID: ${id}`);
+
             await Seat.findByIdAndDelete(id);
 
             logger.warn(
@@ -795,7 +798,6 @@ class SeatController {
                 Seat.countDocuments({status: "active", deletedAt: null}),
                 Seat.countDocuments({status: "maintenance", deletedAt: null}),
                 Seat.countDocuments({status: "out_of_order", deletedAt: null}),
-                Seat.countDocuments({status: "reserved", deletedAt: null}),
             ]);
 
             const [
@@ -810,7 +812,6 @@ class SeatController {
                 activeStatus,
                 maintenance,
                 outOfOrder,
-                reserved,
             ] = stats;
 
             res.status(200).json({
@@ -830,7 +831,6 @@ class SeatController {
                         active: activeStatus,
                         maintenance,
                         outOfOrder,
-                        reserved,
                     },
                     percentageActive: total > 0 ? Math.round((active / total) * 100) : 0,
                 },
@@ -953,7 +953,7 @@ class SeatController {
             }
 
             const newSeats = seatNumbers.map((num) => ({
-                hall_id,
+                hall_id: new mongoose.Types.ObjectId(hall_id),
                 theater_id, // Assign theater_id from hall
                 row: row.toUpperCase(),
                 seat_number: num,
@@ -1079,6 +1079,12 @@ class SeatController {
                         // Log error but don't fail the entire operation
                     }
                 }
+            }
+
+            // Delete associated SeatBooking records in bulk
+            if (deletedSeatIds.length > 0) {
+                const {deletedCount: sbDeletedCount} = await SeatBooking.deleteMany({seatId: {$in: deletedSeatIds}});
+                logger.info(`Deleted ${sbDeletedCount} SeatBooking records for ${deletedSeatIds.length} permanently deleted seats.`);
             }
 
             // 7. Log the bulk operation

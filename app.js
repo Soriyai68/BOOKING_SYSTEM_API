@@ -28,6 +28,7 @@ const permissionRoutes = require("./routes/permission.routes");
 const bookingRoutes = require("./routes/bookings.routes");
 const bookingDetailRoutes = require("./routes/bookingDetails.routes");
 const paymentRoutes = require("./routes/payments.routes");
+const seatBookingsRoutes = require("./routes/seatBookings.routes");
 
 const app = express();
 
@@ -133,6 +134,8 @@ app.use("/api/v1/bookings", bookingRoutes);
 app.use("/api/v1/bookingDetails", bookingDetailRoutes);
 // payment
 app.use("/api/v1/payments", paymentRoutes);
+// seatBooking
+app.use("/api/v1/seatBookings", seatBookingsRoutes);
 
 // 404 handler for undefined routes
 app.use((req, res) => {

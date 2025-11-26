@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const logger = require("../utils/logger");
 
 const seatSchema = new mongoose.Schema(
     {
@@ -23,7 +24,7 @@ const seatSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ["active", "maintenance", "out_of_order", "reserved", "closed"],
+            enum: ["active", "maintenance", "out_of_order", "closed"],
             default: "active",
         },
         notes: {
@@ -122,7 +123,6 @@ seatSchema.methods.updateStatus = function (newStatus, updatedBy = null) {
         "active",
         "maintenance",
         "out_of_order",
-        "reserved",
         "closed",
     ];
     if (!validStatuses.includes(newStatus)) {
@@ -144,7 +144,13 @@ seatSchema.pre("save", function (next) {
 // After a seat is saved
 seatSchema.post("save", async function () {
     const Hall = mongoose.model("Hall");
-    await Hall.updateTotalSeatsForHall(this.hall_id);
+    try {
+        await Hall.updateTotalSeatsForHall(this.hall_id);
+        logger.info(`Updated total_seats for hall ${this.hall_id} after seat save.`);
+    } catch (error) {
+        logger.error(`Failed to update total_seats for hall ${this.hall_id} after seat save:`, error);
+        // Log the error but don't prevent the seat from being saved.
+    }
 });
 
 // After a seat is deleted

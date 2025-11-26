@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const logger = require('../utils/logger');
+const SeatBooking = mongoose.model('SeatBooking');
 
 const bookingSchema = new mongoose.Schema({
     userId: {
@@ -121,147 +123,54 @@ bookingSchema.methods.isExpired = function () {
     return this.expired_at < new Date();
 };
 
-bookingSchema.methods.markAsCompleted = function (paymentId) {
+bookingSchema.methods.markAsCompleted = async function (paymentId) { // Changed to async
     this.payment_status = 'Completed';
     this.booking_status = 'Completed';
     if (paymentId) {
         this.payment_id = paymentId;
     }
+
+    // Update associated SeatBooking records
+    const updateResult = await SeatBooking.updateMany(
+        { bookingId: this._id, status: 'locked' },
+        {
+            $set: {
+                status: 'booked',
+            },
+            $unset: { locked_until: "" }
+        }
+    );
+
+    if (updateResult.modifiedCount > 0) {
+        logger.info(`${updateResult.modifiedCount} seat bookings for Booking ID: ${this._id} updated from 'locked' to 'booked'.`);
+    } else {
+        logger.warn(`No 'locked' seat bookings found for Booking ID: ${this._id} to update to 'booked'.`);
+    }
+    
+    logger.info(`Booking ${this.reference_code} (ID: ${this._id}) status updated to Completed. Payment ID: ${paymentId}.`);
+
     return this.save();
 };
 
-bookingSchema.methods.cancelBooking = function (reason = 'Cancelled by user') {
+bookingSchema.methods.cancelBooking = async function (reason = 'Cancelled by user') {
     this.booking_status = 'Cancelled';
     this.noted = reason;
     this.deletedAt = new Date();
+
+    // New logic: Release the seats by deleting the corresponding SeatBooking documents.
+    const SeatBooking = mongoose.model('SeatBooking');
+    await SeatBooking.deleteMany({ bookingId: this._id });
+
     return this.save();
 };
 
-// Mongoose middleware for auto-updating seat status
-bookingSchema.pre('save', async function (next) {
-    if (this.isModified('booking_status') || this.isNew) {
-        const Seat = mongoose.model('Seat');
-        const Showtime = mongoose.model('Showtime');
+// Mongoose middleware for auto-updating seat status has been removed.
+// The new design uses a separate SeatBooking collection to manage seat reservations per showtime.
 
-        try {
-            const showtime = await Showtime.findById(this.showtimeId);
-            if (!showtime) {
-                throw new Error(`Showtime with ID ${this.showtimeId} not found.`);
-            }
+// Middleware to handle seat updates on existing bookings has been removed.
 
-            const hallId = showtime.hall_id;
-            let newStatus;
+// Middleware to release seats when a booking is permanently deleted has been removed.
 
-            if (this.booking_status === 'Cancelled') {
-                newStatus = 'active';
-            } else if (this.booking_status === 'Confirmed' || this.booking_status === 'Completed') {
-                newStatus = 'reserved';
-            } else {
-                return next(); // No seat status change needed
-            }
-
-            const seatUpdates = this.seats.map(async (seatId) => {
-                const seat = await Seat.findById(seatId);
-
-                if (seat) {
-                    // Optional: Verify seat belongs to the correct hall from the showtime
-                    if (seat.hall_id.toString() !== hallId.toString()) {
-                        // Silently skip if seat is in the wrong hall
-                        return;
-                    }
-
-                    if (seat.status !== newStatus) {
-                        seat.status = newStatus;
-                        return seat.save();
-                    }
-                }
-            });
-
-            await Promise.all(seatUpdates);
-            next();
-        } catch (error) {
-            // Pass the error to prevent saving the booking in an inconsistent state
-            next(error);
-        }
-    } else {
-        next();
-    }
-});
-
-// Middleware to handle seat updates on existing bookings
-bookingSchema.pre('findOneAndUpdate', async function (next) {
-    // `this` is the query object
-    const update = this.getUpdate();
-
-    // Check if the 'seats' field is being updated
-    if (!update.$set || !update.$set.seats) {
-        return next();
-    }
-
-    try {
-        const Seat = mongoose.model('Seat');
-
-        // Get the original document before the update
-        const originalDoc = await this.model.findOne(this.getFilter()).lean();
-
-        if (originalDoc) {
-            const oldSeats = originalDoc.seats.map(s => s.toString());
-            const newSeats = update.$set.seats.map(s => s.toString());
-
-            // Determine which seats to release and which to reserve
-            const seatsToRelease = oldSeats.filter(seatId => !newSeats.includes(seatId));
-            const seatsToReserve = newSeats.filter(seatId => !oldSeats.includes(seatId));
-
-            // Release old seats
-            if (seatsToRelease.length > 0) {
-                await Seat.updateMany(
-                    {_id: {$in: seatsToRelease}},
-                    {$set: {status: 'active'}}
-                );
-            }
-
-            // Reserve new seats
-            if (seatsToReserve.length > 0) {
-                await Seat.updateMany(
-                    {_id: {$in: seatsToReserve}},
-                    {$set: {status: 'reserved'}}
-                );
-            }
-        }
-
-        next();
-    } catch (error) {
-        // Pass any errors to the next middleware
-        next(error);
-    }
-});
-
-// Middleware to release seats when a booking is permanently deleted
-bookingSchema.post('findOneAndDelete', async function (doc) {
-    if (doc) {
-        const Seat = mongoose.model('Seat');
-        const logger = require('../utils/logger');
-
-        try {
-            // Only release seats if the booking was not in a 'Cancelled' state
-            // because their seats would have already been released.
-            if (doc.booking_status !== 'Cancelled') {
-                logger.info(`Booking ${doc._id} was permanently deleted. Releasing associated seats.`);
-                const seatIdsToRelease = doc.seats.map(id => id.toString());
-
-                if (seatIdsToRelease.length > 0) {
-                    const {modifiedCount} = await Seat.updateMany(
-                        {_id: {$in: seatIdsToRelease}, status: 'reserved'},
-                        {$set: {status: 'active'}}
-                    );
-                    logger.info(`Released ${modifiedCount} seats for deleted booking ${doc._id}.`);
-                }
-            }
-        } catch (error) {
-            logger.error(`Error releasing seats for deleted booking ${doc._id}: ${error.message}`);
-        }
-    }
-});
 
 // Indexes
 bookingSchema.index({userId: 1});

@@ -1,5 +1,6 @@
 const { required } = require("joi");
 const mongoose = require("mongoose");
+const logger = require("../utils/logger");
 
 const hallSchema = new mongoose.Schema(
   {
@@ -307,6 +308,7 @@ hallSchema.statics.getHallsWithSeatCounts = async function (query = {}) {
 
 // Static method to update total_seats for a hall based on actual seat count
 hallSchema.statics.updateTotalSeatsForHall = async function (hallId) {
+  logger.info(`updateTotalSeatsForHall called for hallId: ${hallId}`);
   try {
     const Seat = mongoose.model("Seat");
 
@@ -314,7 +316,7 @@ hallSchema.statics.updateTotalSeatsForHall = async function (hallId) {
     const result = await Seat.aggregate([
       {
         $match: {
-          hall_id: hallId,
+          hall_id: new mongoose.Types.ObjectId(hallId), // Ensure hallId is ObjectId
           deletedAt: null,
         },
       },
@@ -334,20 +336,43 @@ hallSchema.statics.updateTotalSeatsForHall = async function (hallId) {
       },
     ]);
 
-    const seatCount = result.length > 0 ? result[0].totalSeats : 0;
+    logger.info(`Aggregation result for hallId ${hallId}:`, result);
 
+    const seatCount = result.length > 0 ? result[0].totalSeats : 0;
+    logger.info(`Calculated seatCount for hallId ${hallId}: ${seatCount}`);
+
+    console.log(`Attempting to update hall ${hallId} with total_seats: ${seatCount}`);
     // Update the hall's total_seats field
-    await this.findByIdAndUpdate(
+    const updatedHall = await this.findByIdAndUpdate(
       hallId,
       { total_seats: seatCount },
       { new: true, timestamps: false } // Don't update timestamps for auto-calculation
     );
+    console.log(`Updated hall ${hallId}:`, updatedHall);
+
 
     return seatCount;
   } catch (error) {
-    console.error(`Error updating total_seats for hall ${hallId}:`, error);
+    logger.error(`Error updating total_seats for hall ${hallId}:`, error);
     throw error;
   }
+};
+
+// Static method to manually trigger recalculation for a specific hall
+hallSchema.statics.recalculateTotalSeats = async function (hallId) {
+  logger.info(`Manual recalculation of total seats requested for Hall ID: ${hallId}`);
+  return await this.updateTotalSeatsForHall(hallId);
+};
+
+// Static method to manually trigger recalculation for all halls
+hallSchema.statics.recalculateAllHallTotalSeats = async function () {
+  logger.info("Manual recalculation of total seats requested for all halls...");
+  const halls = await this.find({}); // Get all halls
+  for (const hall of halls) {
+    await this.updateTotalSeatsForHall(hall._id);
+    logger.info(`Updated total seats for Hall: ${hall.hall_name} (${hall._id})`);
+  }
+  logger.info("Finished recalculating total seats for all halls.");
 };
 
 // Virtual for display name

@@ -15,6 +15,7 @@ const bookingDetailRoutes = require('./bookingDetails.routes');
 const invoiceRoutes = require('./invoices.routes');
 const paymentRoutes = require('./payments.routes');
 const promotionRoutes = require('./promotion.route');
+const seatBookingRoutes = require('./seatBookings.routes');
 
 
 // Mount routes
@@ -31,6 +32,7 @@ router.use('/booking-details', bookingDetailRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/promotions', promotionRoutes);
+router.use('/seat-bookings', seatBookingRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {

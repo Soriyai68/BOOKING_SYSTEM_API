@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const {Booking, Showtime, User} = require("../models");
+const {Booking, Showtime, User, SeatBooking} = require("../models");
 const {Role} = require("../data");
 const logger = require("../utils/logger");
 
@@ -14,6 +14,7 @@ class BookingController {
     // Build filter query
     static buildFilterQuery(filters) {
         const query = {};
+
 
         if (filters.booking_status) {
             query.booking_status = filters.booking_status;
@@ -286,28 +287,31 @@ class BookingController {
             const {
                 userId,
                 showtimeId,
-                seats,
+                seats, // Expecting an array of Seat IDs
                 total_price,
-                payment_method, // Added payment_method
-                payment_id,
-                payment_status = "Pending",
-                booking_status = "Confirmed",
+                payment_method,
                 noted = ""
             } = req.body;
 
-            // Validations
+            // 1. Validations
             if (!userId || !showtimeId || !seats || !Array.isArray(seats) || seats.length === 0) {
                 return res.status(400).json({
                     success: false,
-                    message: "Missing required booking details. Please provide a user, showtime, and select at least one seat."
+                    message: "Missing required details: userId, showtimeId, and seats are required."
                 });
             }
 
-            const user = await User.findById(userId);
-            if (!user) return res.status(404).json({success: false, message: "User not found"});
+            const [user, showtime] = await Promise.all([
+                User.findById(userId),
+                Showtime.findById(showtimeId)
+            ]);
 
-            const showtime = await Showtime.findById(showtimeId);
-            if (!showtime) return res.status(404).json({success: false, message: "Showtime not found"});
+            if (!user) {
+                return res.status(404).json({success: false, message: "User not found"});
+            }
+            if (!showtime) {
+                return res.status(404).json({success: false, message: "Showtime not found"});
+            }
 
             // Check if the showtime is active for booking
             if (!showtime.isActiveForBooking()) {
@@ -316,62 +320,61 @@ class BookingController {
                     message: "This showtime is not available for booking. It might be completed, cancelled, or in the past."
                 });
             }
-
-            const Seat = mongoose.model("Seat");
             const seatObjectIds = seats.filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
 
-            // Ensure all seats exist
-            const foundSeats = await Seat.find({_id: {$in: seatObjectIds}}).lean();
-            if (foundSeats.length !== seats.length) {
-                const missingSeatIds = seats.filter(id => !foundSeats.map(s => s._id.toString()).includes(id));
-                return res.status(404).json({
-                    success: false,
-                    message: `Some selected seats could not be found. Please check the seat IDs: ${missingSeatIds.join(", ")}`
-                });
+            if (seatObjectIds.length !== seats.length) {
+                return res.status(400).json({success: false, message: "Invalid seat ID format found in request."});
             }
 
-            // Ensure all seats belong to the hall
-            const validSeats = foundSeats.filter(seat => seat.hall_id.toString() === showtime.hall_id.toString());
-            if (validSeats.length !== seats.length) {
-                return res.status(400).json({
-                    success: false,
-                    message: "One or more selected seats do not belong to the chosen hall. Please verify your seat selection."
-                });
-            }
+            // 2. Check Seat Availability using SeatBooking model
+            const existingSeatBookings = await SeatBooking.find({
+                showtimeId: showtimeId,
+                seatId: {$in: seatObjectIds}
+            });
 
-            // Check if seats already booked
-            const existingBookings = await Booking.findActiveBookingsByShowtime(showtimeId);
-            const bookedSeatIds = existingBookings.flatMap(b => b.seats.map(id => id.toString()));
-            const alreadyBookedSeats = seats.filter(id => bookedSeatIds.includes(id));
-            if (alreadyBookedSeats.length > 0) {
+            if (existingSeatBookings.length > 0) {
+                const populatedBookings = await SeatBooking.populate(existingSeatBookings, {
+                    path: 'seatId',
+                    select: 'row seat_number'
+                });
+                const bookedSeatLabels = populatedBookings.map(sb => sb.seatId ? `${sb.seatId.row}${sb.seatId.seat_number}` : 'UnknownSeat');
                 return res.status(409).json({
                     success: false,
-                    message: `Some of the selected seats are already booked or reserved. Please choose different seats.`
+                    message: `Some selected seats are already booked or locked: ${bookedSeatLabels.join(', ')}. Please choose different seats.`
                 });
             }
 
-            // Create booking
+            // 3. Create Booking & SeatBookings (Note: Not an atomic operation)
             const reference_code = await Booking.generateReferenceCode();
-
-            let expired_at;
-            if (payment_method === 'Cash') {
-                expired_at = null;
-            } else {
-                const [hours, minutes] = showtime.start_time.split(':');
-                const showtimeDate = new Date(showtime.show_date);
-                showtimeDate.setHours(hours, minutes, 0, 0);
-                expired_at = new Date(showtimeDate.getTime() - 15 * 60 * 1000);
-            }
             const booking = new Booking({
-                userId, showtimeId, seats: seatObjectIds, seat_count: seats.length,
-                total_price, reference_code, payment_id, payment_status,
-                booking_status, expired_at, payment_method,
+                userId,
+                showtimeId,
+                seats: seatObjectIds,
+                seat_count: seats.length,
+                total_price,
+                reference_code,
+                payment_status: 'Pending',
+                booking_status: 'Confirmed',
+                payment_method,
                 noted
             });
 
+            // Set a 15-minute expiration for the booking itself if payment is pending
+            booking.expired_at = new Date(Date.now() + 15 * 60 * 1000);
+
             await booking.save();
 
-            // Populate booking for response with consistent details
+            // Lock the seats by creating SeatBooking documeants
+            const seatBookingDocs = seatObjectIds.map(seatId => ({
+                showtimeId,
+                seatId,
+                bookingId: booking._id,
+                status: 'locked',
+                locked_until: booking.expired_at // Align seat lock with booking expiration
+            }));
+            await SeatBooking.insertMany(seatBookingDocs);
+
+            // 4. Populate and Respond
             await booking.populate([
                 {path: "userId", select: "name email phone"},
                 {
@@ -380,16 +383,18 @@ class BookingController {
                         {path: "movie_id", select: "title poster_url duration_minutes"},
                         {path: "hall_id", select: "hall_name screen_type"},
                     ]
-                },
-                {path: "seats"}
+                }
             ]);
 
             res.status(201).json({
                 success: true,
-                message: "Booking created successfully",
+                message: "Booking created successfully. Seats are locked for 15 minutes.",
                 data: {booking}
             });
+
         } catch (error) {
+            // Note: Without a transaction, if booking.save() succeeds but SeatBooking.insertMany() fails,
+            // the booking will exist without any locked seats. This would require manual cleanup.
             logger.error("Create booking error:", error);
             res.status(500).json({success: false, message: "Failed to create booking"});
         }
@@ -401,189 +406,97 @@ class BookingController {
             const {id} = req.params;
             BookingController.validateObjectId(id);
 
-            // 1. Fetch the existing booking
+            const updateData = req.body;
+
             const booking = await Booking.findById(id);
             if (!booking) {
                 return res.status(404).json({success: false, message: "Booking not found"});
             }
 
-            const updateData = {...req.body};
-            delete updateData._id;
-            delete updateData.createdAt;
 
-            let currentShowtime = await Showtime.findById(booking.showtimeId); // Get current showtime object
-            let currentSeats = [...booking.seats]; // Get current seats array
-
-            // Store original values for seat release logic later
-            const originalSeats = [...booking.seats];
             const originalShowtimeId = booking.showtimeId;
+            const originalSeatIds = booking.seats.map(s => s.toString());
 
-
-            // --- Primary Showtime Validation ---
-            // Unless we are specifically trying to cancel the booking, no updates should be
-            // allowed if the associated showtime is no longer active.
-            if (updateData.booking_status !== 'Cancelled' && booking.booking_status !== 'Cancelled') {
-                if (!currentShowtime) {
-                    return res.status(404).json({
-                        success: false,
-                        message: "The showtime associated with this booking could not be found."
-                    });
-                }
-                if (!currentShowtime.isActiveForBooking()) {
-                    return res.status(400).json({
-                        success: false,
-                        message: "This booking cannot be updated because its showtime is no longer active (it may be completed or cancelled)."
-                    });
-                }
-            }
-
-
-            // --- Handle Showtime ID Update ---
-            // If a new showtimeId is provided in the request, and it's different from the current one.
+            // --- Handle Showtime Change ---
             if (updateData.showtimeId && updateData.showtimeId.toString() !== booking.showtimeId.toString()) {
                 const newShowtime = await Showtime.findById(updateData.showtimeId);
-                if (!newShowtime) {
-                    return res.status(404).json({success: false, message: "The new showtime specified was not found."});
-                }
-                // Validate if the new showtime is available for booking (not completed, cancelled, or in the past).
-                if (!newShowtime.isActiveForBooking()) {
-                    return res.status(400).json({
-                        success: false,
-                        message: "The new showtime is not available for booking. It might be completed, cancelled, or in the past."
-                    });
-                }
-                // Update the booking's showtimeId and set currentShowtime for subsequent seat validations.
+                if (!newShowtime) throw new Error("The new showtime specified was not found.");
+                if (!newShowtime.isActiveForBooking()) throw new Error("The new showtime is not available for booking.");
                 booking.showtimeId = newShowtime._id;
-                currentShowtime = newShowtime;
             }
 
-            // 3. Handle seats update (if provided)
-            if (updateData.seats && Array.isArray(updateData.seats)) {
-                if (!currentShowtime) { // Should not happen if showtimeId is always valid
-                    return res.status(500).json({success: false, message: "Internal error: Showtime details missing."});
-                }
-                const Seat = mongoose.model("Seat");
-                const newSeatObjectIds = updateData.seats.filter(id => mongoose.Types.ObjectId.isValid(id)).map(id => new mongoose.Types.ObjectId(id));
+            // --- Handle Seat and Other Data Changes ---
+            const showtimeChanged = booking.showtimeId.toString() !== originalShowtimeId.toString();
+            const newSeatIds = updateData.seats ? updateData.seats.map(s => s.toString()) : originalSeatIds;
 
-                const foundNewSeats = await Seat.find({_id: {$in: newSeatObjectIds}}).lean();
-                if (foundNewSeats.length !== newSeatObjectIds.length) {
-                    const missingSeatIds = updateData.seats.filter(id => !foundNewSeats.map(s => s._id.toString()).includes(id));
-                    return res.status(404).json({
-                        success: false,
-                        message: `Some selected seats could not be found for the new selection: ${missingSeatIds.join(", ")}`
+            // If showtime changed OR seats changed, we need to update SeatBookings
+            if (showtimeChanged || JSON.stringify(newSeatIds) !== JSON.stringify(originalSeatIds)) {
+                // 1. Release all original seats from the original showtime context
+                await SeatBooking.deleteMany({
+                    bookingId: booking._id,
+                    showtimeId: originalShowtimeId
+                });
+
+                // 2. Check availability of new seats for the potentially new showtime
+                if (newSeatIds.length > 0) {
+                    const existingBookings = await SeatBooking.find({
+                        showtimeId: booking.showtimeId,
+                        seatId: {$in: newSeatIds}
                     });
-                }
 
-                const validNewSeats = foundNewSeats.filter(seat => seat.hall_id.toString() === currentShowtime.hall_id.toString());
-                if (validNewSeats.length !== newSeatObjectIds.length) {
-                    return res.status(400).json({
-                        success: false,
-                        message: "One or more new seats do not belong to the current showtime's hall. Please verify your selection."
-                    });
-                }
-
-                // Check if new seats are already booked by *other* bookings
-                const existingBookingsForShowtime = await Booking.findActiveBookingsByShowtime(currentShowtime._id);
-                const bookedSeatIds = existingBookingsForShowtime
-                    .filter(b => b._id.toString() !== booking._id.toString()) // Exclude current booking
-                    .flatMap(b => b.seats.map(id => id.toString()));
-
-                const alreadyBookedSeats = updateData.seats.filter(id => bookedSeatIds.includes(id));
-                if (alreadyBookedSeats.length > 0) {
-                    return res.status(409).json({
-                        success: false,
-                        message: `Some of the newly selected seats are already booked or reserved: ${alreadyBookedSeats.join(", ")}`
-                    });
-                }
-                booking.seats = newSeatObjectIds;
-                currentSeats = newSeatObjectIds;
-            }
-
-            // 4. Manually manage seat status changes
-            const Seat = mongoose.model('Seat');
-            const seatsToRelease = [];
-            const seatsToReserve = [];
-
-            // Seats that were in original booking but not in current booking (or showtime changed)
-            if (originalShowtimeId.toString() !== booking.showtimeId.toString() || originalSeats.toString() !== currentSeats.toString()) {
-                // If showtime changed, all original seats must be released
-                if (originalShowtimeId.toString() !== booking.showtimeId.toString()) {
-                    seatsToRelease.push(...originalSeats);
-                } else { // Only seats changed, some might be removed
-                    for (const oldSeatId of originalSeats) {
-                        if (!currentSeats.some(newSeatId => newSeatId.toString() === oldSeatId.toString())) {
-                            seatsToRelease.push(oldSeatId);
-                        }
+                    if (existingBookings.length > 0) {
+                        const populated = await SeatBooking.populate(existingBookings, {
+                            path: 'seatId',
+                            select: 'row seat_number'
+                        });
+                        const labels = populated.map(sb => sb.seatId ? `${sb.seatId.row}${sb.seatId.seat_number}` : 'Unknown');
+                        throw new Error(`Cannot update booking. The following seats are already taken for the showtime: ${labels.join(', ')}`);
                     }
+
+                    // 3. Lock the new set of seats
+                    const seatBookingDocs = newSeatIds.map(seatId => ({
+                        showtimeId: booking.showtimeId,
+                        seatId,
+                        bookingId: booking._id,
+                        status: 'locked',
+                        locked_until: booking.expired_at || new Date(Date.now() + 15 * 60 * 1000)
+                    }));
+                    await SeatBooking.insertMany(seatBookingDocs);
                 }
-
-                // Seats that are in current booking but were not in original booking
-                for (const newSeatId of currentSeats) {
-                    if (!originalSeats.some(oldSeatId => oldSeatId.toString() === newSeatId.toString())) {
-                        seatsToReserve.push(newSeatId);
-                    }
-                }
             }
 
-            // Execute seat status updates
-            if (seatsToRelease.length > 0) {
-                const uniqueSeatsToRelease = [...new Set(seatsToRelease)];
-                await Seat.updateMany(
-                    {_id: {$in: uniqueSeatsToRelease}, status: 'reserved'},
-                    {$set: {status: 'active'}}
-                );
-            }
-            if (seatsToReserve.length > 0) {
-                const uniqueSeatsToReserve = [...new Set(seatsToReserve)];
-                await Seat.updateMany(
-                    {_id: {$in: uniqueSeatsToReserve}, status: 'active'},
-                    {$set: {status: 'reserved'}}
-                );
-            }
-
-            // 5. Apply remaining updates
+            // --- Apply remaining updates to the booking document ---
             Object.keys(updateData).forEach(key => {
-                if (key !== 'showtimeId' && key !== 'seats') {
-                    booking[key] = updateData[key];
-                }
+                booking[key] = updateData[key];
             });
+            booking.seats = newSeatIds;
+            booking.seat_count = newSeatIds.length;
 
-            // 6. Save the booking
-            await booking.save(); // This will trigger pre('save') middleware for booking_status changes
+            await booking.save();
 
-            // 7. Populate for response
+            // Populate for response
             await booking.populate([
                 {path: "userId", select: "name email phone"},
                 {
                     path: "showtimeId",
                     populate: [
-                        {path: "movie_id", select: "title poster_url duration_minutes"},
-                        {path: "hall_id", select: "hall_name screen_type"},
+                        {path: "movie_id", select: "title poster_url"},
+                        {path: "hall_id", select: "hall_name"},
                     ]
-                },
-                {path: "seats"}
+                }
             ]);
-
 
             res.status(200).json({
                 success: true,
                 message: "Booking updated successfully",
                 data: {booking},
             });
+
         } catch (error) {
             logger.error("Update booking error:", error);
-            if (error.message === "Invalid Booking ID format") {
-                return res.status(400).json({success: false, message: error.message});
-            }
-            // Catch custom validation errors and send appropriate response
-            if (error.message.includes("Showtime not found") || error.message.includes("not available for booking") ||
-                error.message.includes("seats could not be found") || error.message.includes("seats do not belong to the hall") ||
-                error.message.includes("seats are already booked")) {
-                return res.status(400).json({success: false, message: error.message});
-            }
-            res
-                .status(500)
-                .json({success: false, message: "Failed to update booking"});
+            const errorMessage = error.message || "Failed to update booking";
+            const statusCode = error.message.includes("already taken") ? 409 : 500;
+            res.status(statusCode).json({success: false, message: errorMessage});
         }
     }
 
@@ -658,13 +571,18 @@ class BookingController {
             const {id} = req.params;
             BookingController.validateObjectId(id);
 
-            const booking = await Booking.findByIdAndDelete(id);
-
+            // Find the booking first to ensure it exists
+            const booking = await Booking.findById(id);
             if (!booking) {
-                return res
-                    .status(404)
-                    .json({success: false, message: "Booking not found"});
+                return res.status(404).json({success: false, message: "Booking not found"});
             }
+
+            // Delete associated SeatBooking records
+            const { deletedCount: sbDeletedCount } = await SeatBooking.deleteMany({ bookingId: id });
+            logger.info(`Deleted ${sbDeletedCount} SeatBooking records for permanently deleted booking ID: ${id}`);
+
+            // Perform permanent deletion of the Booking
+            await Booking.findByIdAndDelete(id);
 
             res.status(200).json({
                 success: true,

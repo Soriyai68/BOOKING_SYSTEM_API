@@ -2,7 +2,7 @@ const Joi = require("joi");
 
 // const SEAT_TYPES = ['standard', 'premium', 'vip', 'wheelchair', 'recliner'];
 const SEAT_TYPES = ["regular", "vip", "couple", "queen"];
-const SEAT_STATUSES = ["active", "maintenance", "out_of_order", "reserved", "closed"];
+const SEAT_STATUSES = ["active", "maintenance", "out_of_order", "closed"];
 
 const createSeatSchema = Joi.object({
     row: Joi.string()

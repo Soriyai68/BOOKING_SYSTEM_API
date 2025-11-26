@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const Showtime = require('../models/showtime.model');
 const Movie = require('../models/movie.model');
 const Booking = require('../models/booking.model');
-const Seat = require('../models/seat.model');
+const SeatBooking = require('../models/seatBooking.model');
 const logger = require('../utils/logger');
 
 /**
@@ -37,29 +37,12 @@ const startShowtimeScheduler = () => {
                     {$set: {status: 'completed', updatedAt: now}}
                 );
                 logger.info(`Updated ${modifiedCount} showtimes to 'completed' via scheduler.`);
+                const {deletedCount} = await SeatBooking.deleteMany({
+                    showtimeId: {$in: showtimesToCompleteIds}
+                });
 
-                for (const showtimeId of showtimesToCompleteIds) {
-                    try {
-                        const bookings = await Booking.find({
-                            showtimeId: showtimeId,
-                            booking_status: {$ne: 'Cancelled'}
-                        }).select('seats');
-
-                        if (bookings.length > 0) {
-                            const seatIdsToRelease = bookings.flatMap(b => b.seats.map(id => id.toString()));
-                            const uniqueSeatIds = [...new Set(seatIdsToRelease)];
-
-                            if (uniqueSeatIds.length > 0) {
-                                const {modifiedCount: seatsModifiedCount} = await Seat.updateMany(
-                                    {_id: {$in: uniqueSeatIds}, status: 'reserved'},
-                                    {$set: {status: 'active'}}
-                                );
-                                logger.info(`Scheduler released ${seatsModifiedCount} seats for showtime ${showtimeId}.`);
-                            }
-                        }
-                    } catch (seatReleaseError) {
-                        logger.error(`Error releasing seats for showtime ${showtimeId} via scheduler: ${seatReleaseError.message}`);
-                    }
+                if (deletedCount > 0) {
+                    logger.info(`Scheduler cleaned up ${deletedCount} seat bookings for ${modifiedCount} completed showtimes.`);
                 }
             } else {
                 logger.info('No scheduled showtimes found that need to be completed.');
@@ -128,12 +111,58 @@ const startBookingScheduler = () => {
 };
 
 /**
+ * Schedules a job to sync seat statuses for completed bookings.
+ * This acts as a janitor to ensure seats for paid bookings are marked as 'booked'.
+ */
+const startSeatBookingSyncScheduler = () => {
+    logger.info('Scheduling seat booking sync job to run every minute.');
+    cron.schedule('* * * * *', async () => {
+        logger.info('Running scheduled job to sync seat bookings for completed bookings...');
+        try {
+            // Find bookings that are 'Completed' but may have seats still 'locked'
+            const completedBookings = await Booking.find({
+                booking_status: 'Completed',
+            }).select('_id');
+
+            if (completedBookings.length === 0) {
+                logger.info('No completed bookings found to sync seat statuses.');
+                return;
+            }
+            const completedBookingIds = completedBookings.map(b => b._id);
+
+            // Find 'locked' SeatBooking records associated with these completed bookings and update them to 'booked'
+            const result = await SeatBooking.updateMany(
+                {
+                    bookingId: {$in: completedBookingIds},
+                    status: 'locked'
+                },
+                {
+                    $set: {
+                        status: 'booked',
+                    },
+                    $unset: { locked_until: "" }
+                }
+            );
+
+            if (result.modifiedCount > 0) {
+                logger.info(`Synced ${result.modifiedCount} seat bookings from 'locked' to 'booked' for completed bookings.`);
+            } else {
+                logger.info('No seat bookings required syncing for completed bookings.');
+            }
+        } catch (error) {
+            logger.error('Error in scheduled seat booking sync job:', error);
+        }
+    });
+};
+
+/**
  * Initializes and starts all scheduled jobs for the application.
  */
 const startAllSchedulers = () => {
     startShowtimeScheduler();
     startMovieScheduler();
     startBookingScheduler();
+    startSeatBookingSyncScheduler();
 };
 
 module.exports = startAllSchedulers;
