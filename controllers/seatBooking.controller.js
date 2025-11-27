@@ -13,14 +13,15 @@ class SeatBookingController {
     // Helper method for search and filter
     static filterBuilder(query) {
         const filter = {};
-        const {showtimeId, seatId, bookingId, status} = query;
+        const {showtimeId, seatId, bookingId, status, seat_type} = query
 
         if (showtimeId) {
             SeatBookingController.validateObjectId(showtimeId);
             filter.showtimeId = new mongoose.Types.ObjectId(showtimeId);
         }
-        if (filter.seat_type) {
-            matchConditions['seatId.seat_type'] = filter.seat_type;
+        if (seatId) {
+            SeatBookingController.validateObjectId(seatId);
+            filter.seatId = new mongoose.Types.ObjectId(seatId);
         }
 
         if (bookingId) {
@@ -30,7 +31,7 @@ class SeatBookingController {
         if (status) {
             filter.status = status;
         }
-        return filter;
+        return {filter, seat_type};
     }
 
     static searchBuilder(query) {
@@ -85,7 +86,7 @@ class SeatBookingController {
             const skip = (pageNum - 1) * limitNum;
             const sort = {[sortBy]: sortOrder === "desc" ? -1 : 1};
 
-            const initialFilter = SeatBookingController.filterBuilder(filterParams);
+            const {filter: initialFilter, seat_type} = SeatBookingController.filterBuilder(filterParams);
             const searchFilter = SeatBookingController.searchBuilder({search});
 
             const pipeline = [
@@ -124,7 +125,6 @@ class SeatBookingController {
                     }
                 },
                 {$unwind: {path: '$seatId', preserveNullAndEmptyArrays: true}},
-
                 // Lookup Booking
                 {
                     $lookup: {
@@ -163,7 +163,11 @@ class SeatBookingController {
             if (search) {
                 pipeline.push({$match: searchFilter});
             }
-
+            if (seat_type) {
+                pipeline.push({
+                    $match: {'seatId.seat_type': seat_type}
+                });
+            }
             const [seatBookings, totalCountResult] = await Promise.all([
                 SeatBooking.aggregate([
                     ...pipeline,
