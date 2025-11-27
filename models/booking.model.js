@@ -36,8 +36,8 @@ const bookingSchema = new mongoose.Schema({
     },
     booking_status: {
         type: String,
-        enum: ['Confirmed', 'Cancelled', 'Completed'],
-        default: 'Confirmed',
+        enum: ['Pending', 'Confirmed', 'Cancelled', 'Completed'],
+        default: 'Pending',
     },
     reference_code: {
         type: String,
@@ -93,7 +93,7 @@ bookingSchema.statics.autoCancelExpiredBookings = async function () {
     const now = new Date();
     const expiredBookings = await this.find({
         expired_at: {$lte: now},
-        booking_status: 'Confirmed',
+        booking_status: 'Pending',
         payment_status: 'Pending',
         deletedAt: null,
     });
@@ -125,7 +125,7 @@ bookingSchema.methods.isExpired = function () {
 
 bookingSchema.methods.markAsCompleted = async function (paymentId) { // Changed to async
     this.payment_status = 'Completed';
-    this.booking_status = 'Completed';
+    this.booking_status = 'Confirmed';
     if (paymentId) {
         this.payment_id = paymentId;
     }

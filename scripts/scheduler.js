@@ -44,6 +44,14 @@ const startShowtimeScheduler = () => {
                 if (deletedCount > 0) {
                     logger.info(`Scheduler cleaned up ${deletedCount} seat bookings for ${modifiedCount} completed showtimes.`);
                 }
+
+                const {modifiedCount: bookingModifiedCount} = await Booking.updateMany(
+                    {showtimeId: {$in: showtimesToCompleteIds}, booking_status: 'Confirmed'},
+                    {$set: {booking_status: 'Completed', updatedAt: now}}
+                );
+                if (bookingModifiedCount > 0) {
+                    logger.info(`Updated ${bookingModifiedCount} bookings to 'Completed' for completed showtimes.`);
+                }
             } else {
                 logger.info('No scheduled showtimes found that need to be completed.');
             }
