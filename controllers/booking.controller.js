@@ -69,7 +69,7 @@ class BookingController {
         includeDeleted = false,
         ...filters
       } = req.query;
-      
+
       const pageNum = Math.max(1, parseInt(page));
       const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
       const skip = (pageNum - 1) * limitNum;
@@ -77,7 +77,7 @@ class BookingController {
       const matchQuery = { ...BookingController.buildFilterQuery(filters) };
       const searchQuery = BookingController.buildSearchQuery({ search });
       if (!includeDeleted || includeDeleted === "false")
-        matchQuery.deletedAt = null;  
+        matchQuery.deletedAt = null;
 
       const pipeline = [
         { $match: matchQuery },

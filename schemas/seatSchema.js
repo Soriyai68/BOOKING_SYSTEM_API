@@ -62,6 +62,11 @@ const createSeatSchema = Joi.object({
     notes: Joi.string().trim().max(500).allow("").optional().messages({
         "string.max": "Notes cannot exceed 500 characters",
     }),
+    price: Joi.number().min(0).required().messages({
+        "number.base": "Price must be a number",
+        "number.min": "Price cannot be negative",
+        "any.required": "Price is required",
+    }),
 });
 const bulkCreateSeatsSchema = Joi.object({
     row: Joi.string()
@@ -138,7 +143,11 @@ const bulkCreateSeatsSchema = Joi.object({
         "string.empty": "Hall ID is required",
         "any.required": "Hall ID is required",
     }),
-
+    price: Joi.number().min(0).required().messages({
+        "number.base": "Price must be a number",
+        "number.min": "Price cannot be negative",
+        "any.required": "Price is required",
+    }),
     createdBy: Joi.string().optional(),
 });
 const updateSeatSchema = Joi.object({
@@ -192,6 +201,10 @@ const updateSeatSchema = Joi.object({
 
     notes: Joi.string().trim().max(500).allow("").optional().messages({
         "string.max": "Notes cannot exceed 500 characters",
+    }),
+    price: Joi.number().min(0).messages({
+        "number.base": "Price must be a number",
+        "number.min": "Price cannot be negative",
     }),
 })
     .min(1)

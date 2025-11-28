@@ -253,6 +253,7 @@ class SeatController {
             // ✅ Create new seat
             const processedSeatData = {
                 ...seatData,
+                price: seatData.price,
                 row: seatData.row.toUpperCase(),
             };
 
@@ -893,7 +894,7 @@ class SeatController {
     // bulk create for insert multiple seats
     static async bulkCreateSeats(req, res) {
         try {
-            const {hall_id, row, range, seat_type} = req.body;
+            const {hall_id, row, range, seat_type, price} = req.body;
             const createdBy = req.user?.userId;
 
             if (!hall_id || !row || !range?.start || !range?.end) {
@@ -958,6 +959,7 @@ class SeatController {
                 row: row.toUpperCase(),
                 seat_number: num,
                 seat_type: seat_type || "standard", // Default to 'standard'
+                price: price,
                 status: "active", // Default status
                 createdBy,
             }));
