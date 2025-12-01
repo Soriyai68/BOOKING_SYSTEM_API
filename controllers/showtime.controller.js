@@ -305,6 +305,13 @@ class ShowtimeController {
                 });
             }
 
+            if (movie.status === 'ended') {
+                return res.status(409).json({
+                    success: false,
+                    message: "Cannot create showtime for a movie that has ended.",
+                });
+            }
+
             // The overlap check is now handled by the pre-save middleware in the model
             // which also calculates the end_time.
 
@@ -768,6 +775,49 @@ class ShowtimeController {
 
             for (let i = 0; i < showtimes.length; i++) {
                 const showtimeData = showtimes[i];
+                const {movie_id, hall_id, show_date, start_time} = showtimeData;
+
+                if (!movie_id || !hall_id || !show_date || !start_time) {
+                    errors.push({
+                        index: i,
+                        data: showtimeData,
+                        error: "movie_id, hall_id, show_date, and start_time are required.",
+                    });
+                    continue;
+                }
+
+                // Check if referenced documents exist and are active
+                const [movie, hall] = await Promise.all([
+                    Movie.findOne({_id: movie_id, deletedAt: null}),
+                    Hall.findOne({_id: hall_id, deletedAt: null}),
+                ]);
+
+                if (!movie) {
+                    errors.push({
+                        index: i,
+                        data: showtimeData,
+                        error: "Movie not found or has been deleted.",
+                    });
+                    continue;
+                }
+                if (!hall) {
+                    errors.push({
+                        index: i,
+                        data: showtimeData,
+                        error: "Hall not found or has been deleted.",
+                    });
+                    continue;
+                }
+
+                if (movie.status === 'ended') {
+                    errors.push({
+                        index: i,
+                        data: showtimeData,
+                        error: "Cannot create showtime for a movie that has ended.",
+                    });
+                    continue;
+                }
+
                 try {
                     const showtime = new Showtime({...showtimeData, createdBy});
                     await showtime.save();
@@ -792,8 +842,10 @@ class ShowtimeController {
             if (errors.length > 0) {
                 logger.error("Bulk create showtime encountered errors:", {errors});
                 let message = "Some showtimes could not be created.";
-                if (errors.length === 1) {
-                    message = errors[0].error;
+                if (errors.length === showtimes.length) { // All failed
+                    message = "None of the showtimes could be created.";
+                } else if (errors.length > 0) {
+                    message = "Some showtimes could not be created due to validation errors or conflicts.";
                 }
                 return res.status(409).json({
                     success: false,
@@ -1081,6 +1133,49 @@ class ShowtimeController {
 
             for (let i = 0; i < showtimesToInsert.length; i++) {
                 const showtimeData = showtimesToInsert[i];
+                const {movie_id, hall_id, show_date, start_time} = showtimeData;
+
+                if (!movie_id || !hall_id || !show_date || !start_time) {
+                    errors.push({
+                        index: i,
+                        data: showtimeData,
+                        error: "movie_id, hall_id, show_date, and start_time are required.",
+                    });
+                    continue;
+                }
+
+                // Check if referenced documents exist and are active
+                const [movie, hall] = await Promise.all([
+                    Movie.findOne({_id: movie_id, deletedAt: null}),
+                    Hall.findOne({_id: hall_id, deletedAt: null}),
+                ]);
+
+                if (!movie) {
+                    errors.push({
+                        index: i,
+                        data: showtimeData,
+                        error: "Movie not found or has been deleted.",
+                    });
+                    continue;
+                }
+                if (!hall) {
+                    errors.push({
+                        index: i,
+                        data: showtimeData,
+                        error: "Hall not found or has been deleted.",
+                    });
+                    continue;
+                }
+
+                if (movie.status === 'ended') {
+                    errors.push({
+                        index: i,
+                        data: showtimeData,
+                        error: "Cannot create showtime for a movie that has ended.",
+                    });
+                    continue;
+                }
+
                 try {
                     const showtime = new Showtime({...showtimeData, createdBy});
                     await showtime.save();
@@ -1107,8 +1202,10 @@ class ShowtimeController {
                     errors,
                 });
                 let message = "Some showtimes could not be created/duplicated.";
-                if (errors.length === 1) {
-                    message = errors[0].error;
+                if (errors.length === showtimesToInsert.length) { // All failed
+                    message = "None of the showtimes could be created/duplicated.";
+                } else if (errors.length > 0) {
+                    message = "Some showtimes could not be created/duplicated due to validation errors or conflicts.";
                 }
                 return res.status(409).json({
                     success: false,
