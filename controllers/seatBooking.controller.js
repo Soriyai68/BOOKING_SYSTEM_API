@@ -411,7 +411,8 @@ class SeatBookingController {
       if (!showtime.isActiveForBooking()) {
         return res.status(400).json({
           success: false,
-          message: "This showtime is no longer available for booking.",
+          message:
+            "This showtime is not available for booking. It might be completed, cancelled, or its start time has already passed.",
         });
       }
 

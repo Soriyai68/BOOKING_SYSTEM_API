@@ -44,6 +44,16 @@ class ShowtimeController {
                 $gte: day,
                 $lt: nextDay,
             };
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // If the requested date is today, also filter by start_time
+            if (day.getTime() === today.getTime()) {
+                const now = new Date();
+                const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+                query.start_time = { $gte: currentTime };
+            }
         }
         // Date range filter
         else if (filters.dateFrom || filters.dateTo) {

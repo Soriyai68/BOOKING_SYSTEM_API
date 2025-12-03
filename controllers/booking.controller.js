@@ -358,10 +358,19 @@ class BookingController {
 
       // Check if the showtime is active for booking
       if (!showtime.isActiveForBooking()) {
+        // More specific check for showtime in the past
+        if (!showtime.isUpcoming()) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "This showtime's start time has already passed and cannot be booked.",
+          });
+        }
+        // Fallback for other reasons like completed or cancelled
         return res.status(400).json({
           success: false,
           message:
-            "This showtime is not available for booking. It might be completed, cancelled, or in the past.",
+            "This showtime is not available for booking. It might be completed or cancelled.",
         });
       }
       const seatObjectIds = seats
@@ -510,20 +519,22 @@ class BookingController {
         showtimeChanged ||
         JSON.stringify(newSeatIds) !== JSON.stringify(originalSeatIds)
       ) {
-        // 1. Release all original seats and create history
+        // 1. Release all original seats and update history
         if (originalSeatIds.length > 0) {
           await SeatBooking.deleteMany({
             bookingId: booking._id,
             showtimeId: originalShowtimeId,
           });
 
-          const historyDocs = originalSeatIds.map((seatId) => ({
-            showtimeId: originalShowtimeId,
-            seatId,
-            bookingId: booking._id,
-            action: 'canceled',
-          }));
-          await SeatBookingHistory.insertMany(historyDocs);
+          // Update history records to 'canceled' instead of creating new ones
+          await SeatBookingHistory.updateMany(
+            {
+              bookingId: booking._id,
+              seatId: { $in: originalSeatIds },
+              action: 'booked',
+            },
+            { $set: { action: 'canceled' } }
+          );
         }
 
 
@@ -685,13 +696,10 @@ class BookingController {
 
       // Create cancellation history before deleting
       if (booking.seats && booking.seats.length > 0) {
-        const historyDocs = booking.seats.map((seatId) => ({
-          showtimeId: booking.showtimeId,
-          seatId,
-          bookingId: booking._id,
-          action: 'canceled',
-        }));
-        await SeatBookingHistory.insertMany(historyDocs);
+        await SeatBookingHistory.updateMany(
+          { bookingId: booking._id, action: "booked" },
+          { $set: { action: "canceled" } }
+        );
       }
 
       // Delete associated SeatBooking records

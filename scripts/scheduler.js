@@ -164,6 +164,51 @@ const startSeatBookingSyncScheduler = () => {
 };
 
 /**
+ * Schedules a job to release seats for bookings that have failed or been cancelled.
+ * This acts as a janitor to clean up orphaned seat locks.
+ */
+const startSeatReleaseScheduler = () => {
+    logger.info('Scheduling seat release job for failed/cancelled bookings to run every minute.');
+    cron.schedule('* * * * *', async () => {
+        logger.info('Running scheduled job to release seats for failed/cancelled bookings...');
+        try {
+            // Find bookings that are cancelled or have a failed payment
+            const bookingsToClean = await Booking.find({
+                $or: [
+                    { payment_status: 'Failed' },
+                    { booking_status: 'Cancelled' }
+                ]
+            }).select('_id');
+
+            if (bookingsToClean.length === 0) {
+                logger.info('No failed or cancelled bookings found that require seat release.');
+                return;
+            }
+
+            const bookingIdsToClean = bookingsToClean.map(b => b._id);
+
+            // Find and delete the associated SeatBooking records
+            const seatBookingsToDelete = await SeatBooking.find({ bookingId: { $in: bookingIdsToClean } }).lean();
+
+            if (seatBookingsToDelete.length > 0) {
+                const { deletedCount } = await SeatBooking.deleteMany({ _id: { $in: seatBookingsToDelete.map(sb => sb._id) } });
+
+                // Update the corresponding history records to 'canceled'
+                await mongoose.model('SeatBookingHistory').updateMany(
+                    { bookingId: { $in: bookingIdsToClean }, action: 'booked' },
+                    { $set: { action: 'canceled' } }
+                );
+
+                logger.info(`Released ${deletedCount} seats from ${bookingIdsToClean.length} failed/cancelled bookings via scheduler.`);
+            }
+
+        } catch (error) {
+            logger.error('Error in scheduled seat release job:', error);
+        }
+    });
+};
+
+/**
  * Initializes and starts all scheduled jobs for the application.
  */
 const startAllSchedulers = () => {
@@ -171,6 +216,7 @@ const startAllSchedulers = () => {
     startMovieScheduler();
     startBookingScheduler();
     startSeatBookingSyncScheduler();
+    startSeatReleaseScheduler();
 };
 
 module.exports = startAllSchedulers;
