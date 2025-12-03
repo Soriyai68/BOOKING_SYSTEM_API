@@ -1,5 +1,10 @@
 const mongoose = require("mongoose");
-const { Showtime, Seat, SeatBooking } = require("../models");
+const {
+  Showtime,
+  Seat,
+  SeatBooking,
+  SeatBookingHistory,
+} = require("../models");
 const logger = require("../utils/logger");
 
 class SeatBookingController {
@@ -272,12 +277,10 @@ class SeatBookingController {
 
       const hall = showtime.hall_id;
       if (!hall) {
-        return res
-          .status(404)
-          .json({
-            success: false,
-            message: "Hall for this showtime not found",
-          });
+        return res.status(404).json({
+          success: false,
+          message: "Hall for this showtime not found",
+        });
       }
 
       // 1. Get all seats for the hall
@@ -523,12 +526,10 @@ class SeatBookingController {
       const { seatBookingIds } = req.body;
 
       if (!Array.isArray(seatBookingIds) || seatBookingIds.length === 0) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "An array of seatBookingIds is required.",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "An array of seatBookingIds is required.",
+        });
       }
 
       const seatBookings = await SeatBooking.find({
@@ -567,6 +568,240 @@ class SeatBookingController {
       res
         .status(500)
         .json({ success: false, message: "Failed to extend seat locks." });
+    }
+  }
+
+  // --- Seat Booking History ---
+
+  // Helper method for history search and filter
+  static historyFilterBuilder(query) {
+    const filter = {};
+    const { showtimeId, seatId, bookingId, action, seat_type } = query;
+
+    if (showtimeId) {
+      SeatBookingController.validateObjectId(showtimeId);
+      filter.showtimeId = new mongoose.Types.ObjectId(showtimeId);
+    }
+    if (seatId) {
+      SeatBookingController.validateObjectId(seatId);
+      filter.seatId = new mongoose.Types.ObjectId(seatId);
+    }
+    if (bookingId) {
+      SeatBookingController.validateObjectId(bookingId);
+      filter.bookingId = new mongoose.Types.ObjectId(bookingId);
+    }
+    if (action) {
+      filter.action = action;
+    }
+    return { filter, seat_type };
+  }
+
+  static historySearchBuilder(query) {
+    const { search } = query;
+    if (!search) {
+      return {};
+    }
+
+    const searchConditions = [];
+    // Search in movie title (via showtime)
+    searchConditions.push({
+      "showtime.movie.title": { $regex: search, $options: "i" },
+    });
+    // Search in seat identifier (concatenation of row and number)
+    searchConditions.push({
+      "seat.seat_identifier": { $regex: search, $options: "i" },
+    });
+    // Search in booking reference code
+    searchConditions.push({
+      "booking.reference_code": { $regex: search, $options: "i" },
+    });
+
+    // If the search term is a valid ObjectId, search by IDs directly
+    if (mongoose.Types.ObjectId.isValid(search)) {
+      const objectId = new mongoose.Types.ObjectId(search);
+      searchConditions.push({ showtimeId: objectId });
+      searchConditions.push({ seatId: objectId });
+      searchConditions.push({ bookingId: objectId });
+    }
+
+    return { $or: searchConditions };
+  }
+
+  // 6. GET ALL SEAT BOOKING HISTORIES
+  static async getHistory(req, res) {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = "createdAt",
+        sortOrder = "desc",
+        search,
+        ...filterParams
+      } = req.query;
+
+      const pageNum = Math.max(1, parseInt(page));
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+      const skip = (pageNum - 1) * limitNum;
+      const sort = { [sortBy]: sortOrder === "desc" ? -1 : 1 };
+
+      const { filter: initialFilter, seat_type } =
+        SeatBookingController.historyFilterBuilder(filterParams);
+
+      const pipeline = [
+        { $match: initialFilter },
+        // Lookup Showtime
+        {
+          $lookup: {
+            from: "showtimes",
+            localField: "showtimeId",
+            foreignField: "_id",
+            as: "showtime",
+          },
+        },
+        { $unwind: { path: "$showtime", preserveNullAndEmptyArrays: true } },
+        // Lookup Movie from Showtime
+        {
+          $lookup: {
+            from: "movies",
+            localField: "showtime.movie_id",
+            foreignField: "_id",
+            as: "showtime.movie",
+          },
+        },
+        {
+          $unwind: {
+            path: "$showtime.movie",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        // Lookup Seat
+        {
+          $lookup: {
+            from: "seats",
+            localField: "seatId",
+            foreignField: "_id",
+            as: "seat",
+          },
+        },
+        { $unwind: { path: "$seat", preserveNullAndEmptyArrays: true } },
+        // Lookup Booking
+        {
+          $lookup: {
+            from: "bookings",
+            localField: "bookingId",
+            foreignField: "_id",
+            as: "booking",
+          },
+        },
+        { $unwind: { path: "$booking", preserveNullAndEmptyArrays: true } },
+        // Lookup User from Booking
+        {
+          $lookup: {
+            from: "users",
+            localField: "booking.userId",
+            foreignField: "_id",
+            as: "booking.user",
+          },
+        },
+        {
+          $unwind: { path: "$booking.user", preserveNullAndEmptyArrays: true },
+        },
+        // Add seat_identifier for searching and display
+        {
+          $addFields: {
+            "seat.seat_identifier": {
+              $concat: [
+                { $toString: "$seat.row" },
+                { $toString: "$seat.seat_number" },
+              ],
+            },
+          },
+        },
+        // Filter out records where lookups failed
+        {
+          $match: {
+            "showtime._id": { $exists: true, $ne: null },
+            "seat._id": { $exists: true, $ne: null },
+          },
+        },
+      ];
+
+      const searchFilter = SeatBookingController.historySearchBuilder({
+        search,
+      });
+      if (search) {
+        pipeline.push({ $match: searchFilter });
+      }
+      if (seat_type) {
+        pipeline.push({
+          $match: { "seat.seat_type": seat_type },
+        });
+      }
+      const [histories, totalCountResult] = await Promise.all([
+        SeatBookingHistory.aggregate([
+          ...pipeline,
+          { $sort: sort },
+          { $skip: skip },
+          { $limit: limitNum },
+          {
+            $project: {
+              _id: 1,
+              action: 1,
+              createdAt: 1,
+              updatedAt: 1,
+              showtime: {
+                _id: "$showtime._id",
+                show_date: "$showtime.show_date",
+                start_time: "$showtime.start_time",
+                movie: "$showtime.movie.title",
+              },
+              seat: {
+                _id: "$seat._id",
+                row: "$seat.row",
+                seat_number: "$seat.seat_number",
+                seat_identifier: "$seat.seat_identifier",
+                seat_type: "$seat.seat_type",
+              },
+              booking: {
+                _id: "$booking._id",
+                reference_code: "$booking.reference_code",
+                user: "$booking.user.name",
+                phone: "$booking.user.phone",
+              },
+            },
+          },
+        ]),
+        SeatBookingHistory.aggregate([...pipeline, { $count: "total" }]),
+      ]);
+
+      const totalCount =
+        totalCountResult.length > 0 ? totalCountResult[0].total : 0;
+      const totalPages = Math.ceil(totalCount / limitNum);
+      const hasNextPage = pageNum < totalPages;
+      const hasPrevPage = pageNum > 1;
+
+      res.status(200).json({
+        success: true,
+        data: {
+          histories: histories,
+          pagination: {
+            currentPage: pageNum,
+            totalPages,
+            totalCount,
+            limit: limitNum,
+            hasNextPage,
+            hasPrevPage,
+            nextPage: hasNextPage ? pageNum + 1 : null,
+            prevPage: hasPrevPage ? pageNum - 1 : null,
+          },
+        },
+      });
+    } catch (error) {
+      logger.error("Get all seat booking histories error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to retrieve seat booking histories",
+      });
     }
   }
 }

@@ -47,4 +47,13 @@ router.post(
     SeatBookingController.extendSeatLock
 );
 
+// GET /api/seat-bookings/history - Get all seat booking histories (Admin/SuperAdmin only)
+router.get(
+    '/history',
+    authenticate,
+    authorize(Role.ADMIN, Role.SUPERADMIN),
+    validator(seatBookingSchema.getAllQuery, 'query'),
+    SeatBookingController.getHistory
+);
+
 module.exports = router;

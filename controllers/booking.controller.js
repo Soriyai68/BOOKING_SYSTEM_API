@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { Booking, Showtime, User, SeatBooking } = require("../models");
+const { Booking, Showtime, User, SeatBooking, SeatBookingHistory } = require("../models");
 const { Role } = require("../data");
 const logger = require("../utils/logger");
 
@@ -430,6 +430,15 @@ class BookingController {
       }));
       await SeatBooking.insertMany(seatBookingDocs);
 
+      // Create seat booking history records
+      const seatBookingHistoryDocs = seatObjectIds.map((seatId) => ({
+        showtimeId,
+        seatId,
+        bookingId: booking._id,
+        action: "booked",
+      }));
+      await SeatBookingHistory.insertMany(seatBookingHistoryDocs);
+
       // 4. Populate and Respond
       await booking.populate([
         { path: "userId", select: "name email phone" },
@@ -501,11 +510,22 @@ class BookingController {
         showtimeChanged ||
         JSON.stringify(newSeatIds) !== JSON.stringify(originalSeatIds)
       ) {
-        // 1. Release all original seats from the original showtime context
-        await SeatBooking.deleteMany({
-          bookingId: booking._id,
-          showtimeId: originalShowtimeId,
-        });
+        // 1. Release all original seats and create history
+        if (originalSeatIds.length > 0) {
+          await SeatBooking.deleteMany({
+            bookingId: booking._id,
+            showtimeId: originalShowtimeId,
+          });
+
+          const historyDocs = originalSeatIds.map((seatId) => ({
+            showtimeId: originalShowtimeId,
+            seatId,
+            bookingId: booking._id,
+            action: 'canceled',
+          }));
+          await SeatBookingHistory.insertMany(historyDocs);
+        }
+
 
         // 2. Check availability of new seats for the potentially new showtime
         if (newSeatIds.length > 0) {
@@ -529,7 +549,7 @@ class BookingController {
             );
           }
 
-          // 3. Lock the new set of seats
+          // 3. Lock the new set of seats and create history
           const seatBookingDocs = newSeatIds.map((seatId) => ({
             showtimeId: booking.showtimeId,
             seatId,
@@ -539,6 +559,14 @@ class BookingController {
               booking.expired_at || new Date(Date.now() + 15 * 60 * 1000),
           }));
           await SeatBooking.insertMany(seatBookingDocs);
+
+          const historyDocs = newSeatIds.map((seatId) => ({
+            showtimeId: booking.showtimeId,
+            seatId,
+            bookingId: booking._id,
+            action: 'booked',
+          }));
+          await SeatBookingHistory.insertMany(historyDocs);
         }
       }
 
@@ -647,12 +675,23 @@ class BookingController {
       const { id } = req.params;
       BookingController.validateObjectId(id);
 
-      // Find the booking first to ensure it exists
+      // Find the booking first to ensure it exists and to get its details
       const booking = await Booking.findById(id);
       if (!booking) {
         return res
           .status(404)
           .json({ success: false, message: "Booking not found" });
+      }
+
+      // Create cancellation history before deleting
+      if (booking.seats && booking.seats.length > 0) {
+        const historyDocs = booking.seats.map((seatId) => ({
+          showtimeId: booking.showtimeId,
+          seatId,
+          bookingId: booking._id,
+          action: 'canceled',
+        }));
+        await SeatBookingHistory.insertMany(historyDocs);
       }
 
       // Delete associated SeatBooking records

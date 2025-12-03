@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const logger = require('../utils/logger');
 const SeatBooking = mongoose.model('SeatBooking');
+const SeatBookingHistory = mongoose.model('SeatBookingHistory');
 
 const bookingSchema = new mongoose.Schema({
     userId: {
@@ -157,6 +158,15 @@ bookingSchema.methods.cancelBooking = async function (reason = 'Cancelled by use
     this.noted = reason;
     this.deletedAt = new Date();
 
+    // Create seat booking history before deleting seat bookings
+    const seatBookingHistoryDocs = this.seats.map((seatId) => ({
+      showtimeId: this.showtimeId,
+      seatId,
+      bookingId: this._id,
+      action: "canceled",
+    }));
+    await SeatBookingHistory.insertMany(seatBookingHistoryDocs);
+    
     // New logic: Release the seats by deleting the corresponding SeatBooking documents.
     const SeatBooking = mongoose.model('SeatBooking');
     await SeatBooking.deleteMany({ bookingId: this._id });
