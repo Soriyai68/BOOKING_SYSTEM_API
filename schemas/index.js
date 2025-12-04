@@ -7,5 +7,6 @@ exports.showtimeSchema = require("./showtimeSchema");
 exports.bookingSchema = require("./bookingSchema");
 exports.bookingSchema = require("./bookingDetailSchema");
 exports.paymentsSchema = require("./paymentSchema");
-exports.promotion
+exports.promotion = require("./promotionSchema");
+exports.customerSchema = require("./customerSchema");
 

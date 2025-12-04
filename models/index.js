@@ -12,3 +12,4 @@ exports.Payment = require("./payment.model");
 exports.Invoice = require("./invoice.model");
 exports.Permission = require("./permission.model");
 exports.Promotion = require("./promotion.model");
+exports.Customer = require("./customer.model");

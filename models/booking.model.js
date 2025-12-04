@@ -5,9 +5,9 @@ const SeatBookingHistory = mongoose.model("SeatBookingHistory");
 
 const bookingSchema = new mongoose.Schema(
   {
-    userId: {
+    customerId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Customer",
       required: true,
     },
     showtimeId: {
@@ -77,8 +77,8 @@ const bookingSchema = new mongoose.Schema(
 );
 
 // Static methods
-bookingSchema.statics.findByUserId = function (userId) {
-  return this.find({ userId, deletedAt: null });
+bookingSchema.statics.findByCustomerId = function (customerId) {
+  return this.find({ customerId, deletedAt: null });
 };
 
 bookingSchema.statics.findByReferenceCode = function (referenceCode) {
@@ -194,7 +194,7 @@ bookingSchema.methods.cancelBooking = async function (
 // Middleware to release seats when a booking is permanently deleted has been removed.
 
 // Indexes
-bookingSchema.index({ userId: 1 });
+bookingSchema.index({ customerId: 1 });
 bookingSchema.index({ showtimeId: 1 });
 bookingSchema.index({ reference_code: 1 });
 bookingSchema.index({ booking_status: 1 });

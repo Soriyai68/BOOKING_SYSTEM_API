@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { Booking, Showtime, User, SeatBooking, SeatBookingHistory } = require("../models");
+const { Booking, Showtime, Customer, SeatBooking, SeatBookingHistory } = require("../models");
 const { Role } = require("../data");
 const logger = require("../utils/logger");
 
@@ -23,8 +23,8 @@ class BookingController {
       query.payment_status = filters.payment_status;
     }
 
-    if (filters.userId && mongoose.Types.ObjectId.isValid(filters.userId)) {
-      query.userId = new mongoose.Types.ObjectId(filters.userId);
+    if (filters.customerId && mongoose.Types.ObjectId.isValid(filters.customerId)) {
+      query.customerId = new mongoose.Types.ObjectId(filters.customerId);
     }
 
     if (
@@ -50,8 +50,8 @@ class BookingController {
     if (!search) return {};
     const searchConditions = [
       { reference_code: { $regex: search, $options: "i" } },
-      { "user.name": { $regex: search, $options: "i" } },
-      { "user.phone": { $regex: search, $options: "i" } },
+      { "customer.name": { $regex: search, $options: "i" } },
+      { "customer.phone": { $regex: search, $options: "i" } },
       { "movie.title": { $regex: search, $options: "i" } },
       { "hall.hall_name": { $regex: search, $options: "i" } },
     ];
@@ -82,18 +82,18 @@ class BookingController {
       const pipeline = [
         { $match: matchQuery },
 
-        // Lookup user
+        // Lookup customer
         {
           $lookup: {
-            from: "users",
-            localField: "userId",
+            from: "customers",
+            localField: "customerId",
             foreignField: "_id",
-            as: "user",
+            as: "customer",
           },
         },
         {
           $unwind: {
-            path: "$user",
+            path: "$customer",
             preserveNullAndEmptyArrays: true,
           },
         },
@@ -211,7 +211,7 @@ class BookingController {
       // Project final output
       pipeline.push({
         $project: {
-          user: { _id: 1, name: 1, phone: 1 },
+          customer: { _id: 1, name: 1, phone: 1 },
           showtime: { _id: 1, show_date: 1, start_time: 1, end_time: 1 },
           movie: { _id: 1, title: 1, poster_url: 1, duration_minutes: 1 },
           hall: { _id: 1, hall_name: 1 },
@@ -261,7 +261,7 @@ class BookingController {
       BookingController.validateObjectId(id);
 
       const booking = await Booking.findById(id)
-        .populate("userId", "name email phone")
+        .populate("customerId", "name email phone")
         .populate({
           path: "showtimeId",
           populate: [
@@ -317,7 +317,7 @@ class BookingController {
   static async create(req, res) {
     try {
       const {
-        userId,
+        customerId,
         showtimeId,
         seats, // Expecting an array of Seat IDs
         total_price,
@@ -327,7 +327,7 @@ class BookingController {
 
       // 1. Validations
       if (
-        !userId ||
+        !customerId ||
         !showtimeId ||
         !seats ||
         !Array.isArray(seats) ||
@@ -336,19 +336,19 @@ class BookingController {
         return res.status(400).json({
           success: false,
           message:
-            "Missing required details: userId, showtimeId, and seats are required.",
+            "Missing required details: customerId, showtimeId, and seats are required.",
         });
       }
 
-      const [user, showtime] = await Promise.all([
-        User.findById(userId),
+      const [customer, showtime] = await Promise.all([
+        Customer.findById(customerId),
         Showtime.findById(showtimeId),
       ]);
 
-      if (!user) {
+      if (!customer) {
         return res
           .status(404)
-          .json({ success: false, message: "User not found" });
+          .json({ success: false, message: "Customer not found" });
       }
       if (!showtime) {
         return res
@@ -412,7 +412,7 @@ class BookingController {
       // 3. Create Booking & SeatBookings (Note: Not an atomic operation)
       const reference_code = await Booking.generateReferenceCode();
       const booking = new Booking({
-        userId,
+        customerId,
         showtimeId,
         seats: seatObjectIds,
         seat_count: seats.length,
@@ -450,7 +450,7 @@ class BookingController {
 
       // 4. Populate and Respond
       await booking.populate([
-        { path: "userId", select: "name email phone" },
+        { path: "customerId", select: "name email phone" },
         {
           path: "showtimeId",
           populate: [
@@ -592,7 +592,7 @@ class BookingController {
 
       // Populate for response
       await booking.populate([
-        { path: "userId", select: "name email phone" },
+        { path: "customerId", select: "name email phone" },
         {
           path: "showtimeId",
           populate: [
@@ -745,7 +745,7 @@ class BookingController {
       const totalCount = await Booking.countDocuments(query);
 
       const bookings = await Booking.find(query)
-        .populate("userId", "username email phone")
+        .populate("customerId", "username email phone")
         .populate({
           path: "showtimeId",
           populate: [
@@ -838,7 +838,7 @@ class BookingController {
       }
 
       const booking = await Booking.findByReferenceCode(reference_code)
-        .populate("userId", "username email phone")
+        .populate("customerId", "username email phone")
         .populate({
           path: "showtimeId",
           populate: [
@@ -880,7 +880,7 @@ class BookingController {
   static async cancelUserBooking(req, res) {
     try {
       const { id } = req.params;
-      const userId = req.user.id; // from auth middleware
+      const customerId = req.user.id; // from auth middleware
 
       BookingController.validateObjectId(id);
 
@@ -893,7 +893,7 @@ class BookingController {
       }
 
       // Ensure the booking belongs to the user trying to cancel it
-      if (booking.userId.toString() !== userId) {
+      if (booking.customerId.toString() !== customerId) {
         return res.status(403).json({
           success: false,
           message: "Forbidden: You cannot cancel this booking",

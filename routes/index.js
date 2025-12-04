@@ -16,6 +16,8 @@ const invoiceRoutes = require('./invoices.routes');
 const paymentRoutes = require('./payments.routes');
 const promotionRoutes = require('./promotion.route');
 const seatBookingRoutes = require('./seatBookings.routes');
+const customerAuthRoutes = require('./customer.auth.routes');
+const customerRoutes = require('./customer.routes');
 
 
 // Mount routes
@@ -33,6 +35,7 @@ router.use('/invoices', invoiceRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/promotions', promotionRoutes);
 router.use('/seat-bookings', seatBookingRoutes);
+router.use('/customers', customerRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {
@@ -64,6 +67,7 @@ router.get('/', (req, res) => {
       invoices: '/api/invoices',
       payments: '/api/payments',
       promotions: '/api/promotions',
+      customerAuth: '/api/customer/auth',
     }
   });
 });

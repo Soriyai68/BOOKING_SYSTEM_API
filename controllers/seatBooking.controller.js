@@ -150,15 +150,15 @@ class SeatBookingController {
         // Lookup User from Booking
         {
           $lookup: {
-            from: "users",
-            localField: "bookingId.userId",
+            from: "customers",
+            localField: "bookingId.customerId",
             foreignField: "_id",
-            as: "bookingId.userId",
+            as: "bookingId.customer",
           },
         },
         {
           $unwind: {
-            path: "$bookingId.userId",
+            path: "$bookingId.customer",
             preserveNullAndEmptyArrays: true,
           },
         },
@@ -220,10 +220,10 @@ class SeatBookingController {
                 _id: "$bookingId._id",
                 reference_code: "$bookingId.reference_code",
                 status: "$bookingId.status",
-                userId: {
-                  _id: "$bookingId.userId._id",
-                  name: "$bookingId.userId.name",
-                  phone: "$bookingId.userId.phone",
+                customer: {
+                  _id: "$bookingId.customer._id",
+                  name: "$bookingId.customer.name",
+                  phone: "$bookingId.customer.phone",
                 },
               },
             },
@@ -356,9 +356,9 @@ class SeatBookingController {
         })
         .populate({
           path: "bookingId",
-          select: "reference_code userId",
+          select: "reference_code customerId",
           populate: {
-            path: "userId",
+            path: "customerId",
             select: "name phone",
           },
         })
@@ -695,17 +695,17 @@ class SeatBookingController {
           },
         },
         { $unwind: { path: "$booking", preserveNullAndEmptyArrays: true } },
-        // Lookup User from Booking
+        // Lookup Customer from Booking
         {
           $lookup: {
-            from: "users",
-            localField: "booking.userId",
+            from: "customers",
+            localField: "booking.customerId",
             foreignField: "_id",
-            as: "booking.user",
+            as: "booking.customer",
           },
         },
         {
-          $unwind: { path: "$booking.user", preserveNullAndEmptyArrays: true },
+          $unwind: { path: "$booking.customer", preserveNullAndEmptyArrays: true },
         },
         // Add seat_identifier for searching and display
         {
@@ -766,8 +766,8 @@ class SeatBookingController {
               booking: {
                 _id: "$booking._id",
                 reference_code: "$booking.reference_code",
-                user: "$booking.user.name",
-                phone: "$booking.user.phone",
+                customer: "$booking.customer.name",
+                phone: "$booking.customer.phone",
               },
             },
           },
