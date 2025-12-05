@@ -38,6 +38,17 @@ class CustomerController {
     }
     return query;
   }
+  // Helper to build search query
+  static buildSearchQuery(search) {
+    if (!search) return {};
+    const searchConditions = [
+      { phone: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+      { name: { $regex: search, $options: "i" } },
+      { username: { $regex: search, $options: "i" } },
+    ];
+    return { $or: searchConditions };
+  }
 
   // 1. GET ALL CUSTOMERS
   static async getAll(req, res) {
