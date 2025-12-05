@@ -9,9 +9,14 @@ const customerSchema = new mongoose.Schema(
       trim: true,
       unique: true,
       sparse: true,
-      required: true,
       match: [/^\+?[1-9]\d{1,14}$/, "Invalid phone number"],
     },
+    // For customer type guest, email is optional
+        email:{
+          type: String,
+          trim: true,
+          match: [/.+@.+\..+/, "Invalid email address"],
+        },
     // Optional username for password login
     username: {
       type: String,
@@ -23,9 +28,8 @@ const customerSchema = new mongoose.Schema(
     // Cusotmer fullname for display in tickets, receipts, profiles
     name: {
       type: String,
-      required: true,
       trim: true,
-      minlength: 2,
+      minlength: 0,
       maxlength: 50,
     },
     // Optional password (only when user wants password login)

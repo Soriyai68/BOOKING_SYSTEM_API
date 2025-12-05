@@ -12,7 +12,7 @@ const paymentSchema = new mongoose.Schema({
     },
     payment_method: {
         type: String,
-        enum: ['Bakong', 'Cash', 'Card', 'Mobile Banking', 'Bank Transfer'],
+        enum: ['Bakong', 'Cash', 'Card', 'Mobile Banking', 'Bank Transfer', 'PayAtCinema'],
         required: true,
     },
     payment_date: {

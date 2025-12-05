@@ -1,5 +1,6 @@
 const Providers = {
-  PHONE: 'phone'
+  PHONE: 'phone',
+  EMAIL: 'email'
 };
 
 module.exports = Providers;

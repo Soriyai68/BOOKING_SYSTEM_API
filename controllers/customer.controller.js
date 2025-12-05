@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Customer = require("../models/customer.model");
 const { Role } = require("../utils/constants");
 const logger = require("../utils/logger");
+const { Providers } = require("../data");
 
 class CustomerController {
   static validateObjectId(id) {
@@ -68,7 +69,12 @@ class CustomerController {
       const sortObj = { [sortBy]: sortOrder === "desc" ? -1 : 1 };
 
       const [customers, totalCount] = await Promise.all([
-        Customer.find(query).sort(sortObj).skip(skip).limit(limitNum).lean(),
+        Customer.find(query)
+          .sort(sortObj)
+          .skip(skip)
+          .limit(limitNum)
+          .select("-__v")
+          .lean(),
         Customer.countDocuments(query),
       ]);
 
@@ -117,35 +123,80 @@ class CustomerController {
         .json({ success: false, message: "Failed to retrieve customer" });
     }
   }
-
   // 3. CREATE CUSTOMER
   static async create(req, res) {
     try {
-      const { phone, name, username, customerType } = req.body;
-      if (!phone || !name) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Phone and name are required" });
-      }
+      const { phone, name, email, username, customerType, provider } = req.body;
 
-      const existing = await Customer.findOne({
-        $or: [{ phone }, { username }],
-      });
-      if (existing) {
-        const field = existing.phone === phone ? "phone number" : "username";
-        return res.status(409).json({
+      // Validate required fields
+      if (customerType === "member" && (!phone || !name)) {
+        return res.status(400).json({
           success: false,
-          message: `Customer with this ${field} already exists`,
+          message: "Phone and name are required for member customers.",
         });
       }
 
-      const customer = new Customer({ phone, name, username, customerType });
+      if (customerType === "walkin" && !phone) {
+        return res.status(400).json({
+          success: false,
+          message: "Phone is required for walk-in customers.",
+        });
+      }
+
+      if (customerType === "guest" && !email) {
+        return res.status(400).json({
+          success: false,
+          message: "Email is required for guest customers.",
+        });
+      }
+
+      // Check uniqueness
+      const orConditions = [];
+      if (phone) orConditions.push({ phone });
+      if (username) orConditions.push({ username });
+      if (email) orConditions.push({ email });
+
+      if (orConditions.length > 0) {
+        const existing = await Customer.findOne({ $or: orConditions });
+        if (existing) {
+          let field = "details";
+          if (existing.phone === phone) field = "phone number";
+          if (existing.username === username) field = "username";
+          if (existing.email === email) field = "email";
+
+          return res.status(409).json({
+            success: false,
+            message: `Customer with this ${field} already exists`,
+          });
+        }
+      }
+
+      // Create customer object
+      let customerData = {
+        customerType,
+        provider: provider,
+        isVerified: false,
+      };
+
+      if (customerType === "guest") {
+        customerData.email = email;
+        customerData.provider = Providers.EMAIL;
+      } else {
+        customerData = {
+          ...customerData,
+          phone,
+          name,
+          email,
+          username,
+        };
+      }
+      const customer = new Customer(customerData);
       await customer.save();
 
       res.status(201).json({
         success: true,
         message: "Customer created successfully",
-        data: { customer },
+        data: customer,
       });
     } catch (error) {
       logger.error("Create customer error:", error);
@@ -163,19 +214,23 @@ class CustomerController {
 
       const { password, ...updateData } = req.body;
 
-      if (updateData.phone || updateData.username) {
+      if (updateData.phone || updateData.username || updateData.email) {
         const orConditions = [];
         if (updateData.phone) orConditions.push({ phone: updateData.phone });
         if (updateData.username)
           orConditions.push({ username: updateData.username });
+        if (updateData.email) orConditions.push({ email: updateData.email });
 
         const existing = await Customer.findOne({
           $or: orConditions,
           _id: { $ne: id },
         });
+
         if (existing) {
-          const field =
-            existing.phone === updateData.phone ? "phone number" : "username";
+          let field = "details";
+          if (existing.phone === updateData.phone) field = "phone number";
+          if (existing.username === updateData.username) field = "username";
+          if (existing.email === updateData.email) field = "email";
           return res.status(409).json({
             success: false,
             message: `This ${field} is already in use`,

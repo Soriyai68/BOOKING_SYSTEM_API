@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
-const { Booking, Showtime, Customer, SeatBooking, SeatBookingHistory } = require("../models");
-const { Role } = require("../data");
+const {
+  Booking,
+  Showtime,
+  Customer,
+  SeatBooking,
+  SeatBookingHistory,
+} = require("../models");
+const { Role, Providers } = require("../data");
 const logger = require("../utils/logger");
 
 class BookingController {
@@ -23,7 +29,10 @@ class BookingController {
       query.payment_status = filters.payment_status;
     }
 
-    if (filters.customerId && mongoose.Types.ObjectId.isValid(filters.customerId)) {
+    if (
+      filters.customerId &&
+      mongoose.Types.ObjectId.isValid(filters.customerId)
+    ) {
       query.customerId = new mongoose.Types.ObjectId(filters.customerId);
     }
 
@@ -318,61 +327,85 @@ class BookingController {
     try {
       const {
         customerId,
+        guestEmail, // Expecting an email string for guest bookings
         showtimeId,
-        seats, // Expecting an array of Seat IDs
+        seats,
         total_price,
         payment_method,
         noted = "",
       } = req.body;
 
-      // 1. Validations
-      if (
-        !customerId ||
-        !showtimeId ||
-        !seats ||
-        !Array.isArray(seats) ||
-        seats.length === 0
-      ) {
+      // 1. Determine the customer (member or guest)
+      let customer;
+
+      if (customerId) {
+        customer = await Customer.findById(customerId);
+        if (!customer) {
+          return res
+            .status(404)
+            .json({ success: false, message: "Customer not found" });
+        }
+      } else if (guestEmail) {
+        // --- Handle Guest Booking via Email ---
+
+        const emailRegex = /.+@.+\..+/;
+        if (!emailRegex.test(guestEmail)) {
+            return res.status(400).json({ success: false, message: "Invalid guest email address format." });
+        }
+
+        const existingCustomer = await Customer.findOne({ email: guestEmail });
+
+        if (existingCustomer) {
+            if (existingCustomer.isMemberCustomer()) {
+                return res.status(409).json({
+                    success: false,
+                    message: "This email is registered to a member account. Please log in with your registered phone number to book.",
+                });
+            }
+            // If it's an existing guest, just use them
+            customer = existingCustomer;
+        } else {
+          // Create a new guest customer with only an email
+          const customerData = {
+            email: guestEmail,
+            customerType: "guest",
+            provider: Providers.EMAIL,
+            isVerified: false,
+          };
+          customer = new Customer(customerData);
+          await customer.save();
+        }
+      } else {
         return res.status(400).json({
           success: false,
           message:
-            "Missing required details: customerId, showtimeId, and seats are required.",
+            "Booking request must include either a customerId or a guestEmail.",
         });
       }
 
-      const [customer, showtime] = await Promise.all([
-        Customer.findById(customerId),
-        Showtime.findById(showtimeId),
-      ]);
-
-      if (!customer) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Customer not found" });
+      // 2. Validations for Booking details (Showtime, Seats)
+      if (!showtimeId || !seats || !Array.isArray(seats) || seats.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Missing required booking details: showtimeId and seats are required.",
+        });
       }
+
+      const showtime = await Showtime.findById(showtimeId);
       if (!showtime) {
         return res
           .status(404)
           .json({ success: false, message: "Showtime not found" });
       }
 
-      // Check if the showtime is active for booking
       if (!showtime.isActiveForBooking()) {
-        // More specific check for showtime in the past
-        if (!showtime.isUpcoming()) {
-          return res.status(400).json({
-            success: false,
-            message:
-              "This showtime's start time has already passed and cannot be booked.",
-          });
-        }
-        // Fallback for other reasons like completed or cancelled
-        return res.status(400).json({
-          success: false,
-          message:
-            "This showtime is not available for booking. It might be completed or cancelled.",
-        });
+        const message = !showtime.isUpcoming()
+          ? "This showtime's start time has already passed and cannot be booked."
+          : "This showtime is not available for booking. It might be completed or cancelled.";
+        return res.status(400).json({ success: false, message });
       }
+      
       const seatObjectIds = seats
         .filter((id) => mongoose.Types.ObjectId.isValid(id))
         .map((id) => new mongoose.Types.ObjectId(id));
@@ -384,7 +417,7 @@ class BookingController {
         });
       }
 
-      // 2. Check Seat Availability using SeatBooking model
+      // 3. Check Seat Availability
       const existingSeatBookings = await SeatBooking.find({
         showtimeId: showtimeId,
         seatId: { $in: seatObjectIds },
@@ -393,10 +426,7 @@ class BookingController {
       if (existingSeatBookings.length > 0) {
         const populatedBookings = await SeatBooking.populate(
           existingSeatBookings,
-          {
-            path: "seatId",
-            select: "row seat_number",
-          }
+          { path: "seatId", select: "row seat_number" }
         );
         const bookedSeatLabels = populatedBookings.map((sb) =>
           sb.seatId ? `${sb.seatId.row}${sb.seatId.seat_number}` : "UnknownSeat"
@@ -409,10 +439,36 @@ class BookingController {
         });
       }
 
-      // 3. Create Booking & SeatBookings (Note: Not an atomic operation)
+      // 4. Create Booking and Lock Seats
       const reference_code = await Booking.generateReferenceCode();
+
+      let expirationTime;
+      let expirationMessage = "Booking created successfully. Seats are locked for 15 minutes.";
+
+      if (payment_method === 'PayAtCinema') {
+        const showDateTime = new Date(showtime.show_date);
+        const [hours, minutes] = showtime.start_time.split(':');
+        showDateTime.setHours(parseInt(hours, 10));
+        showDateTime.setMinutes(parseInt(minutes, 10));
+        showDateTime.setSeconds(0);
+        showDateTime.setMilliseconds(0);
+
+        const thirtyMinutesBeforeShow = new Date(showDateTime.getTime() - 30 * 60 * 1000);
+
+        if (new Date() > thirtyMinutesBeforeShow) {
+          return res.status(400).json({
+            success: false,
+            message: "The 'Pay at Cinema' option is not available within 30 minutes of the show's start time."
+          });
+        }
+        expirationTime = thirtyMinutesBeforeShow;
+        expirationMessage = "Booking created successfully. Your reservation is held until 30 minutes before the show starts.";
+      } else {
+        expirationTime = new Date(Date.now() + 15 * 60 * 1000);
+      }
+      
       const booking = new Booking({
-        customerId,
+        customerId: customer._id, // Use the determined customer ID
         showtimeId,
         seats: seatObjectIds,
         seat_count: seats.length,
@@ -422,24 +478,20 @@ class BookingController {
         booking_status: "Pending",
         payment_method,
         noted,
+        expired_at: expirationTime,
       });
-
-      // Set a 15-minute expiration for the booking itself if payment is pending
-      booking.expired_at = new Date(Date.now() + 15 * 60 * 1000);
 
       await booking.save();
 
-      // Lock the seats by creating SeatBooking documeants
       const seatBookingDocs = seatObjectIds.map((seatId) => ({
         showtimeId,
         seatId,
         bookingId: booking._id,
         status: "locked",
-        locked_until: booking.expired_at, // Align seat lock with booking expiration
+        locked_until: booking.expired_at,
       }));
       await SeatBooking.insertMany(seatBookingDocs);
 
-      // Create seat booking history records
       const seatBookingHistoryDocs = seatObjectIds.map((seatId) => ({
         showtimeId,
         seatId,
@@ -448,7 +500,7 @@ class BookingController {
       }));
       await SeatBookingHistory.insertMany(seatBookingHistoryDocs);
 
-      // 4. Populate and Respond
+      // 5. Populate and Respond
       await booking.populate([
         { path: "customerId", select: "name email phone" },
         {
@@ -462,13 +514,10 @@ class BookingController {
 
       res.status(201).json({
         success: true,
-        message:
-          "Booking created successfully. Seats are locked for 15 minutes.",
+        message: expirationMessage,
         data: { booking },
       });
     } catch (error) {
-      // Note: Without a transaction, if booking.save() succeeds but SeatBooking.insertMany() fails,
-      // the booking will exist without any locked seats. This would require manual cleanup.
       logger.error("Create booking error:", error);
       res
         .status(500)
@@ -531,12 +580,11 @@ class BookingController {
             {
               bookingId: booking._id,
               seatId: { $in: originalSeatIds },
-              action: 'booked',
+              action: "booked",
             },
-            { $set: { action: 'canceled' } }
+            { $set: { action: "canceled" } }
           );
         }
-
 
         // 2. Check availability of new seats for the potentially new showtime
         if (newSeatIds.length > 0) {
@@ -575,7 +623,7 @@ class BookingController {
             showtimeId: booking.showtimeId,
             seatId,
             bookingId: booking._id,
-            action: 'booked',
+            action: "booked",
           }));
           await SeatBookingHistory.insertMany(historyDocs);
         }

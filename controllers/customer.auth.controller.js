@@ -94,7 +94,7 @@ class CustomerAuthController {
   // Verify OTP and register/login customer
   static async verifyOTP(req, res) {
     try {
-      const { phone, otp, name } = req.body || {};
+      const { phone, otp, name, username, password } = req.body || {};
 
       if (!phone || !otp) {
         return res.status(400).json({
@@ -130,7 +130,6 @@ class CustomerAuthController {
 
         logger.info(`Customer logged in: ${phone}`);
       } else {
-        const { username } = req.body;
         if (!name || name.trim().length < 2) {
           return res.status(400).json({
             success: false,
@@ -162,6 +161,18 @@ class CustomerAuthController {
 
         if (username) {
           customerData.username = username.trim().toLowerCase();
+        }
+        
+        // If password is provided during registration, add it
+        if (password) {
+          if (password.length < 6) {
+            return res.status(400).json({
+              success: false,
+              message: "Password must be at least 6 characters long",
+            });
+          }
+          customerData.password = password;
+          customerData.passwordChangedAt = new Date();
         }
 
         customer = new Customer(customerData);
