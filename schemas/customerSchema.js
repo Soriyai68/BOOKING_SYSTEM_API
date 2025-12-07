@@ -6,98 +6,144 @@ const Providers = require("../data/providers");
 // ------------------------
 // Base fields for reuse
 const baseCustomerFields = {
-  username: Joi.string().trim().lowercase().min(3).max(30).optional().empty(['', null]).messages({
-    'string.min': 'Username must be at least 3 characters',
-    'string.max': 'Username cannot exceed 30 characters',
-  }),
+  username: Joi.string()
+    .trim()
+    .lowercase()
+    .min(3)
+    .max(30)
+    .optional()
+    .empty(["", null])
+    .messages({
+      "string.min": "Username must be at least 3 characters",
+      "string.max": "Username cannot exceed 30 characters",
+    }),
   password: Joi.string().min(6).optional().messages({
-    'string.min': 'Password must be at least 6 characters',
+    "string.min": "Password must be at least 6 characters",
   }),
   isVerified: Joi.boolean().default(false),
   isActive: Joi.boolean().default(true),
 };
 
-const createCustomerSchema = Joi.alternatives()
-  .try(
-    // Schema for 'member'
-    Joi.object({
-      customerType: Joi.string().valid('member').required(),
-      name: Joi.string().trim().min(2).max(50).required().messages({
-        'any.required': 'Name is required for member customers.',
-        'string.empty': 'Name cannot be empty.',
-        'string.min': 'Name must be at least 2 characters',
-        'string.max': 'Name cannot exceed 50 characters',
-      }),
-      phone: Joi.string().pattern(/^\+?[1-9]\d{1,14}$/).required().messages({
-        'any.required': 'Phone number is required for member customers.',
-        'string.pattern.base': 'Please enter a valid phone number',
-      }),
-      email: Joi.string().email().optional().empty(['', null]).messages({ // Added .empty(['', null])
-        'string.email': 'Please enter a valid email address',
-      }),
-      provider: Joi.string().valid(Providers.PHONE).default(Providers.PHONE),
-      ...baseCustomerFields,
+const createCustomerSchema = Joi.alternatives().try(
+  // Schema for 'member'
+  Joi.object({
+    customerType: Joi.string().valid("member").required(),
+    name: Joi.string().trim().min(2).max(50).required().messages({
+      "any.required": "Name is required for member customers.",
+      "string.empty": "Name cannot be empty.",
+      "string.min": "Name must be at least 2 characters",
+      "string.max": "Name cannot exceed 50 characters",
     }),
-    // Schema for 'walkin'
-    Joi.object({
-      customerType: Joi.string().valid('walkin').required(),
-      name: Joi.string().trim().min(2).max(50).optional().empty(['', null]),
-      phone: Joi.string().pattern(/^\+?[1-9]\d{1,14}$/).required().messages({
-        'any.required': 'Phone number is required for walk-in customers.',
-        'string.pattern.base': 'Please enter a valid phone number',
+    phone: Joi.string()
+      .pattern(/^\+?[1-9]\d{1,14}$/)
+      .required()
+      .messages({
+        "any.required": "Phone number is required for member customers.",
+        "string.pattern.base": "Please enter a valid phone number",
       }),
-      email: Joi.string().email().optional().empty(['', null]).messages({ // Added .empty(['', null])
-        'string.email': 'Please enter a valid email address',
-      }),
-      provider: Joi.string().valid(Providers.PHONE).default(Providers.PHONE),
-      ...baseCustomerFields,
+    email: Joi.string().email().optional().empty(["", null]).messages({
+      // Added .empty(['', null])
+      "string.email": "Please enter a valid email address",
     }),
-    // Schema for 'guest'
-    Joi.object({
-      customerType: Joi.string().valid('guest').required(),
-      name: Joi.string().trim().min(2).max(50).optional().empty(['', null]),
-      phone: Joi.string().pattern(/^\+?[1-9]\d{1,14}$/).optional().empty(['', null]), // Added .empty(['', null])
-      email: Joi.string().email().required().messages({
-        'any.required': 'Email is required for guest customers.',
-        'string.email': 'Please enter a valid email address',
+    provider: Joi.string().valid(Providers.PHONE).default(Providers.PHONE),
+    ...baseCustomerFields,
+  }),
+  // Schema for 'walkin'
+  Joi.object({
+    customerType: Joi.string().valid("walkin").required(),
+    name: Joi.string().trim().min(2).max(50).optional().empty(["", null]),
+    phone: Joi.string()
+      .pattern(/^\+?[1-9]\d{1,14}$/)
+      .required()
+      .messages({
+        "any.required": "Phone number is required for walk-in customers.",
+        "string.pattern.base": "Please enter a valid phone number",
       }),
-      provider: Joi.string().valid(Providers.EMAIL).default(Providers.EMAIL),
-      ...baseCustomerFields,
-    })
-  );
+    email: Joi.string().email().optional().empty(["", null]).messages({
+      // Added .empty(['', null])
+      "string.email": "Please enter a valid email address",
+    }),
+    provider: Joi.string().valid(Providers.PHONE).default(Providers.PHONE),
+    ...baseCustomerFields,
+  }),
+  // Schema for 'guest'
+  Joi.object({
+    customerType: Joi.string().valid("guest").required(),
+    name: Joi.string().trim().min(2).max(50).optional().empty(["", null]),
+    phone: Joi.string()
+      .pattern(/^\+?[1-9]\d{1,14}$/)
+      .optional()
+      .empty(["", null]), // Added .empty(['', null])
+    email: Joi.string().email().required().messages({
+      "any.required": "Email is required for guest customers.",
+      "string.email": "Please enter a valid email address",
+    }),
+    provider: Joi.string().valid(Providers.EMAIL).default(Providers.EMAIL),
+    ...baseCustomerFields,
+  })
+);
 
 // ------------------------
 // UPDATE CUSTOMER
 // ------------------------
-const updateCustomerSchema = Joi.object({
-  name: Joi.string().trim().min(2).max(50).messages({
-    "string.min": "Name must be at least 2 characters",
-    "string.max": "Name cannot exceed 50 characters",
-  }),
-
-  phone: Joi.string()
-    .pattern(/^\+?[1-9]\d{1,14}$/)
-    .messages({
-      "string.pattern.base": "Please enter a valid phone number",
+const updateCustomerSchema = Joi.alternatives().try(
+  // Schema for 'member'
+  Joi.object({
+    customerType: Joi.string().valid("member").required(),
+    name: Joi.string().trim().min(2).max(50).required().messages({
+      "any.required": "Name is required for member customers.",
+      "string.empty": "Name cannot be empty.",
+      "string.min": "Name must be at least 2 characters",
+      "string.max": "Name cannot exceed 50 characters",
     }),
-
-  username: Joi.string().trim().lowercase().min(3).max(30).optional().messages({
-    "string.min": "Username must be at least 3 characters",
-    "string.max": "Username cannot exceed 30 characters",
+    phone: Joi.string()
+      .pattern(/^\+?[1-9]\d{1,14}$/)
+      .required()
+      .messages({
+        "any.required": "Phone number is required for member customers.",
+        "string.pattern.base": "Please enter a valid phone number",
+      }),
+    email: Joi.string().email().optional().empty(["", null]).messages({
+      // Added .empty(['', null])
+      "string.email": "Please enter a valid email address",
+    }),
+    provider: Joi.string().valid(Providers.PHONE).default(Providers.PHONE),
+    ...baseCustomerFields,
   }),
-
-  password: Joi.string().min(6).optional().messages({
-    "string.min": "Password must be at least 6 characters",
+  // Schema for 'walkin'
+  Joi.object({
+    customerType: Joi.string().valid("walkin").required(),
+    name: Joi.string().trim().min(2).max(50).optional().empty(["", null]),
+    phone: Joi.string()
+      .pattern(/^\+?[1-9]\d{1,14}$/)
+      .required()
+      .messages({
+        "any.required": "Phone number is required for walk-in customers.",
+        "string.pattern.base": "Please enter a valid phone number",
+      }),
+    email: Joi.string().email().optional().empty(["", null]).messages({
+      // Added .empty(['', null])
+      "string.email": "Please enter a valid email address",
+    }),
+    provider: Joi.string().valid(Providers.PHONE).default(Providers.PHONE),
+    ...baseCustomerFields,
   }),
-
-  isVerified: Joi.boolean(),
-  isActive: Joi.boolean(),
-  lastLogin: Joi.date(),
-})
-  .min(1)
-  .messages({
-    "object.min": "At least one field must be provided for update",
-  });
+  // Schema for 'guest'
+  Joi.object({
+    customerType: Joi.string().valid("guest").required(),
+    name: Joi.string().trim().min(2).max(50).optional().empty(["", null]),
+    phone: Joi.string()
+      .pattern(/^\+?[1-9]\d{1,14}$/)
+      .optional()
+      .empty(["", null]), // Added .empty(['', null])
+    email: Joi.string().email().required().messages({
+      "any.required": "Email is required for guest customers.",
+      "string.email": "Please enter a valid email address",
+    }),
+    provider: Joi.string().valid(Providers.EMAIL).default(Providers.EMAIL),
+    ...baseCustomerFields,
+  })
+);
 
 // ------------------------
 // PHONE OTP SCHEMAS

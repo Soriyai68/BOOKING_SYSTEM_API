@@ -61,6 +61,7 @@ class BookingController {
       { reference_code: { $regex: search, $options: "i" } },
       { "customer.name": { $regex: search, $options: "i" } },
       { "customer.phone": { $regex: search, $options: "i" } },
+      { "customer.email": { $regex: search, $options: "i" } },
       { "movie.title": { $regex: search, $options: "i" } },
       { "hall.hall_name": { $regex: search, $options: "i" } },
     ];
@@ -97,6 +98,7 @@ class BookingController {
             from: "customers",
             localField: "customerId",
             foreignField: "_id",
+            pipeline: [{ $project: { _id: 1, name: 1, phone: 1, email: 1, customerType: 1} }],
             as: "customer",
           },
         },
@@ -220,7 +222,7 @@ class BookingController {
       // Project final output
       pipeline.push({
         $project: {
-          customer: { _id: 1, name: 1, phone: 1 },
+          customer: { _id: 1, name: 1, phone: 1, email: 1, customerType: 1 },
           showtime: { _id: 1, show_date: 1, start_time: 1, end_time: 1 },
           movie: { _id: 1, title: 1, poster_url: 1, duration_minutes: 1 },
           hall: { _id: 1, hall_name: 1 },
@@ -270,7 +272,7 @@ class BookingController {
       BookingController.validateObjectId(id);
 
       const booking = await Booking.findById(id)
-        .populate("customerId", "name email phone")
+        .populate("customerId", "name email phone customerType")
         .populate({
           path: "showtimeId",
           populate: [
@@ -327,7 +329,8 @@ class BookingController {
     try {
       const {
         customerId,
-        guestEmail, // Expecting an email string for guest bookings
+        guestEmail,
+        phone,
         showtimeId,
         seats,
         total_price,
@@ -335,7 +338,7 @@ class BookingController {
         noted = "",
       } = req.body;
 
-      // 1. Determine the customer (member or guest)
+      // 1. Determine the customer (member, guest, or walk-in) based on provided identifier
       let customer;
 
       if (customerId) {
@@ -345,46 +348,68 @@ class BookingController {
             .status(404)
             .json({ success: false, message: "Customer not found" });
         }
+        if (!customer.isMemberCustomer()) {
+          return res.status(400).json({ success: false, message: "The provided customerId does not belong to a member account." });
+        }
       } else if (guestEmail) {
         // --- Handle Guest Booking via Email ---
-
-        const emailRegex = /.+@.+\..+/;
-        if (!emailRegex.test(guestEmail)) {
-            return res.status(400).json({ success: false, message: "Invalid guest email address format." });
-        }
-
         const existingCustomer = await Customer.findOne({ email: guestEmail });
+
+        if (existingCustomer) {
+          if (existingCustomer.isMemberCustomer()) {
+            return res.status(409).json({
+              success: false,
+              message: "This email is registered to a member account. Please log in to book.",
+            });
+          }
+          customer = existingCustomer;
+        } else {
+          customer = new Customer({
+            email: guestEmail,
+            customerType: "guest",
+            provider: Providers.EMAIL,
+            isVerified: false,
+          });
+          await customer.save();
+        }
+      } else if (phone) {
+        // --- Handle Walk-in Booking via Phone ---
+        const existingCustomer = await Customer.findOne({ phone });
 
         if (existingCustomer) {
             if (existingCustomer.isMemberCustomer()) {
                 return res.status(409).json({
                     success: false,
-                    message: "This email is registered to a member account. Please log in with your registered phone number to book.",
+                    message: "This phone number is registered to a member account. Please log in to book.",
                 });
             }
-            // If it's an existing guest, just use them
-            customer = existingCustomer;
+            customer = existingWalkin;
         } else {
-          // Create a new guest customer with only an email
-          const customerData = {
-            email: guestEmail,
-            customerType: "guest",
-            provider: Providers.EMAIL,
-            isVerified: false,
-          };
-          customer = new Customer(customerData);
-          await customer.save();
+            customer = new Customer({
+                phone: phone,
+                customerType: 'walkin',
+                provider: Providers.PHONE,
+                isVerified: false,
+            });
+            await customer.save();
         }
       } else {
+        // This block should ideally not be reached due to Joi validation, but acts as a fallback.
         return res.status(400).json({
           success: false,
           message:
-            "Booking request must include either a customerId or a guestEmail.",
+            "Booking request must include customerId, guestEmail, or phone.",
         });
       }
 
+
       // 2. Validations for Booking details (Showtime, Seats)
-      if (!showtimeId || !seats || !Array.isArray(seats) || seats.length === 0) {
+      if (
+        !showtimeId ||
+        !seats ||
+        !Array.isArray(seats) ||
+        seats.length === 0
+      ) {
         return res.status(400).json({
           success: false,
           message:
@@ -405,7 +430,7 @@ class BookingController {
           : "This showtime is not available for booking. It might be completed or cancelled.";
         return res.status(400).json({ success: false, message });
       }
-      
+
       const seatObjectIds = seats
         .filter((id) => mongoose.Types.ObjectId.isValid(id))
         .map((id) => new mongoose.Types.ObjectId(id));
@@ -443,30 +468,35 @@ class BookingController {
       const reference_code = await Booking.generateReferenceCode();
 
       let expirationTime;
-      let expirationMessage = "Booking created successfully. Seats are locked for 15 minutes.";
+      let expirationMessage =
+        "Booking created successfully. Seats are locked for 15 minutes.";
 
-      if (payment_method === 'PayAtCinema') {
+      if (payment_method === "PayAtCinema") {
         const showDateTime = new Date(showtime.show_date);
-        const [hours, minutes] = showtime.start_time.split(':');
+        const [hours, minutes] = showtime.start_time.split(":");
         showDateTime.setHours(parseInt(hours, 10));
         showDateTime.setMinutes(parseInt(minutes, 10));
         showDateTime.setSeconds(0);
         showDateTime.setMilliseconds(0);
 
-        const thirtyMinutesBeforeShow = new Date(showDateTime.getTime() - 30 * 60 * 1000);
+        const thirtyMinutesBeforeShow = new Date(
+          showDateTime.getTime() - 30 * 60 * 1000
+        );
 
         if (new Date() > thirtyMinutesBeforeShow) {
           return res.status(400).json({
             success: false,
-            message: "The 'Pay at Cinema' option is not available within 30 minutes of the show's start time."
+            message:
+              "The 'Pay at Cinema' option is not available within 30 minutes of the show's start time.",
           });
         }
         expirationTime = thirtyMinutesBeforeShow;
-        expirationMessage = "Booking created successfully. Your reservation is held until 30 minutes before the show starts.";
+        expirationMessage =
+          "Booking created successfully. Your reservation is held until 30 minutes before the show starts.";
       } else {
         expirationTime = new Date(Date.now() + 15 * 60 * 1000);
       }
-      
+
       const booking = new Booking({
         customerId: customer._id, // Use the determined customer ID
         showtimeId,
