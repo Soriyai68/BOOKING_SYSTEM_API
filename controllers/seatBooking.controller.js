@@ -578,8 +578,15 @@ class SeatBookingController {
   // Helper method for history search and filter
   static historyFilterBuilder(query) {
     const filter = {};
-    const { showtimeId, seatId, bookingId, action, seat_type, customerType } =
-      query;
+    const {
+      showtimeId,
+      seatId,
+      bookingId,
+      action,
+      seat_type,
+      customerType,
+      show_date,
+    } = query;
 
     if (showtimeId) {
       SeatBookingController.validateObjectId(showtimeId);
@@ -596,7 +603,32 @@ class SeatBookingController {
     if (action) {
       filter.action = action;
     }
-    return { filter, seat_type, customerType };
+
+    let dateFilter = {};
+    if (show_date) {
+      const day = new Date(show_date);
+      day.setHours(0, 0, 0, 0); // Start of the day
+      const nextDay = new Date(day);
+      nextDay.setDate(day.getDate() + 1); // Start of the next day
+
+      dateFilter.show_date = {
+        $gte: day,
+        $lt: nextDay,
+      };
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // If the requested date is today, also filter by start_time
+      if (day.getTime() === today.getTime()) {
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(
+          now.getMinutes()
+        ).padStart(2, "0")}`;
+        dateFilter.start_time = { $gte: currentTime };
+      }
+    }
+    return { filter, seat_type, customerType, dateFilter };
   }
 
   static historySearchBuilder(query) {
@@ -657,8 +689,12 @@ class SeatBookingController {
       const skip = (pageNum - 1) * limitNum;
       const sort = { [sortBy]: sortOrder === "desc" ? -1 : 1 };
 
-      const { filter: initialFilter, seat_type, customerType } =
-        SeatBookingController.historyFilterBuilder(filterParams);
+      const {
+        filter: initialFilter,
+        seat_type,
+        customerType,
+        dateFilter,
+      } = SeatBookingController.historyFilterBuilder(filterParams);
 
       const pipeline = [
         { $match: initialFilter },
@@ -751,6 +787,16 @@ class SeatBookingController {
       if (seat_type) {
         pipeline.push({
           $match: { "seat.seat_type": seat_type },
+        });
+      }
+      if (dateFilter.show_date) {
+        pipeline.push({
+          $match: { "showtime.show_date": dateFilter.show_date },
+        });
+      }
+      if (dateFilter.start_time) {
+        pipeline.push({
+          $match: { "showtime.start_time": dateFilter.start_time },
         });
       }
       if (customerType) {
