@@ -6,6 +6,7 @@ const {
   SeatBookingHistory,
 } = require("../models");
 const logger = require("../utils/logger");
+const { toNamespacedPath } = require("path/win32");
 
 class SeatBookingController {
   // Helper method to validate ObjectId
@@ -577,7 +578,8 @@ class SeatBookingController {
   // Helper method for history search and filter
   static historyFilterBuilder(query) {
     const filter = {};
-    const { showtimeId, seatId, bookingId, action, seat_type } = query;
+    const { showtimeId, seatId, bookingId, action, seat_type, customerType } =
+      query;
 
     if (showtimeId) {
       SeatBookingController.validateObjectId(showtimeId);
@@ -594,7 +596,7 @@ class SeatBookingController {
     if (action) {
       filter.action = action;
     }
-    return { filter, seat_type };
+    return { filter, seat_type, customerType };
   }
 
   static historySearchBuilder(query) {
@@ -615,6 +617,16 @@ class SeatBookingController {
     // Search in booking reference code
     searchConditions.push({
       "booking.reference_code": { $regex: search, $options: "i" },
+    });
+    // Search in customer details from booking
+    searchConditions.push({
+      "booking.customer.name": { $regex: search, $options: "i" },
+    });
+    searchConditions.push({
+      "booking.customer.phone": { $regex: search, $options: "i" },
+    });
+    searchConditions.push({
+      "booking.customer.email": { $regex: search, $options: "i" },
     });
 
     // If the search term is a valid ObjectId, search by IDs directly
@@ -645,7 +657,7 @@ class SeatBookingController {
       const skip = (pageNum - 1) * limitNum;
       const sort = { [sortBy]: sortOrder === "desc" ? -1 : 1 };
 
-      const { filter: initialFilter, seat_type } =
+      const { filter: initialFilter, seat_type, customerType } =
         SeatBookingController.historyFilterBuilder(filterParams);
 
       const pipeline = [
@@ -705,7 +717,10 @@ class SeatBookingController {
           },
         },
         {
-          $unwind: { path: "$booking.customer", preserveNullAndEmptyArrays: true },
+          $unwind: {
+            path: "$booking.customer",
+            preserveNullAndEmptyArrays: true,
+          },
         },
         // Add seat_identifier for searching and display
         {
@@ -738,6 +753,11 @@ class SeatBookingController {
           $match: { "seat.seat_type": seat_type },
         });
       }
+      if (customerType) {
+        pipeline.push({
+          $match: { "booking.customer.customerType": customerType },
+        });
+      }
       const [histories, totalCountResult] = await Promise.all([
         SeatBookingHistory.aggregate([
           ...pipeline,
@@ -766,8 +786,10 @@ class SeatBookingController {
               booking: {
                 _id: "$booking._id",
                 reference_code: "$booking.reference_code",
-                customer: "$booking.customer.name",
+                name: "$booking.customer.name",
                 phone: "$booking.customer.phone",
+                email: "$booking.customer.email",
+                customerType: "$booking.customer.customerType",
               },
             },
           },
