@@ -373,10 +373,90 @@ const batchUpdateStatusSchema = Joi.object({
         }),
 });
 
+const bulkUpdateSeatsSchema = Joi.object({
+    seatUpdates: Joi.array()
+        .items(
+            Joi.object({
+                id: Joi.string()
+                    .pattern(/^[0-9a-fA-F]{24}$/)
+                    .required()
+                    .messages({
+                        "string.pattern.base": "Invalid seat ID format",
+                        "any.required": "Seat ID is required for each update",
+                    }),
+                seat_type: Joi.string()
+                    .valid(...SEAT_TYPES)
+                    .optional()
+                    .messages({
+                        "any.only": `Seat type must be one of: ${SEAT_TYPES.join(", ")}`,
+                    }),
+                status: Joi.string()
+                    .valid(...SEAT_STATUSES)
+                    .optional()
+                    .messages({
+                        "any.only": `Status must be one of: ${SEAT_STATUSES.join(", ")}`,
+                    }),
+                price: Joi.number().min(0).optional().messages({
+                    "number.base": "Price must be a number",
+                    "number.min": "Price cannot be negative",
+                }),
+                notes: Joi.string().trim().max(500).allow("").optional().messages({
+                    "string.max": "Notes cannot exceed 500 characters",
+                }),
+            })
+        )
+        .min(1)
+        .max(100)
+        .required()
+        .messages({
+            "array.min": "At least one seat update is required",
+            "array.max": "Cannot update more than 100 seats at once",
+            "any.required": "Seat updates array is required",
+        }),
+});
+
+const bulkDuplicateSeatsSchema = Joi.object({
+    seat_ids: Joi.array()
+        .items(Joi.string().pattern(/^[0-9a-fA-F]{24}$/))
+        .min(1)
+        .max(100)
+        .required()
+        .messages({
+            "array.min": "At least one seat ID is required",
+            "array.max": "Cannot duplicate more than 100 seats at once",
+            "any.required": "Seat IDs array is required",
+        }),
+    target_hall_id: Joi.string()
+        .pattern(/^[0-9a-fA-F]{24}$/)
+        .required()
+        .messages({
+            "string.pattern.base": "Invalid target hall ID format",
+            "any.required": "Target hall ID is required",
+        }),
+    seat_type: Joi.string()
+        .valid(...SEAT_TYPES)
+        .optional()
+        .messages({
+            "any.only": `Seat type must be one of: ${SEAT_TYPES.join(", ")}`,
+        }),
+    price: Joi.number().min(0).optional().messages({
+        "number.base": "Price must be a number",
+        "number.min": "Price cannot be negative",
+    }),
+    status: Joi.string()
+        .valid(...SEAT_STATUSES)
+        .optional()
+        .messages({
+            "any.only": `Status must be one of: ${SEAT_STATUSES.join(", ")}`,
+        }),
+});
+
 module.exports = {
     // Core CRUD schemas
     createSeatSchema,
     bulkCreateSeatsSchema,
+    bulkUpdateSeatsSchema,
+    bulkDuplicateSeatsSchema,
     updateSeatSchema,
     seatIdParamSchema,
     getAllSeatsQuerySchema,

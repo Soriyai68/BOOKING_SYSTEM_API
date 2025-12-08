@@ -87,6 +87,30 @@ seatSchema.index({ hall_id: 1, row: 1, seat_number: 1 });
 seatSchema.index({ hall_id: 1, row: 1 });
 seatSchema.index({ seat_type: 1 });
 
+// Drop old problematic index if exists (row_1_seat_number_1 without hall_id)
+const dropOldIndex = async () => {
+  try {
+    if (mongoose.connection.readyState === 1) {
+      const collection = mongoose.connection.collection('seats');
+      const indexes = await collection.indexes();
+      const oldIndex = indexes.find(idx => idx.name === 'row_1_seat_number_1');
+      if (oldIndex) {
+        await collection.dropIndex('row_1_seat_number_1');
+        logger.info('Dropped old seat index: row_1_seat_number_1');
+      }
+    }
+  } catch (error) {
+    // Index might not exist or already dropped, ignore
+  }
+};
+
+// Run on connection ready
+if (mongoose.connection.readyState === 1) {
+  dropOldIndex();
+} else {
+  mongoose.connection.once('open', dropOldIndex);
+}
+
 // Instance method to soft delete seat
 seatSchema.methods.softDelete = function (deletedBy = null) {
   this.deletedAt = new Date();

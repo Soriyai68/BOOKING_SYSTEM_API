@@ -3,7 +3,7 @@ const {Role} = require('../data');
 const {seatSchema} = require('../schemas');
 const middlewares = require('../middlewares');
 const SeatController = require('../controllers/seat.controller');
-const {bulkCreateSeatsSchema} = require("../schemas/seatSchema");
+const {bulkCreateSeatsSchema, bulkUpdateSeatsSchema, bulkDuplicateSeatsSchema} = require("../schemas/seatSchema");
 
 const router = express.Router();
 
@@ -96,7 +96,6 @@ router.get('/:id',
 router.put('/:id',
     middlewares.authenticate,
     middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
-
     middlewares.validator(seatSchema.seatIdParamSchema, 'params'),
     middlewares.validator(seatSchema.updateSeatSchema),
     SeatController.update
@@ -106,9 +105,24 @@ router.put('/:id',
 router.delete('/:id',
     middlewares.authenticate,
     middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
-
     middlewares.validator(seatSchema.seatIdParamSchema, 'params'),
     SeatController.delete
+);
+
+//6. bulk update for multiple seats
+router.put('/bulk/update-seats',
+    middlewares.authenticate,
+    middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+    middlewares.validator(bulkUpdateSeatsSchema),
+    SeatController.bulkUpdateSeats
+);
+
+//7. bulk duplicate seats from one hall to another
+router.post('/bulk/duplicate-seats',
+    middlewares.authenticate,
+    middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+    middlewares.validator(bulkDuplicateSeatsSchema),
+    SeatController.bulkDuplicateSeats
 );
 
 module.exports = router;

@@ -999,6 +999,223 @@ class SeatController {
         }
     }
 
+    //  bulk update for insert multiple seats
+    static async bulkUpdateSeats(req, res) {
+        try {
+            const {seatUpdates} = req.body;
+            const updatedBy = req.user?.userId;
+            if (!seatUpdates || !Array.isArray(seatUpdates) || seatUpdates.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Request body must contain a non-empty array of seat updates.",
+                });
+            }
+            const results = [];
+
+            for (const seatUpdate of seatUpdates) {
+                const {id, ...updateData} = seatUpdate;
+                if (!id) {
+                    results.push({
+                        id: null,
+                        success: false,
+                        message: "Seat ID is required for each update.",
+                    });
+                    continue;
+                }
+                if (!mongoose.Types.ObjectId.isValid(id)) {
+                    results.push({
+                        id,
+                        success: false,
+                        message: "Invalid seat ID format.",
+                    });
+                    continue;
+                }
+                try {
+                    const updatedSeat = await Seat.findByIdAndUpdate(
+                        id,
+                        {
+                            ...updateData,
+                            updatedBy,
+                            updatedAt: new Date(),
+                        },
+                        {new: true, lean: true}
+                    );
+                    if (!updatedSeat) {
+                        results.push({
+                            id,
+                            success: false,
+                            message: "Seat not found.",
+                        });
+                    } else {
+                        results.push({
+                            id,
+                            success: true,
+                            message: "Seat updated successfully.",
+                            data: updatedSeat,
+                        });
+                    }
+                } catch (error) {
+                    results.push({
+                        id,
+                        success: false,
+                        message: `Failed to update seat: ${error.message}`,
+                    });
+                }
+            }
+            return res.status(200).json({
+                success: true,
+                message: "Bulk seat update completed.",
+                data: results,
+            });
+        } catch (error) {
+            logger.error("Bulk seat update failed:", error);
+            return res.status(500).json({
+                success: false,
+                message: "An unexpected server error occurred during bulk seat update.",
+                error: error.message,
+            });
+        }
+    }
+
+    // bulk duplicate seats to create multiple seats in a new hall
+    static async bulkDuplicateSeats(req, res) {
+        try {
+            const {seat_ids, target_hall_id, seat_type, price, status} = req.body;
+            const createdBy = req.user?.userId;
+
+            // Validate required fields
+            if (!seat_ids || !Array.isArray(seat_ids) || seat_ids.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "seat_ids array is required and cannot be empty.",
+                });
+            }
+
+            if (!target_hall_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: "target_hall_id is required.",
+                });
+            }
+
+            // Validate target hall ObjectId
+            if (!mongoose.Types.ObjectId.isValid(target_hall_id)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid target hall ID format.",
+                });
+            }
+
+            // Validate all seat IDs
+            const invalidIds = seat_ids.filter(id => !mongoose.Types.ObjectId.isValid(id));
+            if (invalidIds.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid seat ID format.",
+                    invalidIds,
+                });
+            }
+
+            // Validate target hall exists and get its theater_id
+            const targetHall = await Hall.findById(target_hall_id);
+            if (!targetHall) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Target hall not found.",
+                });
+            }
+
+            // Get selected seats
+            const sourceSeats = await Seat.find({
+                _id: {$in: seat_ids},
+                deletedAt: null,
+            }).lean();
+
+            if (sourceSeats.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "No valid seats found to duplicate.",
+                });
+            }
+
+            // Check for existing seats in target hall with same row/seat_number
+            const existingTargetSeats = await Seat.find({
+                hall_id: target_hall_id,
+                deletedAt: null,
+            }).lean();
+
+            const existingKeys = new Set(
+                existingTargetSeats.map(s => `${s.row}-${Array.isArray(s.seat_number) ? s.seat_number.join(',') : s.seat_number}`)
+            );
+
+            // Filter out seats that already exist in target hall
+            const seatsToCreate = [];
+            const skippedSeats = [];
+
+            for (const seat of sourceSeats) {
+                const key = `${seat.row}-${Array.isArray(seat.seat_number) ? seat.seat_number.join(',') : seat.seat_number}`;
+                if (existingKeys.has(key)) {
+                    skippedSeats.push({
+                        row: seat.row,
+                        seat_number: seat.seat_number,
+                        reason: "Already exists in target hall",
+                    });
+                } else {
+                    seatsToCreate.push({
+                        hall_id: new mongoose.Types.ObjectId(target_hall_id),
+                        theater_id: targetHall.theater_id,
+                        row: seat.row,
+                        seat_number: seat.seat_number,
+                        seat_type: seat_type || seat.seat_type,
+                        price: price !== undefined ? price : seat.price,
+                        status: status || seat.status || "active",
+                        notes: seat.notes || "",
+                        createdBy,
+                    });
+                }
+            }
+
+            if (seatsToCreate.length === 0) {
+                return res.status(409).json({
+                    success: false,
+                    message: "All selected seats already exist in target hall.",
+                    data: {skippedSeats},
+                });
+            }
+
+            // Create new seats in target hall
+            const createdSeats = await Seat.insertMany(seatsToCreate, {lean: true});
+
+            // Update target hall's total_seats count
+            try {
+                await Hall.updateTotalSeatsForHall(target_hall_id);
+                logger.info(`Updated total_seats for target hall ${target_hall_id} after bulk duplication.`);
+            } catch (hallError) {
+                logger.error(`Failed to update total_seats for hall ${target_hall_id}: ${hallError.message}`);
+            }
+
+            logger.info(`Bulk duplicated ${createdSeats.length} seats to hall ${target_hall_id}.`);
+
+            return res.status(201).json({
+                success: true,
+                message: `${createdSeats.length} seats duplicated successfully to target hall.`,
+                data: {
+                    createdCount: createdSeats.length,
+                    skippedCount: skippedSeats.length,
+                    seats: createdSeats,
+                    skippedSeats: skippedSeats.length > 0 ? skippedSeats : undefined,
+                },
+            });
+        } catch (error) {
+            logger.error("Bulk duplicate seats failed:", error);
+            return res.status(500).json({
+                success: false,
+                message: "An unexpected server error occurred during bulk seat duplication.",
+                error: error.message,
+            });
+        }
+    }
+
     // bulk force delete seats
     static async bulkForceDeleteSeats(req, res) {
         try {
