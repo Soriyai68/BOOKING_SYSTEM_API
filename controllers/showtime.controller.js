@@ -33,26 +33,45 @@ class ShowtimeController {
             query.hall_id = new mongoose.Types.ObjectId(filters.hall_id);
         }
 
+        const today = new Date();
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+        const tomorrowStart = new Date(todayStart);
+        tomorrowStart.setDate(todayStart.getDate() + 1);
+
+        const dayAfterTomorrowStart = new Date(todayStart);
+        dayAfterTomorrowStart.setDate(todayStart.getDate() + 2);
+
+        const currentTime = `${String(today.getHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}`;
+
+        const todayAndTomorrowQuery = {
+            $or: [
+                { // Today's upcoming showtimes
+                    show_date: { $gte: todayStart, $lt: tomorrowStart },
+                    start_time: { $gte: currentTime }
+                },
+                { // Tomorrow's showtimes
+                    show_date: { $gte: tomorrowStart, $lt: dayAfterTomorrowStart }
+                }
+            ]
+        };
+
         // Handle single date filter
         if (filters.show_date) {
             const day = new Date(filters.show_date);
-            day.setHours(0, 0, 0, 0); // Start of the day
-            const nextDay = new Date(day);
-            nextDay.setDate(day.getDate() + 1); // Start of the next day
+            day.setHours(0, 0, 0, 0);
 
-            query.show_date = {
-                $gte: day,
-                $lt: nextDay,
-            };
-
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            // If the requested date is today, also filter by start_time
-            if (day.getTime() === today.getTime()) {
-                const now = new Date();
-                const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-                query.start_time = { $gte: currentTime };
+            if (day.getTime() === todayStart.getTime()) {
+                // If filtering for today, show today and tomorrow
+                Object.assign(query, todayAndTomorrowQuery);
+            } else {
+                // For any other specific date, just show that day
+                const nextDay = new Date(day);
+                nextDay.setDate(day.getDate() + 1);
+                query.show_date = {
+                    $gte: day,
+                    $lt: nextDay,
+                };
             }
         }
         // Date range filter
@@ -60,6 +79,9 @@ class ShowtimeController {
             query.show_date = {};
             if (filters.dateFrom) query.show_date.$gte = new Date(filters.dateFrom);
             if (filters.dateTo) query.show_date.$lte = new Date(filters.dateTo);
+        } else {
+            // Default to today and tomorrow
+            Object.assign(query, todayAndTomorrowQuery);
         }
         return query;
     }

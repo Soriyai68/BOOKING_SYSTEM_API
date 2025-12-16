@@ -19,7 +19,7 @@ class SeatBookingController {
   // Helper method for search and filter
   static filterBuilder(query) {
     const filter = {};
-    const { showtimeId, seatId, bookingId, status, seat_type } = query;
+    const { showtimeId, seatId, bookingId, status, seat_type, show_date } = query;
 
     if (showtimeId) {
       SeatBookingController.validateObjectId(showtimeId);
@@ -37,7 +37,22 @@ class SeatBookingController {
     if (status) {
       filter.status = status;
     }
-    return { filter, seat_type };
+
+    let dateFilter = {};
+    if (show_date) {
+      const day = new Date(show_date);
+      day.setHours(0, 0, 0, 0); // Start of the day
+      const nextDay = new Date(day);
+      nextDay.setDate(day.getDate() + 1); // Start of the next day
+
+      dateFilter = {
+        "showtimeId.show_date": {
+          $gte: day,
+          $lt: nextDay,
+        },
+      };
+    }
+    return { filter, seat_type, dateFilter };
   }
 
   static searchBuilder(query) {
@@ -92,7 +107,7 @@ class SeatBookingController {
       const skip = (pageNum - 1) * limitNum;
       const sort = { [sortBy]: sortOrder === "desc" ? -1 : 1 };
 
-      const { filter: initialFilter, seat_type } =
+      const { filter: initialFilter, seat_type, dateFilter } =
         SeatBookingController.filterBuilder(filterParams);
       const searchFilter = SeatBookingController.searchBuilder({ search });
 
@@ -183,6 +198,11 @@ class SeatBookingController {
       if (seat_type) {
         pipeline.push({
           $match: { "seatId.seat_type": seat_type },
+        });
+      }
+      if (dateFilter.show_date) {
+        pipeline.push({
+          $match: { "showtimeId.show_date": dateFilter.show_date },
         });
       }
       const [seatBookings, totalCountResult] = await Promise.all([

@@ -91,12 +91,9 @@ showtimeSchema.statics.findAvailableByMovie = function (movieId, date) {
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
 
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
-
   return this.find({
     movie_id: movieId,
-    show_date: { $gte: startOfDay, $lte: endOfDay },
+    show_date: { $gte: startOfDay },
     status: "scheduled",
     deletedAt: null,
   });

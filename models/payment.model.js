@@ -49,11 +49,6 @@ const paymentSchema = new mongoose.Schema({
     toAccount_id: {
         type: String
     },
-    transaction_id: {
-        type: String,
-        unique: true,
-        sparse: true,
-    },
     paid: {
         type: Boolean,
         default: false
@@ -78,7 +73,6 @@ const paymentSchema = new mongoose.Schema({
 
 // Indexes
 paymentSchema.index({bookingId: 1});
-paymentSchema.index({transaction_id: 1});
 paymentSchema.index({status: 1});
 paymentSchema.index({payment_method: 1});
 paymentSchema.index({deletedAt: 1});
@@ -89,7 +83,7 @@ paymentSchema.methods.markAsPaid = function (transactionDetails) {
     this.status = 'Completed';
     this.paid = true;
     this.paidAt = new Date();
-    this.transaction_id = transactionDetails.transactionId;
+
     this.bakongHash = transactionDetails.bakongHash;
     this.fromAccount_id = transactionDetails.fromAccountId;
     this.toAccount_id = transactionDetails.toAccountId;

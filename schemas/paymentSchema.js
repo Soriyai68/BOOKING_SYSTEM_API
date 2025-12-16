@@ -20,14 +20,6 @@ const bookingIdParamSchema = Joi.object({
     }),
 });
 
-const transactionIdParamSchema = Joi.object({
-  transactionId: Joi.string()
-    .required()
-    .messages({
-      "any.required": "Transaction ID is required",
-    }),
-});
-
 const createPaymentSchema = Joi.object({
   bookingId: Joi.string()
     .pattern(/^[0-9a-fA-F]{24}$/)
@@ -62,7 +54,6 @@ const createPaymentSchema = Joi.object({
     .messages({
       "any.only": "Status must be one of: Pending, Completed, Failed, Refunded",
     }),
-  transaction_id: Joi.string().allow("").optional(),
   description: Joi.string().allow("").optional(),
 });
 
@@ -93,7 +84,6 @@ const updatePaymentSchema = Joi.object({
     .messages({
       "any.only": "Status must be one of: Pending, Completed, Failed, Refunded",
     }),
-  transaction_id: Joi.string().allow("").optional(),
   description: Joi.string().allow("").optional(),
 }).min(1).messages({
   "object.min": "At least one field must be provided for update",
@@ -138,7 +128,6 @@ const getAllPaymentsQuerySchema = Joi.object({
     .valid("Bakong", "Cash", "Card", "Mobile Banking", "Bank Transfer")
     .optional(),
   currency: Joi.string().valid("USD", "KHR").optional(),
-  transaction_id: Joi.string().optional(),
   dateFrom: Joi.date().optional(),
   dateTo: Joi.date().optional(),
   amountFrom: Joi.number().min(0).optional(),
@@ -157,7 +146,6 @@ const paginationSchema = Joi.object({
 module.exports = {
   paymentIdParamSchema,
   bookingIdParamSchema,
-  transactionIdParamSchema,
   createPaymentSchema,
   updatePaymentSchema,
   updatePaymentStatusSchema,

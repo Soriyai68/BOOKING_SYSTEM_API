@@ -32,14 +32,6 @@ router.get(
   PaymentController.listDeleted
 );
 
-// GET /api/payments/transaction/:transactionId - Get payment by transaction ID
-router.get(
-  "/transaction/:transactionId",
-  middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
-  middlewares.validator(paymentSchema.transactionIdParamSchema, "params"),
-  PaymentController.getByTransactionId
-);
 
 // GET /api/payments/booking/:bookingId - Get all payments for a specific booking
 router.get(

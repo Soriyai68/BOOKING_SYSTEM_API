@@ -20,6 +20,7 @@ class BookingController {
   // Build filter query
   static buildFilterQuery(filters) {
     const query = {};
+    const showtimeDateFilter = {};
 
     if (filters.booking_status) {
       query.booking_status = filters.booking_status;
@@ -43,7 +44,7 @@ class BookingController {
       query.showtimeId = new mongoose.Types.ObjectId(filters.showtimeId);
     }
 
-    // Date range filter
+    // Date range filter for booking_date
     if (filters.dateFrom || filters.dateTo) {
       query.booking_date = {};
       if (filters.dateFrom)
@@ -51,7 +52,20 @@ class BookingController {
       if (filters.dateTo) query.booking_date.$lte = new Date(filters.dateTo);
     }
 
-    return query;
+    // Date range filter for showtime.show_date
+    if (filters.show_date) {
+      const day = new Date(filters.show_date);
+      day.setHours(0, 0, 0, 0); // Start of the day
+      const nextDay = new Date(day);
+      nextDay.setDate(day.getDate() + 1); // Start of the next day
+
+      showtimeDateFilter["showtime.show_date"] = {
+        $gte: day,
+        $lt: nextDay,
+      };
+    }
+
+    return { query, showtimeDateFilter };
   }
   // Build search query
   static buildSearchQuery(query) {
@@ -84,7 +98,8 @@ class BookingController {
       const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
       const skip = (pageNum - 1) * limitNum;
 
-      const matchQuery = { ...BookingController.buildFilterQuery(filters) };
+      const { query: matchQuery, showtimeDateFilter } =
+        BookingController.buildFilterQuery(filters);
       const searchQuery = BookingController.buildSearchQuery({ search });
       if (!includeDeleted || includeDeleted === "false")
         matchQuery.deletedAt = null;
@@ -124,39 +139,44 @@ class BookingController {
             preserveNullAndEmptyArrays: true,
           },
         },
-
-        // Lookup movie
-        {
-          $lookup: {
-            from: "movies",
-            localField: "showtime.movie_id",
-            foreignField: "_id",
-            as: "movie",
-          },
-        },
-        {
-          $unwind: {
-            path: "$movie",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-
-        // Lookup hall
-        {
-          $lookup: {
-            from: "halls",
-            localField: "showtime.hall_id",
-            foreignField: "_id",
-            as: "hall",
-          },
-        },
-        {
-          $unwind: {
-            path: "$hall",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
       ];
+
+      // Apply showtime date filter if present
+      if (Object.keys(showtimeDateFilter).length > 0) {
+        pipeline.push({ $match: showtimeDateFilter });
+      }
+
+      // Lookup movie
+      pipeline.push({
+        $lookup: {
+          from: "movies",
+          localField: "showtime.movie_id",
+          foreignField: "_id",
+          as: "movie",
+        },
+      });
+      pipeline.push({
+        $unwind: {
+          path: "$movie",
+          preserveNullAndEmptyArrays: true,
+        },
+      });
+
+      // Lookup hall
+      pipeline.push({
+        $lookup: {
+          from: "halls",
+          localField: "showtime.hall_id",
+          foreignField: "_id",
+          as: "hall",
+        },
+      });
+      pipeline.push({
+        $unwind: {
+          path: "$hall",
+          preserveNullAndEmptyArrays: true,
+        },
+      });
 
       if (search) {
         pipeline.push({ $match: searchQuery });
@@ -348,9 +368,6 @@ class BookingController {
             .status(404)
             .json({ success: false, message: "Customer not found" });
         }
-        if (!customer.isMemberCustomer()) {
-          return res.status(400).json({ success: false, message: "The provided customerId does not belong to a member account." });
-        }
       } else if (guestEmail) {
         // --- Handle Guest Booking via Email ---
         const existingCustomer = await Customer.findOne({ email: guestEmail });
@@ -383,7 +400,7 @@ class BookingController {
                     message: "This phone number is registered to a member account. Please log in to book.",
                 });
             }
-            customer = existingWalkin;
+            customer = existingCustomer;
         } else {
             customer = new Customer({
                 phone: phone,
