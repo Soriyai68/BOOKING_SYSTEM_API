@@ -4,6 +4,7 @@ const Showtime = require('../models/showtime.model');
 const Movie = require('../models/movie.model');
 const Booking = require('../models/booking.model');
 const SeatBooking = require('../models/seatBooking.model');
+const Promotion = require('../models/promotion.model');
 const logger = require('../utils/logger');
 
 /**
@@ -209,6 +210,46 @@ const startSeatReleaseScheduler = () => {
 };
 
 /**
+ * Schedules a job to update promotion statuses based on their start and end dates.
+ */
+const startPromotionScheduler = () => {
+    logger.info('Scheduling promotion status update job to run every minute.');
+    cron.schedule('* * * * *', async () => {
+        logger.info('Running scheduled job to update promotion statuses...');
+        try {
+            const now = new Date();
+
+            // Update 'Inactive' promotions to 'Active' if they are within the valid date range.
+            const toActiveResult = await Promotion.updateMany(
+                { status: 'Inactive', start_date: { $lte: now }, end_date: { $gt: now } },
+                { $set: { status: 'Active', updatedAt: now } }
+            );
+            if (toActiveResult.modifiedCount > 0) {
+                logger.info(`Updated ${toActiveResult.modifiedCount} promotions from 'Inactive' to 'Active'.`);
+            }
+
+            // Update 'Active' or 'Inactive' promotions to 'Expired' if their end date has passed.
+            const toExpiredResult = await Promotion.updateMany(
+                {
+                    status: { $in: ['Active', 'Inactive'] },
+                    end_date: { $lte: now }
+                },
+                { $set: { status: 'Expired', updatedAt: now } }
+            );
+            if (toExpiredResult.modifiedCount > 0) {
+                logger.info(`Updated ${toExpiredResult.modifiedCount} promotions to 'Expired'.`);
+            }
+
+            if (toActiveResult.modifiedCount === 0 && toExpiredResult.modifiedCount === 0) {
+                logger.info('No promotion statuses required an update.');
+            }
+        } catch (error) {
+            logger.error('Error in scheduled promotion update job:', error);
+        }
+    });
+};
+
+/**
  * Initializes and starts all scheduled jobs for the application.
  */
 const startAllSchedulers = () => {
@@ -217,6 +258,7 @@ const startAllSchedulers = () => {
     startBookingScheduler();
     startSeatBookingSyncScheduler();
     startSeatReleaseScheduler();
+    startPromotionScheduler();
 };
 
 module.exports = startAllSchedulers;
