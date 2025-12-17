@@ -7,6 +7,7 @@ const {
 } = require("../models");
 const logger = require("../utils/logger");
 const { toNamespacedPath } = require("path/win32");
+const { createPhoneRegex } = require("../utils/helpers");
 
 class SeatBookingController {
   // Helper method to validate ObjectId
@@ -657,6 +658,7 @@ class SeatBookingController {
       return {};
     }
 
+    const phoneRegex = createPhoneRegex(search);
     const searchConditions = [];
     // Search in movie title (via showtime)
     searchConditions.push({
@@ -674,9 +676,11 @@ class SeatBookingController {
     searchConditions.push({
       "booking.customer.name": { $regex: search, $options: "i" },
     });
-    searchConditions.push({
-      "booking.customer.phone": { $regex: search, $options: "i" },
-    });
+    if (phoneRegex) {
+      searchConditions.push({
+        "booking.customer.phone": { $regex: phoneRegex },
+      });
+    }
     searchConditions.push({
       "booking.customer.email": { $regex: search, $options: "i" },
     });

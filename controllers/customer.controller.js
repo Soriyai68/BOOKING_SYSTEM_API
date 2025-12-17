@@ -3,6 +3,7 @@ const Customer = require("../models/customer.model");
 const { Role } = require("../utils/constants");
 const logger = require("../utils/logger");
 const { Providers } = require("../data");
+const { createPhoneRegex } = require("../utils/helpers");
 
 class CustomerController {
   static validateObjectId(id) {
@@ -41,12 +42,15 @@ class CustomerController {
   // Helper to build search query
   static buildSearchQuery(search) {
     if (!search) return {};
+    const phoneRegex = createPhoneRegex(search);
     const searchConditions = [
-      { phone: { $regex: search, $options: "i" } },
       { email: { $regex: search, $options: "i" } },
       { name: { $regex: search, $options: "i" } },
       { username: { $regex: search, $options: "i" } },
     ];
+    if (phoneRegex) {
+      searchConditions.push({ phone: { $regex: phoneRegex } });
+    }
     return { $or: searchConditions };
   }
 

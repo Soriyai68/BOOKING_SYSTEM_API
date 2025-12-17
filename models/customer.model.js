@@ -7,8 +7,6 @@ const customerSchema = new mongoose.Schema(
     phone: {
       type: String,
       trim: true,
-      unique: true,
-      sparse: true,
       match: [/^\+?[1-9]\d{1,14}$/, "Invalid phone number"],
     },
     // For customer type guest, email is optional
@@ -22,8 +20,6 @@ const customerSchema = new mongoose.Schema(
       type: String,
       trim: true,
       lowercase: true,
-      unique: true,
-      sparse: true,
     },
     // Cusotmer fullname for display in tickets, receipts, profiles
     name: {
@@ -98,6 +94,14 @@ const customerSchema = new mongoose.Schema(
 );
 
 customerSchema.pre("save", async function (next) {
+  // If username is an empty string, set it to null to work with sparse index
+  if (this.username === "") {
+    this.username = null;
+  }
+  // If email is an empty string, set it to null to work with sparse index
+  if (this.email === "") {
+    this.email = null;
+  }
   // Only hash password if it's modified and user is admin/superadmin
   if (!this.isModified("password") || !this.password) {
     return next();
@@ -165,8 +169,9 @@ customerSchema.statics.findDeleted = function (query = {}) {
   return this.find({ ...query, isActive: false, deletedAt: { $ne: null } });
 };
 // Indexes
-customerSchema.index({ phone: 1 });
-customerSchema.index({ username: 1 });
+customerSchema.index({ phone: 1 }, { unique: true, sparse: true });
+customerSchema.index({ username: 1 }, { unique: true, sparse: true });
+customerSchema.index({ email: 1 }, { unique: true, sparse: true });
 customerSchema.index({ isActive: 1, deletedAt: 1 });
 customerSchema.index({ otpExpiresAt: 1 });
 customerSchema.index({ lastLogin: -1 });

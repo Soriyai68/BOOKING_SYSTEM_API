@@ -3,6 +3,7 @@ const User = require('../models/user.model');
 const { Role } = require('../data');
 const Providers = require('../data/providers');
 const logger = require('../utils/logger');
+const { createPhoneRegex } = require('../utils/helpers');
 
 /**
  * UserController - Comprehensive CRUD operations without Redis
@@ -19,12 +20,15 @@ class UserController {
   // Helper method to build search query
   static buildSearchQuery(search) {
     if (!search) return {};
-
-    return {
-      $or: [
+    const phoneRegex = createPhoneRegex(search);
+    const searchConditions = [
         { name: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } }
-      ]
+    ];
+    if (phoneRegex) {
+        searchConditions.push({ phone: { $regex: phoneRegex } });
+    }
+    return {
+      $or: searchConditions
     };
   }
 
@@ -678,15 +682,26 @@ class UserController {
 
       // Build search query
       let query = {};
+      const queryConditions = [];
 
       // Handle text search
       const searchFields = fields.length > 0 ? fields : ['name', 'phone'];
       const searchOptions = caseSensitive ? '' : 'i';
       const searchPattern = exact ? `^${searchQuery}$` : searchQuery;
 
-      query.$or = searchFields.map(field => ({
-        [field]: { $regex: searchPattern, $options: searchOptions }
-      }));
+      searchFields.forEach(field => {
+        if (field === 'phone') {
+            const phoneRegex = createPhoneRegex(searchQuery);
+            if (phoneRegex) {
+                queryConditions.push({ [field]: { $regex: phoneRegex } });
+            }
+        } else {
+            queryConditions.push({ [field]: { $regex: searchPattern, $options: searchOptions } });
+        }
+      });
+      if (queryConditions.length > 0) {
+        query.$or = queryConditions;
+      }
 
       // Handle filters
       if (role) query.role = role;

@@ -8,6 +8,7 @@ const {
 } = require("../models");
 const { Role, Providers } = require("../data");
 const logger = require("../utils/logger");
+const { createPhoneRegex } = require("../utils/helpers");
 
 class BookingController {
   // Helper method to validate ObjectId
@@ -71,14 +72,20 @@ class BookingController {
   static buildSearchQuery(query) {
     const { search } = query;
     if (!search) return {};
+    const phoneRegex = createPhoneRegex(search);
+
     const searchConditions = [
       { reference_code: { $regex: search, $options: "i" } },
       { "customer.name": { $regex: search, $options: "i" } },
-      { "customer.phone": { $regex: search, $options: "i" } },
       { "customer.email": { $regex: search, $options: "i" } },
       { "movie.title": { $regex: search, $options: "i" } },
       { "hall.hall_name": { $regex: search, $options: "i" } },
     ];
+
+    if (phoneRegex) {
+      searchConditions.push({ "customer.phone": { $regex: phoneRegex } });
+    }
+
     return { $or: searchConditions };
   }
   // --- GET ALL BOOKINGS ---
