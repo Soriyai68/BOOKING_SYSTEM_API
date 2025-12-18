@@ -222,6 +222,25 @@ class MovieController {
         });
       }
 
+      const releaseDate = new Date(movieData.release_date);
+      const endDate = new Date(movieData.end_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+  
+      if (releaseDate < today || endDate < today) {
+        return res.status(400).json({
+          success: false,
+          message: 'Release date and end date cannot be in the past.'
+        });
+      }
+  
+      if (endDate <= releaseDate) {
+        return res.status(400).json({
+          success: false,
+          message: 'End date must be after the release date.'
+        });
+      }
+
       // Check if movie already exists
       const existingMovie = await Movie.findOne({ 
         title: movieData.title.trim(),
@@ -288,6 +307,36 @@ class MovieController {
       }
 
       MovieController.validateObjectId(id);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+  
+      if (updateData.release_date) {
+        const newReleaseDate = new Date(updateData.release_date);
+        if (newReleaseDate < today) {
+          return res.status(400).json({ success: false, message: 'Release date cannot be set to a past date.' });
+        }
+      }
+  
+      if (updateData.end_date) {
+        const newEndDate = new Date(updateData.end_date);
+        if (newEndDate < today) {
+          return res.status(400).json({ success: false, message: 'End date cannot be set to a past date.' });
+        }
+      }
+  
+      if (updateData.release_date || updateData.end_date) {
+        const movieToUpdate = await Movie.findById(id);
+        if (!movieToUpdate) {
+          return res.status(404).json({ success: false, message: 'Movie not found' });
+        }
+        const releaseDate = updateData.release_date ? new Date(updateData.release_date) : movieToUpdate.release_date;
+        const endDate = updateData.end_date ? new Date(updateData.end_date) : movieToUpdate.end_date;
+  
+        if (endDate <= releaseDate) {
+          return res.status(400).json({ success: false, message: 'End date must be after the release date.' });
+        }
+      }
 
       // Remove sensitive fields
       delete updateData._id;
