@@ -59,6 +59,10 @@ const showtimeSchema = new mongoose.Schema(
 
 // Indexes
 showtimeSchema.index({ movie_id: 1, start_time: 1, status: 1 });
+showtimeSchema.index(
+  { hall_id: 1, show_date: 1, start_time: 1 },
+  { unique: true }
+);
 showtimeSchema.index({ hall_id: 1, start_time: 1 });
 showtimeSchema.index({ start_time: 1 });
 showtimeSchema.index({ status: 1 });

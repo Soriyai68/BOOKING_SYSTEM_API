@@ -418,12 +418,13 @@ class BookingController {
             await customer.save();
         }
       } else {
-        // This block should ideally not be reached due to Joi validation, but acts as a fallback.
-        return res.status(400).json({
-          success: false,
-          message:
-            "Booking request must include customerId, guestEmail, or phone.",
+        // --- Handle Anonymous Walk-in Booking ---
+        customer = new Customer({
+            customerType: 'walkin',
+            provider: Providers.PHONE,
+            isVerified: false,
         });
+        await customer.save();
       }
 
 

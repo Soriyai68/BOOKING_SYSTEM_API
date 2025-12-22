@@ -54,9 +54,10 @@ const createCustomerSchema = Joi.alternatives().try(
     name: Joi.string().trim().min(2).max(50).optional().empty(["", null]),
     phone: Joi.string()
       .pattern(/^\+?[1-9]\d{1,14}$/)
-      .required()
+      .optional()
+      .empty(["", null])
       .messages({
-        "any.required": "Phone number is required for walk-in customers.",
+        // "any.required": "Phone number is required for walk-in customers.", // Removed this message
         "string.pattern.base": "Please enter a valid phone number",
       }),
     email: Joi.string().email().optional().empty(["", null]).messages({
@@ -116,9 +117,10 @@ const updateCustomerSchema = Joi.alternatives().try(
     name: Joi.string().trim().min(2).max(50).optional().empty(["", null]),
     phone: Joi.string()
       .pattern(/^\+?[1-9]\d{1,14}$/)
-      .required()
+      .optional()
+      .empty(["", null])
       .messages({
-        "any.required": "Phone number is required for walk-in customers.",
+        // "any.required": "Phone number is required for walk-in customers.", // Removed this message
         "string.pattern.base": "Please enter a valid phone number",
       }),
     email: Joi.string().email().optional().empty(["", null]).messages({

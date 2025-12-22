@@ -10,11 +10,11 @@ const customerSchema = new mongoose.Schema(
       match: [/^\+?[1-9]\d{1,14}$/, "Invalid phone number"],
     },
     // For customer type guest, email is optional
-        email:{
-          type: String,
-          trim: true,
-          match: [/.+@.+\..+/, "Invalid email address"],
-        },
+    email: {
+      type: String,
+      trim: true,
+      match: [/.+@.+\..+/, "Invalid email address"],
+    },
     // Optional username for password login
     username: {
       type: String,
@@ -94,13 +94,17 @@ const customerSchema = new mongoose.Schema(
 );
 
 customerSchema.pre("save", async function (next) {
-  // If username is an empty string, set it to null to work with sparse index
-  if (this.username === "") {
-    this.username = null;
+  // If username is an empty string or null, set it to undefined to work with sparse index
+  if (this.username === "" || this.username === null) {
+    this.username = undefined;
   }
-  // If email is an empty string, set it to null to work with sparse index
-  if (this.email === "") {
-    this.email = null;
+  // If email is an empty string or null, set it to undefined to work with sparse index
+  if (this.email === "" || this.email === null) {
+    this.email = undefined;
+  }
+  // If phone is an empty string or null, set it to undefined to work with sparse index
+  if (this.phone === "" || this.phone === null) {
+    this.phone = undefined;
   }
   // Only hash password if it's modified and user is admin/superadmin
   if (!this.isModified("password") || !this.password) {

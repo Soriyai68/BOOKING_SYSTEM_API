@@ -73,12 +73,11 @@ const createBookingSchema = Joi.alternatives().try(
     customerId: Joi.forbidden().messages({"any.unknown": "customerId is not allowed for guestEmail bookings."}),
     phone: Joi.forbidden().messages({"any.unknown": "phone is not allowed for guestEmail bookings."}),
   }),
-  // 3. Booking by Phone (for walk-in customers)
+  // 3. Booking by Phone (for walk-in customers, phone is optional)
   Joi.object({
     ...baseBookingFields,
-    phone: Joi.string().pattern(/^\+?[1-9]\d{1,14}$/).required().messages({
+    phone: Joi.string().pattern(/^\+?[1-9]\d{1,14}$/).optional().messages({
         'string.pattern.base': 'Please enter a valid phone number for the walk-in customer',
-        'any.required': 'phone is required for walk-in bookings',
     }),
     customerId: Joi.forbidden().messages({"any.unknown": "customerId is not allowed for phone bookings."}),
     guestEmail: Joi.forbidden().messages({"any.unknown": "guestEmail is not allowed for phone bookings."}),

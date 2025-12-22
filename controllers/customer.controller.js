@@ -151,13 +151,6 @@ class CustomerController {
         });
       }
 
-      if (customerType === "walkin" && !phone) {
-        return res.status(400).json({
-          success: false,
-          message: "Phone is required for walk-in customers.",
-        });
-      }
-
       if (customerType === "guest" && !email) {
         return res.status(400).json({
           success: false,
