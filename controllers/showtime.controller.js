@@ -852,7 +852,6 @@ class ShowtimeController {
   }
 
   // 11. BULK CREATE SHOWTIMES
-  // BULK CREATE SHOWTIMES - simple version
   static async createBulk(req, res) {
     try {
       const { showtimes } = req.body;
