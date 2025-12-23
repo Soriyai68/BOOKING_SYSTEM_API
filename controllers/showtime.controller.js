@@ -26,16 +26,10 @@ class ShowtimeController {
   static buildFilterQuery(filters) {
     const query = {};
 
-    if (filters.status) {
-      query.status = filters.status;
-    }
-
-    if (filters.movie_id && mongoose.Types.ObjectId.isValid(filters.movie_id)) {
-      query.movie_id = new mongoose.Types.ObjectId(filters.movie_id);
-    }
-    if (filters.hall_id && mongoose.Types.ObjectId.isValid(filters.hall_id)) {
-      query.hall_id = new mongoose.Types.ObjectId(filters.hall_id);
-    }
+    const toObjectId = (id) =>
+      mongoose.Types.ObjectId.isValid(id)
+        ? new mongoose.Types.ObjectId(id)
+        : null;
 
     const today = new Date();
     const todayStart = new Date(
@@ -46,106 +40,66 @@ class ShowtimeController {
     const tomorrowStart = new Date(todayStart);
     tomorrowStart.setDate(todayStart.getDate() + 1);
 
-    const dayAfterTomorrowStart = new Date(todayStart);
-    dayAfterTomorrowStart.setDate(todayStart.getDate() + 2);
-
+    // current time in HH:mm format, zero-padded
     const currentTime = `${String(today.getHours()).padStart(2, "0")}:${String(
       today.getMinutes()
     ).padStart(2, "0")}`;
 
-    // Flag to determine if any explicit date filter is applied
-    const isExplicitDateFilterPresent =
-      filters.show_date || filters.dateFrom || filters.dateTo;
-    const isStatusFilterPresent = filters.status;
     const isForBooking =
-      filters.forBooking === true || filters.forBooking === "true"; // Expect 'forBooking=true' in query parameters
+      filters.forBooking === true || filters.forBooking === "true";
 
-    // Handle specific date filters first
-    if (filters.dateFrom || filters.dateTo) {
-      query.show_date = {};
-      if (filters.dateFrom) query.show_date.$gte = new Date(filters.dateFrom);
-      if (filters.dateTo) query.show_date.$lte = new Date(filters.dateTo);
+    /* ---------- Basic filters ---------- */
+    if (filters.status) query.status = filters.status;
 
-      // If for booking, ensure dateFrom is not in the past relative to today, and apply time filter for today.
-      if (isForBooking) {
-        // If the entire date range is in the past, return no showtimes.
-        if (query.show_date.$lte && query.show_date.$lte < todayStart) {
-          query.show_date = { $gte: tomorrowStart, $lt: tomorrowStart }; // Empty range
-        } else if (query.show_date.$gte && query.show_date.$gte < todayStart) {
-          // If range starts in past, adjust to start from today
-          query.show_date.$gte = todayStart;
-        } else if (!query.show_date.$gte) {
-          // If no start date but it's for booking, assume start from today
-          query.show_date.$gte = todayStart;
-        }
+    const movieId = toObjectId(filters.movie_id);
+    if (movieId) query.movie_id = movieId;
 
-        // If the date range includes today, apply start_time filter for today
-        const queryGte = query.show_date.$gte
-          ? new Date(query.show_date.$gte)
-          : todayStart;
-        const queryLte = query.show_date.$lte
-          ? new Date(query.show_date.$lte)
-          : new Date(today.getFullYear() + 1, 0, 1); // A future date
+    const hallId = toObjectId(filters.hall_id);
+    if (hallId) query.hall_id = hallId;
 
-        if (queryGte <= todayStart && queryLte >= todayStart) {
-          // If today is within the range
-          if (!query.$and) query.$and = [];
-          query.$and.push({ start_time: { $gte: currentTime } });
-        }
-      }
-    }
-    // If a single date is specified
-    else if (filters.show_date) {
+    /* ---------- Single date filter ---------- */
+    if (filters.show_date) {
       const day = new Date(filters.show_date);
       day.setHours(0, 0, 0, 0);
+
       const nextDay = new Date(day);
       nextDay.setDate(day.getDate() + 1);
 
-      // If for booking and the requested day is in the past, ensure no results
+      // Booking: block past date
       if (isForBooking && day < todayStart) {
-        query.show_date = { $gte: nextDay, $lt: nextDay }; // Effectively empty date range
-      } else {
-        query.show_date = {
-          $gte: day,
-          $lt: nextDay,
-        };
-        // If for booking and show_date is today, apply current time filter
-        if (isForBooking && day.getTime() === todayStart.getTime()) {
-          if (!query.$and) query.$and = [];
-          query.$and.push({ start_time: { $gte: currentTime } });
-        }
+        query.show_date = { $gte: nextDay, $lt: nextDay }; // empty
+        return query;
       }
-    }
-    // If no date filters are explicitly set AND no status filter
-    else if (!isExplicitDateFilterPresent && !isStatusFilterPresent) {
-      // Default behavior
-      if (isForBooking) {
-        // For booking: only upcoming showtimes for today, and all for tomorrow
-        query.$or = [
-          {
-            // Today's upcoming showtimes
-            show_date: { $gte: todayStart, $lt: tomorrowStart },
-            start_time: { $gte: currentTime },
-          },
-          {
-            // Tomorrow's showtimes (all)
-            show_date: { $gte: tomorrowStart, $lt: dayAfterTomorrowStart },
-          },
-        ];
-      } else {
-        // Original default for general view: all showtimes for today and tomorrow
-        query.$or = [
-          {
-            show_date: { $gte: todayStart, $lt: tomorrowStart },
-          },
-          {
-            show_date: { $gte: tomorrowStart, $lt: dayAfterTomorrowStart },
-          },
-        ];
+
+      query.show_date = { $gte: day, $lt: nextDay };
+
+      // Booking: today → only future times
+      if (isForBooking && day.getTime() === todayStart.getTime()) {
+        query.start_time = { $gte: currentTime };
       }
+
+      return query;
     }
+
+    /* ---------- Booking mode without date ---------- */
+    if (isForBooking) {
+      query.$or = [
+        // Today: only future showtimes
+        {
+          show_date: { $gte: todayStart, $lt: tomorrowStart },
+          start_time: { $gte: currentTime },
+        },
+        // Future dates: all showtimes
+        {
+          show_date: { $gte: tomorrowStart },
+        },
+      ];
+    }
+
+    // Non-booking mode → return all data
     return query;
   }
+
   //1.GET ALL SHOWTIMES
   static async getAll(req, res) {
     try {

@@ -55,14 +55,15 @@ class BookingController {
 
     // Date range filter for showtime.show_date
     if (filters.show_date) {
-      const day = new Date(filters.show_date);
-      day.setHours(0, 0, 0, 0); // Start of the day
-      const nextDay = new Date(day);
-      nextDay.setDate(day.getDate() + 1); // Start of the next day
+      const startDate = new Date(filters.show_date);
+      startDate.setUTCHours(0, 0, 0, 0);
+
+      const endDate = new Date(startDate);
+      endDate.setUTCDate(startDate.getUTCDate() + 1);
 
       showtimeDateFilter["showtime.show_date"] = {
-        $gte: day,
-        $lt: nextDay,
+        $gte: startDate,
+        $lt: endDate,
       };
     }
 

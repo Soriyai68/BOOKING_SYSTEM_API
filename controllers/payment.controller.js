@@ -313,6 +313,7 @@ class PaymentController {
           payment_method,
           currency: currency || "USD",
           status: "Completed",
+          paid: true,
           description: `Payment for booking ${booking.reference_code}`,
         });
 
