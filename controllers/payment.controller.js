@@ -414,7 +414,7 @@ static async checkBakongPayment(req, res) {
         // Update booking if exists
         if (payment.bookingId) {
           const booking = await Booking.findById(payment.bookingId);
-          if (booking && booking.status !== "Completed") {
+          if (booking && booking.booking_status !== "Confirmed") {
             await booking.markAsCompleted(payment._id);
           }
         }

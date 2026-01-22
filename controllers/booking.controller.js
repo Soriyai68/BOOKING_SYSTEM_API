@@ -457,16 +457,16 @@ class BookingController {
         return res.status(400).json({ success: false, message });
       }
 
-      const seatObjectIds = seats
-        .filter((id) => mongoose.Types.ObjectId.isValid(id))
-        .map((id) => new mongoose.Types.ObjectId(id));
-
-      if (seatObjectIds.length !== seats.length) {
+      if (seats.some(id => !mongoose.Types.ObjectId.isValid(id))) {
         return res.status(400).json({
           success: false,
           message: "Invalid seat ID format found in request.",
         });
       }
+
+      const seatObjectIds = [
+        ...new Set(seats.map(id => id.toString())),
+      ].map(id => new mongoose.Types.ObjectId(id));
 
       // 3. Check Seat Availability
       const existingSeatBookings = await SeatBooking.find({
@@ -527,7 +527,7 @@ class BookingController {
         customerId: customer._id, // Use the determined customer ID
         showtimeId,
         seats: seatObjectIds,
-        seat_count: seats.length,
+        seat_count: seatObjectIds.length,
         total_price,
         reference_code,
         payment_status: "Pending",

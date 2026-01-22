@@ -5,8 +5,11 @@ exports.seatSchema = require("./seatSchema");
 exports.hallSchema = require("./hallSchema");
 exports.showtimeSchema = require("./showtimeSchema");
 exports.bookingSchema = require("./bookingSchema");
-exports.bookingSchema = require("./bookingDetailSchema");
-exports.paymentsSchema = require("./paymentSchema");
-exports.promotion = require("./promotionSchema");
+exports.bookingDetailSchema = require("./bookingDetailSchema");
+exports.bookingTicketSchema = require("./bookingTicketSchema");
+exports.paymentSchema = require("./paymentSchema");
+exports.promotionSchema = require("./promotionSchema");
 exports.customerSchema = require("./customerSchema");
+exports.bookingTicketSchema = require("./bookingTicketSchema");
+
 

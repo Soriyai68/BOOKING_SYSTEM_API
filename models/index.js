@@ -7,6 +7,7 @@ exports.SeatBooking = require("./seatBooking.model");
 exports.SeatBookingHistory = require("./seatBookingHistory.model");
 exports.Movie = require("./movie.model");
 exports.Showtime = require("./showtime.model");
+exports.BookingTicket = require("./bookingTicket.model");
 exports.Booking = require("./booking.model");
 exports.Payment = require("./payment.model");
 exports.Invoice = require("./invoice.model");

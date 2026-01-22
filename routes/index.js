@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 // Import route modules
+const authRoutes = require('./auth.routes');
 const userRoutes = require('./users.routes');
 const seatRoutes = require('./seats.routes');
 const hallRoutes = require('./halls.routes');
@@ -12,15 +13,18 @@ const uploadRoutes = require('./upload.routes');
 const permissionRoutes = require('./permission.routes');
 const bookingRoutes = require('./bookings.routes');
 const bookingDetailRoutes = require('./bookingDetails.routes');
+const bookingTicketRoutes = require('./bookingTicket.routes');
 const invoiceRoutes = require('./invoices.routes');
 const paymentRoutes = require('./payments.routes');
 const promotionRoutes = require('./promotion.route');
 const seatBookingRoutes = require('./seatBookings.routes');
 const customerAuthRoutes = require('./customer.auth.routes');
 const customerRoutes = require('./customer.routes');
+const reportRoutes = require('./reports.routes');
 
 
 // Mount routes
+router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/seats', seatRoutes);
 router.use('/halls', hallRoutes);
@@ -31,11 +35,14 @@ router.use('/upload', uploadRoutes);
 router.use('/permissions', permissionRoutes);
 router.use('/bookings', bookingRoutes);
 router.use('/booking-details', bookingDetailRoutes);
+router.use('/booking-tickets', bookingTicketRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/promotions', promotionRoutes);
 router.use('/seat-bookings', seatBookingRoutes);
 router.use('/customers', customerRoutes);
+router.use('/customer/auth', customerAuthRoutes);
+router.use('/reports', reportRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {
@@ -53,6 +60,7 @@ router.get('/', (req, res) => {
     message: 'Movie Booking System API',
     version: '1.0.0',
     endpoints: {
+      auth: '/api/auth',
       users: '/api/users',
       seats: '/api/seats',
       halls: '/api/halls',
@@ -64,6 +72,7 @@ router.get('/', (req, res) => {
       bookings: '/api/bookings',
       showtimes: '/api/showtimes',
       bookingDetails: '/api/booking-details',
+      bookingTickets: '/api/booking-tickets',
       invoices: '/api/invoices',
       payments: '/api/payments',
       promotions: '/api/promotions',

@@ -31,6 +31,7 @@ const paymentRoutes = require("./routes/payments.routes");
 const seatBookingsRoutes = require("./routes/seatBookings.routes");
 const customerRoutes = require("./routes/customer.routes");
 const customerAuthRoutes = require("./routes/customer.auth.routes");
+
 const { custom } = require("joi");
 
 const app = express();

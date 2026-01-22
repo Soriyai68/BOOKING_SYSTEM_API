@@ -56,6 +56,13 @@ const permissions = [
   { name: 'bookings.delete', displayName: 'Delete Bookings', description: 'Can delete bookings', module: 'bookings' },
   { name: 'bookings.manage', displayName: 'Manage Bookings', description: 'Full booking management access', module: 'bookings' },
 
+  // Booking Ticket Management
+  { name: 'booking-tickets.view', displayName: 'View Booking Tickets', description: 'Can view booking tickets list', module: 'booking-tickets' },
+  { name: 'booking-tickets.create', displayName: 'Create Booking Tickets', description: 'Can create new booking tickets manually', module: 'booking-tickets' },
+  { name: 'booking-tickets.edit', displayName: 'Edit Booking Tickets', description: 'Can edit booking ticket information', module: 'booking-tickets' },
+  { name: 'booking-tickets.delete', displayName: 'Delete Booking Tickets', description: 'Can delete booking tickets', module: 'booking-tickets' },
+  { name: 'booking-tickets.manage', displayName: 'Manage Booking Tickets', description: 'Full booking ticket management access', module: 'booking-tickets' },
+
   // Booking Detail Management
   { name: 'bookingdetails.view', displayName: 'View Booking Details', description: 'Can view booking details', module: 'bookingdetails' },
   { name: 'bookingdetails.create', displayName: 'Create Booking Details', description: 'Can create new booking details', module: 'bookingdetails' },
@@ -155,6 +162,13 @@ const rolePermissions = {
     'bookings.delete',
     'bookings.manage',
 
+    // Booking Ticket Management
+    'booking-tickets.view',
+    'booking-tickets.create',
+    'booking-tickets.edit',
+    'booking-tickets.delete',
+    'booking-tickets.manage',
+
     // Booking Detail Management
     'bookingdetails.view',
     'bookingdetails.create',
@@ -234,6 +248,11 @@ const rolePermissions = {
     'bookings.create',
     'bookings.edit',
     'bookings.manage',
+
+    // Booking Ticket Management
+    'booking-tickets.view',
+    'booking-tickets.create',
+    'booking-tickets.edit',
 
     // Booking Detail Management (no delete)
     'bookingdetails.view',

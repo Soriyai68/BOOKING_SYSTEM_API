@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const logger = require("../utils/logger");
 const SeatBooking = mongoose.model("SeatBooking");
 const SeatBookingHistory = mongoose.model("SeatBookingHistory");
+const BookingTicket = mongoose.model("BookingTicket");
 
 const bookingSchema = new mongoose.Schema(
   {
@@ -130,7 +131,12 @@ bookingSchema.methods.isExpired = function () {
 };
 
 bookingSchema.methods.markAsCompleted = async function (paymentId) {
-  // Changed to async
+  if (this.booking_status === "Confirmed") {
+    logger.warn(
+      `Booking ${this.reference_code} (ID: ${this._id}) is already confirmed. Skipping ticket generation.`
+    );
+    return this;
+  }
   this.payment_status = "Completed";
   this.booking_status = "Confirmed";
   if (paymentId) {
@@ -162,6 +168,14 @@ bookingSchema.methods.markAsCompleted = async function (paymentId) {
     `Booking ${this.reference_code} (ID: ${this._id}) status updated to Completed. Payment ID: ${paymentId}.`
   );
 
+  // Fetch seat documents to generate tickets
+  const Seat = mongoose.model("Seat");
+  const seatDocs = await Seat.find({ _id: { $in: this.seats } });
+  const tempBooking = this.toObject();
+  tempBooking.seats = seatDocs;
+
+  await BookingTicket.generateTicketsForBooking(tempBooking);
+
   return this.save();
 };
 
@@ -185,6 +199,7 @@ bookingSchema.methods.cancelBooking = async function (
 
   return this.save();
 };
+
 
 // Mongoose middleware for auto-updating seat status has been removed.
 // The new design uses a separate SeatBooking collection to manage seat reservations per showtime.

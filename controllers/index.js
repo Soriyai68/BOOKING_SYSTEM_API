@@ -7,6 +7,8 @@ module.exports = {
     HallController: require('./hall.controller'),
     TheaterController: require('./theater.controller'),
     BookingController: require('./booking.controller'),
+    CustomerController: require('./customer.controller'),
+    BookingTicketController: require('./bookingTicket.controller'),
 
     BookingDetailController: require('./bookingDetail.controller'),
     PaymentController: require('./payment.controller'),
