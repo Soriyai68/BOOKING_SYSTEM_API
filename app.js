@@ -31,6 +31,7 @@ const paymentRoutes = require("./routes/payments.routes");
 const seatBookingsRoutes = require("./routes/seatBookings.routes");
 const customerRoutes = require("./routes/customer.routes");
 const customerAuthRoutes = require("./routes/customer.auth.routes");
+const previewRoutes = require("./routes/previews.routes");
 
 const { custom } = require("joi");
 
@@ -143,6 +144,8 @@ app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/seatBookings", seatBookingsRoutes);
 // customer
 app.use("/api/v1/customers", customerRoutes);
+// preview
+app.use("/api/v1/previews", previewRoutes);
 
 // 404 handler for undefined routes
 app.use((req, res) => {

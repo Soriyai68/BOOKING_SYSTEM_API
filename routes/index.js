@@ -21,6 +21,7 @@ const seatBookingRoutes = require('./seatBookings.routes');
 const customerAuthRoutes = require('./customer.auth.routes');
 const customerRoutes = require('./customer.routes');
 const reportRoutes = require('./reports.routes');
+const previewRoutes = require('./previews.routes');
 
 
 // Mount routes
@@ -43,6 +44,7 @@ router.use('/seat-bookings', seatBookingRoutes);
 router.use('/customers', customerRoutes);
 router.use('/customer/auth', customerAuthRoutes);
 router.use('/reports', reportRoutes);
+router.use('/previews', previewRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {
