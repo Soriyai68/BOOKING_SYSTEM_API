@@ -26,11 +26,15 @@ const envConfig = {
     origin: [
       "http://localhost:3000",
       "http://localhost:8081",
+      "http://localhost:5173", // Added for common Vite dev server port
+      "http://admin.localhost:3000",
+
+       // Added for admin subdomain
       "http://127.0.0.1:3000",
       "http://127.0.0.1:8081",
       "https://55383vkp-3000.asse.devtunnels.ms",
       "https://bvs045xm-3000.asse.devtunnels.ms",
-      CORS_ORIGIN,
+      CORS_ORIGIN, // Keep this for other potential origins from env var
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
