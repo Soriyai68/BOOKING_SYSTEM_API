@@ -57,6 +57,40 @@ const loginSchema = Joi.object({
     })
 });
 
+// Telegram Login Schema
+const telegramLoginSchema = Joi.object({
+  telegramData: Joi.object({
+    id: Joi.number().required().messages({
+      'any.required': 'Telegram ID is required',
+      'number.base': 'Telegram ID must be a number'
+    }),
+    first_name: Joi.string().optional().allow('').messages({
+      'string.empty': 'First name cannot be empty'
+    }),
+    last_name: Joi.string().optional().allow('').messages({
+      'string.empty': 'Last name cannot be empty'
+    }),
+    username: Joi.string().optional().allow('').messages({
+      'string.empty': 'Username cannot be empty'
+    }),
+    photo_url: Joi.string().uri().optional().allow('').messages({
+      'string.uri': 'Photo URL must be a valid URI',
+      'string.empty': 'Photo URL cannot be empty'
+    }),
+    auth_date: Joi.number().required().messages({
+      'any.required': 'Auth date is required',
+      'number.base': 'Auth date must be a number'
+    }),
+    hash: Joi.string().required().messages({
+      'any.required': 'Hash is required',
+      'string.empty': 'Hash cannot be empty'
+    }),
+  }).required().messages({
+    'any.required': 'Telegram data is required',
+    'object.base': 'Telegram data must be an object'
+  })
+});
+
 // Refresh token schema
 const refreshTokenSchema = Joi.object({
   refreshToken: Joi.string().required().messages({
@@ -141,6 +175,7 @@ module.exports = {
   sendOTPSchema,
   verifyOTPSchema,
   loginSchema,
+  telegramLoginSchema,
   refreshTokenSchema,
   logoutSchema,
   sessionIdParamSchema,

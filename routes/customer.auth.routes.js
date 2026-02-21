@@ -6,6 +6,7 @@ const {
   sendOTPSchema,
   verifyOTPSchema,
   loginSchema,
+  telegramLoginSchema,
   changePasswordSchema,
   sendResetOTPSchema,
   resetPasswordSchema
@@ -16,6 +17,9 @@ const router = express.Router();
 // OTP-based authentication
 router.post('/send-otp', validator(sendOTPSchema), CustomerAuthController.sendOTP);
 router.post('/verify-otp', validator(verifyOTPSchema), CustomerAuthController.verifyOTP);
+
+// Telegram authentication
+router.post('/telegram-login', validator(telegramLoginSchema), CustomerAuthController.telegramLogin);
 
 // Password-based authentication (optional)
 router.post('/login', validator(loginSchema), CustomerAuthController.login);

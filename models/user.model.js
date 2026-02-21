@@ -6,10 +6,16 @@ const Providers = require('../data/providers');
 const userSchema = new mongoose.Schema({
   phone: {
     type: String,
-    required: true,
-    unique: true,
     trim: true,
-    match: [/^\+?[1-9]\d{1,14}$/, 'Please enter a valid phone number']
+    match: [/^\+?[1-9]\d{1,14}$/, 'Please enter a valid phone number'],
+    required: function () {
+      // Required if not a Telegram user
+      return !this.telegramId;
+    },
+    index: {
+      unique: true,
+      sparse: true, // Allow multiple nulls which is needed for conditional uniqueness
+    },
   },
   name: {
     type: String,
@@ -18,12 +24,31 @@ const userSchema = new mongoose.Schema({
     minlength: 2,
     maxlength: 50
   },
+  username: {
+    type: String,
+    trim: true,
+    index: {
+      unique: true,
+      sparse: true,
+    },
+  },
+  telegramId: {
+    type: String,
+    index: {
+      unique: true,
+      sparse: true,
+    },
+  },
+  photoUrl: {
+    type: String,
+    trim: true
+  },
   // Password field for admin and superadmin
   password: {
     type: String,
     required: function() {
-      // Require password for all roles except 'user'
-      return this.role && this.role.toLowerCase() !== 'user';
+      // Require password for all roles except 'user', only for phone provider
+      return this.role && this.role.toLowerCase() !== 'user' && this.provider === Providers.PHONE;
     },
     minlength: [6, 'Password must be at least 6 characters long'],
     select: false // Don't include password in queries by default
@@ -103,7 +128,7 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 
 // Method to check if user requires password authentication
 userSchema.methods.requiresPassword = function() {
-  return this.role && this.role.toLowerCase() !== 'user';
+  return this.role && this.role.toLowerCase() !== 'user' && this.provider === Providers.PHONE;
 };
 
 // Instance method to soft delete user

@@ -4,6 +4,7 @@ const { Role } = require("../utils/constants");
 const logger = require("../utils/logger");
 const { Providers } = require("../data");
 const { createPhoneRegex } = require("../utils/helpers");
+const Telegram = require("../utils/telegram");
 
 class CustomerController {
   static validateObjectId(id) {

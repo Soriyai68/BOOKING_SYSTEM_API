@@ -3,6 +3,7 @@ const AuthService = require("../service/auth.service");
 const logger = require("../utils/logger");
 const Providers = require("../data/providers");
 const jwt = require("jsonwebtoken");
+const Telegram = require("../utils/telegram");
 
 const PREFIX = "customer_";
 
@@ -227,6 +228,128 @@ class CustomerAuthController {
       });
     } catch (error) {
       logger.error("Customer Verify OTP error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  }
+
+  // Authenticate/Register customer via Telegram
+  static async telegramLogin(req, res) {
+    try {
+      const { telegramData } = req.body;
+
+      if (!telegramData) {
+        return res.status(400).json({
+          success: false,
+          message: "Telegram authentication data is required.",
+        });
+      }
+
+      // 1. Validate Telegram data
+      const isValidHash = Telegram.validateTelegramAuth(telegramData);
+      const isValidDate = Telegram.isValidTelegramAuthDate(telegramData.auth_date);
+
+      if (!isValidHash || !isValidDate) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid Telegram authentication data.",
+        });
+      }
+
+      const { id, first_name, last_name, username, photo_url } = telegramData;
+
+      let customer = await Customer.findOne({ telegramId: id });
+      let isNewCustomer = false;
+
+      if (customer) {
+        // Existing customer, update last login and details if necessary
+        customer.lastLogin = new Date();
+        // Update name/username/photo_url if they changed in Telegram
+        customer.name = `${first_name || ''} ${last_name || ''}`.trim();
+        customer.username = username || customer.username;
+        customer.photoUrl = photo_url || customer.photoUrl;
+        await customer.save();
+        logger.info(`Customer logged in via Telegram: ${id}`);
+      } else {
+        // New customer registration via Telegram
+        const customerName = `${first_name || ''} ${last_name || ''}`.trim();
+        if (!customerName) {
+          return res.status(400).json({
+            success: false,
+            message: "Name is required for registration.",
+          });
+        }
+
+        const customerData = {
+          telegramId: id,
+          name: customerName,
+          username: username,
+          photoUrl: photo_url,
+          provider: Providers.TELEGRAM,
+          isVerified: true, // Telegram auth implies verification
+          lastLogin: new Date(),
+        };
+
+        customer = new Customer(customerData);
+        await customer.save();
+        isNewCustomer = true;
+        logger.info(`New customer registered via Telegram: ${id}`);
+      }
+
+      // Generate tokens (assuming AuthService can handle customerId and optionally telegramId/phone)
+      const tokens = AuthService.generateTokens({
+        customerId: customer._id,
+        // Pass phone if it exists, otherwise telegramId for token payload
+        phone: customer.phone, // Can be null
+        telegramId: customer.telegramId,
+        type: "customer",
+      });
+
+      // Store refresh token
+      await AuthService.storeRefreshToken(
+        customer._id,
+        tokens.refreshToken,
+        PREFIX,
+        {
+          customerId: customer._id.toString(),
+          userAgent: req.get("User-Agent") || "unknown",
+          ip: req.ip || req.connection.remoteAddress,
+          loginType: "telegram",
+        }
+      );
+
+      // Create session
+      const sessionId = await AuthService.createSession(customer._id, PREFIX, {
+        customerId: customer._id.toString(),
+        userAgent: req.get("User-Agent") || "unknown",
+        ip: req.ip || req.connection.remoteAddress,
+        loginType: "telegram",
+      });
+
+      res.status(200).json({
+        success: true,
+        message: isNewCustomer ? "Telegram registration successful" : "Telegram login successful",
+        data: {
+          customer: {
+            id: customer._id,
+            phone: customer.phone, // Can be null
+            name: customer.name,
+            username: customer.username,
+            telegramId: customer.telegramId,
+            photoUrl: customer.photoUrl,
+            isVerified: customer.isVerified,
+            customerType: customer.customerType,
+          },
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          sessionId,
+        },
+      });
+
+    } catch (error) {
+      logger.error("Customer Telegram login error:", error);
       res.status(500).json({
         success: false,
         message: "Internal server error",
