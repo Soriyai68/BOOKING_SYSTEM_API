@@ -20,13 +20,11 @@ class UserController {
   // Helper method to build search query
   static buildSearchQuery(search) {
     if (!search) return {};
-    const phoneRegex = createPhoneRegex(search);
     const searchConditions = [
-        { name: { $regex: search, $options: 'i' } },
+      { name: { $regex: search, $options: 'i' } },
+      { username: { $regex: search, $options: 'i' } },
+      { email: { $regex: search, $options: 'i' } }
     ];
-    if (phoneRegex) {
-        searchConditions.push({ phone: { $regex: phoneRegex } });
-    }
     return {
       $or: searchConditions
     };
@@ -208,34 +206,36 @@ class UserController {
       const userData = req.body;
 
       // Validate required fields
-      if (!userData.phone || !userData.name) {
+      if (!userData.username || !userData.email || !userData.name) {
         return res.status(400).json({
           success: false,
-          message: 'Phone and name are required'
+          message: 'Username, email, and name are required'
         });
       }
 
-      // Validate phone format
-      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-      if (!phoneRegex.test(userData.phone)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Please enter a valid phone number'
-        });
-      }
-
-      // Check if user already exists
-      const existingUser = await User.findOne({ phone: userData.phone });
-      if (existingUser) {
+      // Check if username already exists
+      const existingUsername = await User.findOne({ username: userData.username.toLowerCase() });
+      if (existingUsername) {
         return res.status(409).json({
           success: false,
-          message: 'User with this phone number already exists'
+          message: 'Username already exists'
+        });
+      }
+
+      // Check if email already exists
+      const existingEmail = await User.findOne({ email: userData.email.toLowerCase() });
+      if (existingEmail) {
+        return res.status(409).json({
+          success: false,
+          message: 'Email already exists'
         });
       }
 
       // Set default values
       const userToCreate = {
         ...userData,
+        username: userData.username.toLowerCase(),
+        email: userData.email.toLowerCase(),
         role: userData.role || Role.USER,
         provider: userData.provider || Providers.PHONE,
         isVerified: userData.isVerified || false,
@@ -271,9 +271,10 @@ class UserController {
       }
 
       if (error.code === 11000) {
+        const field = Object.keys(error.keyPattern)[0];
         return res.status(409).json({
           success: false,
-          message: 'User with this phone number already exists'
+          message: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`
         });
       }
 
@@ -329,6 +330,36 @@ class UserController {
           return res.status(409).json({
             success: false,
             message: 'Phone number is already in use'
+          });
+        }
+      }
+
+      // Validate username if being updated
+      if (updateData.username) {
+        updateData.username = updateData.username.toLowerCase();
+        const existingUsername = await User.findOne({
+          username: updateData.username,
+          _id: { $ne: id }
+        });
+        if (existingUsername) {
+          return res.status(409).json({
+            success: false,
+            message: 'Username is already in use'
+          });
+        }
+      }
+
+      // Validate email if being updated
+      if (updateData.email) {
+        updateData.email = updateData.email.toLowerCase();
+        const existingEmail = await User.findOne({
+          email: updateData.email,
+          _id: { $ne: id }
+        });
+        if (existingEmail) {
+          return res.status(409).json({
+            success: false,
+            message: 'Email is already in use'
           });
         }
       }
@@ -461,7 +492,7 @@ class UserController {
       // Soft delete using model method
       const deletedUser = await user.softDelete(req.user?.userId);
 
-      logger.info(`Soft deleted user: ${id} (${deletedUser.phone})`);
+      logger.info(`Soft deleted user: ${id} (${deletedUser.username})`);
 
       res.status(200).json({
         success: true,
@@ -524,7 +555,7 @@ class UserController {
       // Restore using model method
       const restoredUser = await user.restore(req.user?.userId);
 
-      logger.info(`Restored user: ${id} (${restoredUser.phone})`);
+      logger.info(`Restored user: ${id} (${restoredUser.username})`);
 
       res.status(200).json({
         success: true,
@@ -603,7 +634,8 @@ class UserController {
       // Store user info for logging before deletion
       const userInfo = {
         id: user._id,
-        phone: user.phone,
+        username: user.username,
+        email: user.email,
         name: user.name,
         role: user.role,
         wasDeleted: user.isDeleted()
@@ -625,7 +657,8 @@ class UserController {
         data: {
           deletedUser: {
             id: userInfo.id,
-            phone: userInfo.phone,
+            username: userInfo.username,
+            email: userInfo.email,
             name: userInfo.name,
             role: userInfo.role
           },
@@ -685,19 +718,12 @@ class UserController {
       const queryConditions = [];
 
       // Handle text search
-      const searchFields = fields.length > 0 ? fields : ['name', 'phone'];
+      const searchFields = fields.length > 0 ? fields : ['name', 'username', 'email'];
       const searchOptions = caseSensitive ? '' : 'i';
       const searchPattern = exact ? `^${searchQuery}$` : searchQuery;
 
       searchFields.forEach(field => {
-        if (field === 'phone') {
-            const phoneRegex = createPhoneRegex(searchQuery);
-            if (phoneRegex) {
-                queryConditions.push({ [field]: { $regex: phoneRegex } });
-            }
-        } else {
-            queryConditions.push({ [field]: { $regex: searchPattern, $options: searchOptions } });
-        }
+        queryConditions.push({ [field]: { $regex: searchPattern, $options: searchOptions } });
       });
       if (queryConditions.length > 0) {
         query.$or = queryConditions;
@@ -1011,6 +1037,71 @@ class UserController {
       res.status(500).json({
         success: false,
         message: 'Failed to update last login'
+      });
+    }
+  }
+
+  // Update profile photo
+  static async updateProfilePhoto(req, res) {
+    try {
+      const { id } = req.params;
+      const { photoUrl } = req.body;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: 'User ID is required'
+        });
+      }
+
+      if (!photoUrl) {
+        return res.status(400).json({
+          success: false,
+          message: 'Photo URL is required'
+        });
+      }
+
+      UserController.validateObjectId(id);
+
+      // Check if user exists
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      // Update photo URL
+      user.photoUrl = photoUrl;
+      if (req.user) {
+        user.updatedBy = req.user.userId;
+      }
+      await user.save();
+
+      // Return user without password
+      const userResponse = user.toObject();
+      delete userResponse.password;
+
+      logger.info(`Updated profile photo for user: ${id}`);
+
+      res.status(200).json({
+        success: true,
+        message: 'Profile photo updated successfully',
+        data: { user: userResponse }
+      });
+    } catch (error) {
+      if (error.message === 'Invalid user ID format') {
+        return res.status(400).json({
+          success: false,
+          message: error.message
+        });
+      }
+
+      logger.error('Update profile photo error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update profile photo'
       });
     }
   }

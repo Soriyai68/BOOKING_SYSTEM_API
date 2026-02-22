@@ -9,7 +9,7 @@ const router = express.Router();
 router.get(
     '/',
     authenticate,
-    authorize([Role.Admin, Role.SuperAdmin]),
+    // authorize([Role.Admin, Role.SuperAdmin]),
     validate(getAllBookingTicketsQuerySchema, 'query'),
     BookingTicketController.getAll
 );
@@ -17,7 +17,7 @@ router.get(
 router.get(
     '/:id',
     authenticate,
-    authorize([Role.Admin, Role.SuperAdmin, Role.User]),
+    // authorize([Role.Admin, Role.SuperAdmin, Role.User]),
     validate(bookingTicketIdParamSchema, 'params'),
     BookingTicketController.getById
 );
@@ -25,7 +25,7 @@ router.get(
 router.post(
     '/',
     authenticate,
-    authorize([Role.Admin, Role.SuperAdmin]),
+    // authorize([Role.Admin, Role.SuperAdmin]),
     validate(createBookingTicketSchema),
     BookingTicketController.create
 );
@@ -33,7 +33,7 @@ router.post(
 router.put(
     '/:id',
     authenticate,
-    authorize([Role.Admin, Role.SuperAdmin]),
+    // authorize([Role.Admin, Role.SuperAdmin]),
     validate(bookingTicketIdParamSchema, 'params'),
     validate(updateBookingTicketSchema),
     BookingTicketController.update
@@ -42,7 +42,7 @@ router.put(
 router.delete(
     '/:id',
     authenticate,
-    authorize([Role.Admin, Role.SuperAdmin]),
+    // authorize([Role.Admin, Role.SuperAdmin]),
     validate(bookingTicketIdParamSchema, 'params'),
     BookingTicketController.delete
 );

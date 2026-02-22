@@ -61,6 +61,13 @@ router.put('/:id/last-login',
   UserController.updateLastLogin
 );
 
+// PUT /api/users/:id/photo - Update profile photo
+router.put('/:id/photo',
+  middlewares.authenticate,
+  middlewares.validator(userSchema.userIdParamSchema, 'params'),
+  UserController.updateProfilePhoto
+);
+
 // DELETE /api/users/:id/force - Permanently delete user (SuperAdmin only)
 router.delete('/:id/force-delete',
   middlewares.authenticate,

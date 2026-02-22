@@ -14,12 +14,33 @@ const createUserSchema = Joi.object({
       'string.max': 'Name cannot exceed 50 characters'
     }),
   
-  phone: Joi.string()
-    .pattern(/^\+?[1-9]\d{1,14}$/)
+  username: Joi.string()
+    .trim()
+    .lowercase()
+    .pattern(/^[a-zA-Z0-9_]{3,30}$/)
     .required()
     .messages({
-      'string.pattern.base': 'Please enter a valid phone number',
-      'any.required': 'Phone number is required'
+      'string.empty': 'Username is required',
+      'string.pattern.base': 'Username must be 3-30 characters (letters, numbers, underscore only)',
+      'any.required': 'Username is required'
+    }),
+  
+  email: Joi.string()
+    .trim()
+    .lowercase()
+    .email()
+    .required()
+    .messages({
+      'string.empty': 'Email is required',
+      'string.email': 'Please enter a valid email address',
+      'any.required': 'Email is required'
+    }),
+  
+  phone: Joi.string()
+    .pattern(/^\+?[1-9]\d{1,14}$/)
+    .optional()
+    .messages({
+      'string.pattern.base': 'Please enter a valid phone number'
     }),
   
   // Password required for all roles except 'user'
@@ -62,8 +83,25 @@ const updateUserSchema = Joi.object({
       'string.max': 'Name cannot exceed 50 characters'
     }),
   
+  username: Joi.string()
+    .trim()
+    .lowercase()
+    .pattern(/^[a-zA-Z0-9_]{3,30}$/)
+    .messages({
+      'string.pattern.base': 'Username must be 3-30 characters (letters, numbers, underscore only)'
+    }),
+  
+  email: Joi.string()
+    .trim()
+    .lowercase()
+    .email()
+    .messages({
+      'string.email': 'Please enter a valid email address'
+    }),
+  
   phone: Joi.string()
     .pattern(/^\+?[1-9]\d{1,14}$/)
+    .optional()
     .messages({
       'string.pattern.base': 'Please enter a valid phone number'
     }),
@@ -235,12 +273,12 @@ const advancedSearchSchema = Joi.object({
     'any.required': 'Search query is required'
   }),
   fields: Joi.array()
-    .items(Joi.string().valid('name', 'phone'))
+    .items(Joi.string().valid('name', 'username', 'email', 'phone'))
     .optional()
-    .default(['name', 'phone']),
+    .default(['name', 'username', 'email']),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(10),
-  sortBy: Joi.string().valid('createdAt', 'name', 'phone', 'lastLogin', 'updatedAt').default('createdAt'),
+  sortBy: Joi.string().valid('createdAt', 'name', 'username', 'email', 'phone', 'lastLogin', 'updatedAt').default('createdAt'),
   sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
   exact: Joi.boolean().default(false),
   caseSensitive: Joi.boolean().default(false),
@@ -258,7 +296,7 @@ const advancedSearchSchema = Joi.object({
 const getAllUsersQuerySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(10),
-  sortBy: Joi.string().valid('createdAt', 'name', 'phone', 'lastLogin', 'updatedAt', 'role').default('createdAt'),
+  sortBy: Joi.string().valid('createdAt', 'name', 'username', 'email', 'phone', 'lastLogin', 'updatedAt', 'role').default('createdAt'),
   sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
   search: Joi.string().trim().max(100).optional(),
   role: Joi.string().trim().lowercase().optional(),

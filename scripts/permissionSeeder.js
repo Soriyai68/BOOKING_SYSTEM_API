@@ -91,6 +91,10 @@ const permissions = [
   { name: 'promotions.delete', displayName: 'Delete Promotions', description: 'Can delete promotions', module: 'promotions' },
   { name: 'promotions.manage', displayName: 'Manage Promotions', description: 'Full promotions management access', module: 'promotions' },
 
+  // Reports Management
+  { name: 'reports.view', displayName: 'View Reports', description: 'Can view system reports', module: 'reports' },
+  { name: 'reports.customer-frequency.view', displayName: 'View Customer Booking Frequency', description: 'Can view customer booking frequency report', module: 'reports' },
+
   // Dashboard & Analytics
   { name: 'dashboard.view', displayName: 'View Dashboard', description: 'Can access admin dashboard', module: 'dashboard' },
   { name: 'analytics.view', displayName: 'View Analytics', description: 'Can view system analytics and reports', module: 'analytics' },
@@ -197,6 +201,10 @@ const rolePermissions = {
     'promotions.delete',
     'promotions.manage',
 
+    // Reports
+    'reports.view',
+    'reports.customer-frequency.view',
+
     // Settings (view only)
     'settings.view',
   ],
@@ -277,6 +285,10 @@ const rolePermissions = {
     'promotions.create',
     'promotions.edit',
     'promotions.manage',
+
+    // Reports
+    'reports.view',
+    'reports.customer-frequency.view',
 
     // Settings (view only)
     'settings.view',

@@ -122,8 +122,11 @@ class AuthController {
             username: user.username,
             email: user.email,
             name: user.name,
+            phone: user.phone,
+            photoUrl: user.photoUrl,
             role: user.role,
             isVerified: user.isVerified,
+            lastLogin: user.lastLogin,
             createdAt: user.createdAt
           }
         }
@@ -266,8 +269,11 @@ class AuthController {
             username: user.username,
             email: user.email,
             name: user.name,
+            phone: user.phone,
+            photoUrl: user.photoUrl,
             role: user.role,
-            isVerified: user.isVerified
+            isVerified: user.isVerified,
+            lastLogin: user.lastLogin
           },
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
