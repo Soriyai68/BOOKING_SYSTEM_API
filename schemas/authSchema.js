@@ -1,44 +1,11 @@
 const Joi = require('joi');
 
-// Send OTP Schema (for regular users)
-const sendOTPSchema = Joi.object({
-  phone: Joi.string()
-    .pattern(/^\+?[1-9]\d{1,14}$/)
-    .required()
-    .messages({
-      'string.pattern.base': 'Please enter a valid phone number',
-      'any.required': 'Phone number is required'
-    })
-});
-
-// Verify OTP Schema (for regular users)
-const verifyOTPSchema = Joi.object({
-  phone: Joi.string()
-    .pattern(/^\+?[1-9]\d{1,14}$/)
-    .required()
-    .messages({
-      'string.pattern.base': 'Please enter a valid phone number',
-      'any.required': 'Phone number is required'
-    }),
-  otp: Joi.string()
-    .length(6)
-    .pattern(/^[0-9]+$/)
-    .required()
-    .messages({
-      'string.length': 'OTP must be 6 digits',
-      'string.pattern.base': 'OTP must contain only numbers',
-      'any.required': 'OTP is required'
-    })
-});
-
 // Admin Login Schema (for admin and superadmin)
 const adminLoginSchema = Joi.object({
-  phone: Joi.string()
-    .pattern(/^\+?[1-9]\d{1,14}$/)
+  username: Joi.string()
     .required()
     .messages({
-      'string.pattern.base': 'Please enter a valid phone number',
-      'any.required': 'Phone number is required'
+      'any.required': 'Username or Email is required'
     }),
   password: Joi.string()
     .min(6)
@@ -89,34 +56,12 @@ const changePasswordSchema = Joi.object({
   })
 });
 
-// Send reset OTP schema
-const sendResetOTPSchema = Joi.object({
-  phone: Joi.string()
-    .pattern(/^\+?[1-9]\d{1,14}$/)
-    .required()
-    .messages({
-      'string.pattern.base': 'Please enter a valid phone number',
-      'any.required': 'Phone number is required'
-    })
-});
-
-// Reset password schema
+// Reset password schema (no OTP — admin/superadmin tool)
 const resetPasswordSchema = Joi.object({
-  phone: Joi.string()
-    .pattern(/^\+?[1-9]\d{1,14}$/)
+  username: Joi.string()
     .required()
     .messages({
-      'string.pattern.base': 'Please enter a valid phone number',
-      'any.required': 'Phone number is required'
-    }),
-  otp: Joi.string()
-    .length(6)
-    .pattern(/^[0-9]+$/)
-    .required()
-    .messages({
-      'string.length': 'OTP must be 6 digits',
-      'string.pattern.base': 'OTP must contain only numbers',
-      'any.required': 'OTP is required'
+      'any.required': 'Username or email is required'
     }),
   newPassword: Joi.string().min(6).required().messages({
     'string.min': 'New password must be at least 6 characters',
@@ -130,20 +75,17 @@ const resetPasswordSchema = Joi.object({
 });
 
 module.exports = {
-  // Basic auth schemas
-  sendOTPSchema,
-  verifyOTPSchema,
+  // Admin auth
   adminLoginSchema,
-  
+
   // Token management schemas
   refreshTokenSchema,
   logoutSchema,
-  
+
   // Parameter schemas
   sessionIdParamSchema,
-  
+
   // Password management schemas
   changePasswordSchema,
-  sendResetOTPSchema,
   resetPasswordSchema
 };

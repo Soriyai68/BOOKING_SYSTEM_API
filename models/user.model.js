@@ -1,21 +1,23 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const { Role } = require('../data');
-const Providers = require('../data/providers');
 
 const userSchema = new mongoose.Schema({
-  phone: {
+  email: {
     type: String,
     trim: true,
-    match: [/^\+?[1-9]\d{1,14}$/, 'Please enter a valid phone number'],
-    required: function () {
-      // Required if not a Telegram user
-      return !this.telegramId;
-    },
-    index: {
-      unique: true,
-      sparse: true, // Allow multiple nulls which is needed for conditional uniqueness
-    },
+    lowercase: true,
+    match: [/.+@.+\..+/, 'Please enter a valid email'],
+    required: true,
+    index: { unique: true }
+  },
+  username: {
+    type: String,
+    trim: true,
+    required: true,
+    minlength: 2,
+    maxlength: 50,
+    index: { unique: true }
   },
   name: {
     type: String,
@@ -24,45 +26,24 @@ const userSchema = new mongoose.Schema({
     minlength: 2,
     maxlength: 50
   },
-  username: {
-    type: String,
-    trim: true,
-    index: {
-      unique: true,
-      sparse: true,
-    },
-  },
-  telegramId: {
-    type: String,
-    index: {
-      unique: true,
-      sparse: true,
-    },
-  },
   photoUrl: {
     type: String,
     trim: true
   },
-  // Password field for admin and superadmin
   password: {
     type: String,
-    required: function() {
-      // Require password for all roles except 'user', only for phone provider
-      return this.role && this.role.toLowerCase() !== 'user' && this.provider === Providers.PHONE;
+    required: function () {
+      // Require password for admin/superadmin
+      return this.role && this.role.toLowerCase() !== 'user';
     },
     minlength: [6, 'Password must be at least 6 characters long'],
-    select: false // Don't include password in queries by default
+    select: false
   },
   role: {
     type: String,
     trim: true,
     lowercase: true,
     default: Role.USER
-  },
-  provider: {
-    type: String,
-    enum: Object.values(Providers),
-    default: Providers.PHONE
   },
   isVerified: {
     type: Boolean,
@@ -75,7 +56,6 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  // Soft delete fields
   deletedAt: {
     type: Date,
     default: null
@@ -92,24 +72,26 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  // Track password changes
   passwordChangedAt: {
     type: Date,
+    default: null
+  },
+  createdBy: {
+    type: String,
+    default: null
+  },
+  updatedBy: {
+    type: String,
     default: null
   }
 }, {
   timestamps: true
 });
 
-// Pre-save middleware to hash password
-userSchema.pre('save', async function(next) {
-  // Only hash password if it's modified and user is admin/superadmin
-  if (!this.isModified('password') || (!this.password)) {
-    return next();
-  }
-  
+// Hash password before save
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password') || !this.password) return next();
   try {
-    // Hash password with cost of 12
     const saltRounds = 12;
     this.password = await bcrypt.hash(this.password, saltRounds);
     next();
@@ -118,21 +100,19 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Method to compare password
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  if (!this.password) {
-    return false;
-  }
+// Compare password method
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Method to check if user requires password authentication
-userSchema.methods.requiresPassword = function() {
-  return this.role && this.role.toLowerCase() !== 'user' && this.provider === Providers.PHONE;
+// Check if user requires password
+userSchema.methods.requiresPassword = function () {
+  return this.role && this.role.toLowerCase() !== 'user';
 };
 
-// Instance method to soft delete user
-userSchema.methods.softDelete = function(userId = null) {
+// Soft delete
+userSchema.methods.softDelete = function (userId = null) {
   this.isActive = false;
   this.deletedAt = new Date();
   this.deletedBy = userId;
@@ -141,8 +121,8 @@ userSchema.methods.softDelete = function(userId = null) {
   return this.save();
 };
 
-// Instance method to restore user
-userSchema.methods.restore = function(userId = null) {
+// Restore user
+userSchema.methods.restore = function (userId = null) {
   this.isActive = true;
   this.deletedAt = null;
   this.deletedBy = null;
@@ -151,38 +131,25 @@ userSchema.methods.restore = function(userId = null) {
   return this.save();
 };
 
-// Instance method to check if user is soft deleted
-userSchema.methods.isDeleted = function() {
+// Check if soft deleted
+userSchema.methods.isDeleted = function () {
   return this.deletedAt !== null;
 };
 
-// Static method to find active users (excluding soft deleted)
-userSchema.statics.findActive = function(query = {}) {
-  return this.find({
-    ...query,
-    isActive: true,
-    deletedAt: null
-  });
+// Static methods
+userSchema.statics.findActive = function (query = {}) {
+  return this.find({ ...query, isActive: true, deletedAt: null });
 };
 
-// Static method to find deleted users
-userSchema.statics.findDeleted = function(query = {}) {
-  return this.find({
-    ...query,
-    deletedAt: { $ne: null }
-  }).sort({ deletedAt: -1 });
+userSchema.statics.findDeleted = function (query = {}) {
+  return this.find({ ...query, deletedAt: { $ne: null } }).sort({ deletedAt: -1 });
 };
 
-// Static method to find users by role (active only)
-userSchema.statics.findByRole = function(role) {
-  return this.find({
-    role: role,
-    isActive: true,
-    deletedAt: null
-  });
+userSchema.statics.findByRole = function (role) {
+  return this.find({ role: role, isActive: true, deletedAt: null });
 };
 
-// Index for faster queries
+// Indexes
 userSchema.index({ role: 1 });
 userSchema.index({ deletedAt: 1 });
 userSchema.index({ isActive: 1, deletedAt: 1 });
