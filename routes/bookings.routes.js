@@ -13,7 +13,7 @@ router.get(
   "/analytics",
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
-  BookingController.getAnalytics
+  BookingController.getAnalytics,
 );
 
 // GET /api/bookings/deleted - Get deleted bookings (Admin/SuperAdmin only)
@@ -22,7 +22,7 @@ router.get(
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
   middlewares.validator(bookingSchema.paginationSchema, "query"),
-  BookingController.listDeleted
+  BookingController.listDeleted,
 );
 
 // PUT /api/bookings/:id/restore - Restore a deleted booking (Admin/SuperAdmin only)
@@ -31,7 +31,7 @@ router.put(
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
   middlewares.validator(bookingSchema.bookingIdParamSchema, "params"),
-  BookingController.restore
+  BookingController.restore,
 );
 
 // DELETE /api/bookings/:id/force-delete - Permanently delete a booking (Admin/SuperAdmin only)
@@ -40,7 +40,7 @@ router.delete(
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
   middlewares.validator(bookingSchema.bookingIdParamSchema, "params"),
-  BookingController.forceDelete
+  BookingController.forceDelete,
 );
 
 // === User-Specific Routes ===
@@ -51,7 +51,7 @@ router.patch(
   middlewares.authenticate,
   middlewares.authorize(Role.USER), // Ensure only users can access
   middlewares.validator(bookingSchema.bookingIdParamSchema, "params"),
-  BookingController.cancelUserBooking
+  BookingController.cancelUserBooking,
 );
 
 // === Standard CRUD Routes ===
@@ -62,7 +62,7 @@ router.get(
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.USER, Role.CASHIER),
   middlewares.validator(bookingSchema.getAllBookingsQuerySchema, "query"),
-  BookingController.getAll
+  BookingController.getAll,
 );
 
 // POST /api/bookings - Create a new booking
@@ -71,7 +71,7 @@ router.post(
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.USER, Role.CASHIER),
   middlewares.validator(bookingSchema.createBookingSchema),
-  BookingController.create
+  BookingController.create,
 );
 
 // GET /api/bookings/:id - Get a single booking by ID
@@ -80,7 +80,7 @@ router.get(
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.USER, Role.CASHIER),
   middlewares.validator(bookingSchema.bookingIdParamSchema, "params"),
-  BookingController.getById
+  BookingController.getById,
 );
 
 // PUT /api/bookings/:id - Update a booking
@@ -90,7 +90,16 @@ router.put(
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(bookingSchema.bookingIdParamSchema, "params"),
   middlewares.validator(bookingSchema.updateBookingSchema),
-  BookingController.update
+  BookingController.update,
+);
+
+// PATCH /api/bookings/:id/change-seat - Update seats for a booking
+router.patch(
+  "/:id/change-seat",
+  middlewares.authenticate,
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+  middlewares.validator(bookingSchema.bookingIdParamSchema, "params"),
+  BookingController.changeSeat,
 );
 
 // PATCH /api/bookings/:id/cancel - Cancel a booking (soft delete)
@@ -99,7 +108,7 @@ router.patch(
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(bookingSchema.bookingIdParamSchema, "params"),
-  BookingController.cancel
+  BookingController.cancel,
 );
 
 module.exports = router;

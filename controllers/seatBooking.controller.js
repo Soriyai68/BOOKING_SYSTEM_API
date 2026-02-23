@@ -20,7 +20,8 @@ class SeatBookingController {
   // Helper method for search and filter
   static filterBuilder(query) {
     const filter = {};
-    const { showtimeId, seatId, bookingId, status, seat_type, show_date } = query;
+    const { showtimeId, seatId, bookingId, status, seat_type, show_date } =
+      query;
 
     if (showtimeId) {
       SeatBookingController.validateObjectId(showtimeId);
@@ -108,8 +109,11 @@ class SeatBookingController {
       const skip = (pageNum - 1) * limitNum;
       const sort = { [sortBy]: sortOrder === "desc" ? -1 : 1 };
 
-      const { filter: initialFilter, seat_type, dateFilter } =
-        SeatBookingController.filterBuilder(filterParams);
+      const {
+        filter: initialFilter,
+        seat_type,
+        dateFilter,
+      } = SeatBookingController.filterBuilder(filterParams);
       const searchFilter = SeatBookingController.searchBuilder({ search });
 
       const pipeline = [
@@ -206,13 +210,41 @@ class SeatBookingController {
           $match: { "showtimeId.show_date": dateFilter.show_date },
         });
       }
+      // Group by bookingId, status, and showtimeId to consolidate seats
+      const groupingPipeline = [
+        ...pipeline,
+        {
+          $group: {
+            _id: {
+              bookingId: "$bookingId._id",
+              status: "$status",
+              showtimeId: "$showtimeId._id",
+            },
+            status: { $first: "$status" },
+            locked_until: { $first: "$locked_until" },
+            createdAt: { $first: "$createdAt" },
+            updatedAt: { $first: "$updatedAt" },
+            showtimeId: { $first: "$showtimeId" },
+            bookingId: { $first: "$bookingId" },
+            seats: {
+              $push: {
+                _id: "$seatId._id",
+                row: "$seatId.row",
+                seat_number: "$seatId.seat_number",
+                seat_identifier: "$seatId.seat_identifier",
+                seat_type: "$seatId.seat_type",
+              },
+            },
+          },
+        },
+      ];
+
       const [seatBookings, totalCountResult] = await Promise.all([
         SeatBooking.aggregate([
-          ...pipeline,
+          ...groupingPipeline,
           { $sort: sort },
           { $skip: skip },
           { $limit: limitNum },
-          // Project to shape the output similar to populate for consistency if needed
           {
             $project: {
               _id: 1,
@@ -231,13 +263,7 @@ class SeatBookingController {
                   title: "$showtimeId.movie_id.title",
                 },
               },
-              seatId: {
-                _id: "$seatId._id",
-                row: "$seatId.row",
-                seat_number: "$seatId.seat_number",
-                seat_type: "$seatId.seat_type",
-                seat_identifier: "$seatId.seat_identifier",
-              },
+              seats: 1,
               bookingId: {
                 _id: "$bookingId._id",
                 reference_code: "$bookingId.reference_code",
@@ -251,7 +277,7 @@ class SeatBookingController {
             },
           },
         ]),
-        SeatBooking.aggregate([...pipeline, { $count: "total" }]),
+        SeatBooking.aggregate([...groupingPipeline, { $count: "total" }]),
       ]);
 
       const totalCount =
@@ -316,7 +342,7 @@ class SeatBookingController {
 
       // 3. Create a map of seatId -> status for quick lookup
       const seatStatusMap = new Map(
-        seatBookings.map((sb) => [sb.seatId.toString(), sb.status])
+        seatBookings.map((sb) => [sb.seatId.toString(), sb.status]),
       );
 
       // 4. Map final status to each seat
@@ -482,7 +508,7 @@ class SeatBookingController {
         }
       }
       const unavailablePhysicalSeats = seats.filter(
-        (seat) => seat.status !== "active"
+        (seat) => seat.status !== "active",
       );
       if (unavailablePhysicalSeats.length > 0) {
         const seatIdentifiers = unavailablePhysicalSeats
@@ -644,7 +670,7 @@ class SeatBookingController {
       if (day.getTime() === today.getTime()) {
         const now = new Date();
         const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(
-          now.getMinutes()
+          now.getMinutes(),
         ).padStart(2, "0")}`;
         dateFilter.start_time = { $gte: currentTime };
       }
@@ -828,9 +854,37 @@ class SeatBookingController {
           $match: { "booking.customer.customerType": customerType },
         });
       }
+      // Group by bookingId, action, and showtimeId to consolidate seats
+      const groupingPipeline = [
+        ...pipeline,
+        {
+          $group: {
+            _id: {
+              bookingId: "$booking._id",
+              action: "$action",
+              showtimeId: "$showtime._id",
+            },
+            action: { $first: "$action" },
+            createdAt: { $first: "$createdAt" },
+            updatedAt: { $first: "$updatedAt" },
+            showtime: { $first: "$showtime" },
+            booking: { $first: "$booking" },
+            seats: {
+              $push: {
+                _id: "$seat._id",
+                row: "$seat.row",
+                seat_number: "$seat.seat_number",
+                seat_identifier: "$seat.seat_identifier",
+                seat_type: "$seat.seat_type",
+              },
+            },
+          },
+        },
+      ];
+
       const [histories, totalCountResult] = await Promise.all([
         SeatBookingHistory.aggregate([
-          ...pipeline,
+          ...groupingPipeline,
           { $sort: sort },
           { $skip: skip },
           { $limit: limitNum },
@@ -846,13 +900,7 @@ class SeatBookingController {
                 start_time: "$showtime.start_time",
                 movie: "$showtime.movie.title",
               },
-              seat: {
-                _id: "$seat._id",
-                row: "$seat.row",
-                seat_number: "$seat.seat_number",
-                seat_identifier: "$seat.seat_identifier",
-                seat_type: "$seat.seat_type",
-              },
+              seats: 1,
               booking: {
                 _id: "$booking._id",
                 reference_code: "$booking.reference_code",
@@ -864,7 +912,10 @@ class SeatBookingController {
             },
           },
         ]),
-        SeatBookingHistory.aggregate([...pipeline, { $count: "total" }]),
+        SeatBookingHistory.aggregate([
+          ...groupingPipeline,
+          { $count: "total" },
+        ]),
       ]);
 
       const totalCount =

@@ -121,7 +121,17 @@ class BookingController {
             from: "customers",
             localField: "customerId",
             foreignField: "_id",
-            pipeline: [{ $project: { _id: 1, name: 1, phone: 1, email: 1, customerType: 1} }],
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  phone: 1,
+                  email: 1,
+                  customerType: 1,
+                },
+              },
+            ],
             as: "customer",
           },
         },
@@ -234,7 +244,7 @@ class BookingController {
             ],
             as: "seats",
           },
-        }
+        },
       );
       // Count total
       const totalCountResult = await Booking.aggregate([
@@ -384,7 +394,8 @@ class BookingController {
           if (existingCustomer.isMemberCustomer()) {
             return res.status(409).json({
               success: false,
-              message: "This email is registered to a member account. Please log in to book.",
+              message:
+                "This email is registered to a member account. Please log in to book.",
             });
           }
           customer = existingCustomer;
@@ -402,32 +413,32 @@ class BookingController {
         const existingCustomer = await Customer.findOne({ phone });
 
         if (existingCustomer) {
-            if (existingCustomer.isMemberCustomer()) {
-                return res.status(409).json({
-                    success: false,
-                    message: "This phone number is registered to a member account. Please log in to book.",
-                });
-            }
-            customer = existingCustomer;
-        } else {
-            customer = new Customer({
-                phone: phone,
-                customerType: 'walkin',
-                provider: Providers.PHONE,
-                isVerified: false,
+          if (existingCustomer.isMemberCustomer()) {
+            return res.status(409).json({
+              success: false,
+              message:
+                "This phone number is registered to a member account. Please log in to book.",
             });
-            await customer.save();
+          }
+          customer = existingCustomer;
+        } else {
+          customer = new Customer({
+            phone: phone,
+            customerType: "walkin",
+            provider: Providers.PHONE,
+            isVerified: false,
+          });
+          await customer.save();
         }
       } else {
         // --- Handle Anonymous Walk-in Booking ---
         customer = new Customer({
-            customerType: 'walkin',
-            provider: Providers.PHONE,
-            isVerified: false,
+          customerType: "walkin",
+          provider: Providers.PHONE,
+          isVerified: false,
         });
         await customer.save();
       }
-
 
       // 2. Validations for Booking details (Showtime, Seats)
       if (
@@ -457,16 +468,16 @@ class BookingController {
         return res.status(400).json({ success: false, message });
       }
 
-      if (seats.some(id => !mongoose.Types.ObjectId.isValid(id))) {
+      if (seats.some((id) => !mongoose.Types.ObjectId.isValid(id))) {
         return res.status(400).json({
           success: false,
           message: "Invalid seat ID format found in request.",
         });
       }
 
-      const seatObjectIds = [
-        ...new Set(seats.map(id => id.toString())),
-      ].map(id => new mongoose.Types.ObjectId(id));
+      const seatObjectIds = [...new Set(seats.map((id) => id.toString()))].map(
+        (id) => new mongoose.Types.ObjectId(id),
+      );
 
       // 3. Check Seat Availability
       const existingSeatBookings = await SeatBooking.find({
@@ -477,15 +488,17 @@ class BookingController {
       if (existingSeatBookings.length > 0) {
         const populatedBookings = await SeatBooking.populate(
           existingSeatBookings,
-          { path: "seatId", select: "row seat_number" }
+          { path: "seatId", select: "row seat_number" },
         );
         const bookedSeatLabels = populatedBookings.map((sb) =>
-          sb.seatId ? `${sb.seatId.row}${sb.seatId.seat_number}` : "UnknownSeat"
+          sb.seatId
+            ? `${sb.seatId.row}${sb.seatId.seat_number}`
+            : "UnknownSeat",
         );
         return res.status(409).json({
           success: false,
           message: `Some selected seats are already booked or locked: ${bookedSeatLabels.join(
-            ", "
+            ", ",
           )}. Please choose different seats.`,
         });
       }
@@ -506,7 +519,7 @@ class BookingController {
         showDateTime.setMilliseconds(0);
 
         const thirtyMinutesBeforeShow = new Date(
-          showDateTime.getTime() - 30 * 60 * 1000
+          showDateTime.getTime() - 30 * 60 * 1000,
         );
 
         if (new Date() > thirtyMinutesBeforeShow) {
@@ -638,7 +651,7 @@ class BookingController {
               seatId: { $in: originalSeatIds },
               action: "booked",
             },
-            { $set: { action: "canceled" } }
+            { $set: { action: "canceled" } },
           );
         }
 
@@ -655,12 +668,14 @@ class BookingController {
               select: "row seat_number",
             });
             const labels = populated.map((sb) =>
-              sb.seatId ? `${sb.seatId.row}${sb.seatId.seat_number}` : "Unknown"
+              sb.seatId
+                ? `${sb.seatId.row}${sb.seatId.seat_number}`
+                : "Unknown",
             );
             throw new Error(
               `Cannot update booking. The following seats are already taken for the showtime: ${labels.join(
-                ", "
-              )}`
+                ", ",
+              )}`,
             );
           }
 
@@ -719,6 +734,87 @@ class BookingController {
     }
   }
 
+  // 4a. CHANGE SEATS
+  static async changeSeat(req, res) {
+    try {
+      const { id } = req.params;
+      const { seats, totalPrice } = req.body;
+      BookingController.validateObjectId(id);
+
+      const booking = await Booking.findById(id);
+      if (!booking) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Booking not found" });
+      }
+
+      const originalSeatIds = booking.seats.map((s) => s.toString());
+      const newSeatIds = seats.map((s) => s.toString());
+
+      // 1. Release original seats
+      if (originalSeatIds.length > 0) {
+        await SeatBooking.deleteMany({
+          bookingId: booking._id,
+          showtimeId: booking.showtimeId,
+        });
+
+        await SeatBookingHistory.updateMany(
+          {
+            bookingId: booking._id,
+            seatId: { $in: originalSeatIds },
+            action: "booked",
+          },
+          { $set: { action: "canceled" } },
+        );
+      }
+
+      // 2. Lock new seats
+      if (newSeatIds.length > 0) {
+        const existingBookings = await SeatBooking.find({
+          showtimeId: booking.showtimeId,
+          seatId: { $in: newSeatIds },
+        });
+
+        if (existingBookings.length > 0) {
+          throw new Error("One or more selected seats are already taken.");
+        }
+
+        const seatBookingDocs = newSeatIds.map((seatId) => ({
+          showtimeId: booking.showtimeId,
+          seatId,
+          bookingId: booking._id,
+          status: "locked",
+          locked_until:
+            booking.expired_at || new Date(Date.now() + 15 * 60 * 1000),
+        }));
+        await SeatBooking.insertMany(seatBookingDocs);
+
+        const historyDocs = newSeatIds.map((seatId) => ({
+          showtimeId: booking.showtimeId,
+          seatId,
+          bookingId: booking._id,
+          action: "booked",
+        }));
+        await SeatBookingHistory.insertMany(historyDocs);
+      }
+
+      booking.seats = newSeatIds;
+      booking.seat_count = newSeatIds.length;
+      if (totalPrice) booking.total_price = totalPrice;
+
+      await booking.save();
+
+      res.status(200).json({
+        success: true,
+        message: "Seats updated successfully",
+        data: { booking },
+      });
+    } catch (error) {
+      logger.error("Change seat error:", error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
   // 5. CANCEL BOOKING (SOFT DELETE)
   static async cancel(req, res) {
     try {
@@ -762,7 +858,7 @@ class BookingController {
       const booking = await Booking.findByIdAndUpdate(
         id,
         { deletedAt: null },
-        { new: true }
+        { new: true },
       );
 
       if (!booking) {
@@ -802,7 +898,7 @@ class BookingController {
       if (booking.seats && booking.seats.length > 0) {
         await SeatBookingHistory.updateMany(
           { bookingId: booking._id, action: "booked" },
-          { $set: { action: "canceled" } }
+          { $set: { action: "canceled" } },
         );
       }
 
@@ -811,7 +907,7 @@ class BookingController {
         bookingId: id,
       });
       logger.info(
-        `Deleted ${sbDeletedCount} SeatBooking records for permanently deleted booking ID: ${id}`
+        `Deleted ${sbDeletedCount} SeatBooking records for permanently deleted booking ID: ${id}`,
       );
 
       // Perform permanent deletion of the Booking
@@ -964,7 +1060,7 @@ class BookingController {
         booking.payment_status === "Pending"
       ) {
         await booking.cancelBooking(
-          "Found expired while fetching by reference"
+          "Found expired while fetching by reference",
         );
       }
 
