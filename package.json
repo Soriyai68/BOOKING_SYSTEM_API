@@ -8,7 +8,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed:permissions": "node scripts/permissionSeeder.js",
     "seed:users": "node scripts/seeder.js",
-    "seed:all": "npm run seed:permissions && npm run seed:users"
+    "seed:all": "npm run seed:permissions && npm run seed:users",
+    "ngrok": "node scripts/ngrok.js"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +17,7 @@
   "description": "",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.888.0",
+    "axios": "^1.13.5",
     "bakong-khqr": "^1.0.7",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.7.0",
@@ -43,6 +45,7 @@
     "winston": "^3.17.0"
   },
   "devDependencies": {
+    "ngrok": "^5.0.0-beta.2",
     "nodemon": "^3.1.10"
   }
 }

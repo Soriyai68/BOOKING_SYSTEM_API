@@ -48,6 +48,7 @@ class CustomerController {
       { email: { $regex: search, $options: "i" } },
       { name: { $regex: search, $options: "i" } },
       { username: { $regex: search, $options: "i" } },
+      { telegramId: { $regex: search, $options: "i" } },
     ];
     if (phoneRegex) {
       searchConditions.push({ phone: { $regex: phoneRegex } });
@@ -202,6 +203,11 @@ class CustomerController {
       const customer = new Customer(customerData);
       await customer.save();
 
+      // Notify admins
+      await Telegram.sendNotificationToAdmins(
+        `👤 <b>New Customer Created by Admin</b>\nName: ${customer.name}\nPhone: ${customer.phone || "N/A"}\nProvider: ${customer.provider || "manual"}\nEmail: ${customer.email || "N/A"}\nType: ${customer.customerType}`,
+      );
+
       res.status(201).json({
         success: true,
         message: "Customer created successfully",
@@ -345,7 +351,7 @@ class CustomerController {
       }
 
       logger.warn(
-        `PERMANENT DELETION: Customer ${customer._id} permanently deleted by ${req.user.userId}`
+        `PERMANENT DELETION: Customer ${customer._id} permanently deleted by ${req.user.userId}`,
       );
       res
         .status(200)

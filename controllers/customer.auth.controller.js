@@ -8,239 +8,20 @@ const Telegram = require("../utils/telegram");
 const PREFIX = "customer_";
 
 class CustomerAuthController {
-  // Send OTP for registration or login
-  static async sendOTP(req, res) {
-    try {
-      const { phone } = req.body || {};
-
-      if (!phone) {
-        return res.status(400).json({
-          success: false,
-          message: "Phone number is required",
-        });
-      }
-
-      if (!AuthService.isValidPhone(phone)) {
-        return res.status(400).json({
-          success: false,
-          message: "Please enter a valid phone number",
-        });
-      }
-
-      // Check rate limiting
-      const rateLimit = await AuthService.checkOTPRateLimit(phone, PREFIX);
-      if (!rateLimit.allowed) {
-        return res.status(429).json({
-          success: false,
-          message: rateLimit.message,
-        });
-      }
-
-      // Check if OTP already sent recently
-      const existingOTP = await AuthService.checkExistingOTP(phone, PREFIX);
-      if (existingOTP.exists) {
-        return res.status(429).json({
-          success: false,
-          message: `OTP already sent. Please wait ${Math.ceil(
-            existingOTP.ttl / 60
-          )} minutes before requesting again.`,
-        });
-      }
-
-      // Generate and store OTP
-      const otp = AuthService.generateOTP();
-      const storeResult = await AuthService.storeOTP(phone, otp, PREFIX);
-
-      if (!storeResult.success) {
-        return res.status(500).json({
-          success: false,
-          message: "Failed to generate OTP. Please try again.",
-        });
-      }
-
-      // Update rate limit
-      await AuthService.updateRateLimit(phone, PREFIX);
-
-      // Send OTP via SMS
-      const smsResult = await AuthService.sendOTP(phone, otp, "login");
-
-      if (!smsResult.success) {
-        await AuthService.deleteOTP(phone, PREFIX);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to send OTP. Please try again.",
-        });
-      }
-
-      logger.info(`Customer OTP sent to phone: ${phone}`);
-
-      res.status(200).json({
-        success: true,
-        message: "OTP sent successfully",
-        data: {
-          phone,
-          otp,
-          expiresIn: "5 minutes",
-        },
-      });
-    } catch (error) {
-      logger.error("Customer Send OTP error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
-    }
-  }
-
-  // Verify OTP and register/login customer
-  static async verifyOTP(req, res) {
-    try {
-      const { phone, otp, name, username, password } = req.body || {};
-
-      if (!phone || !otp) {
-        return res.status(400).json({
-          success: false,
-          message: "Phone number and OTP are required",
-        });
-      }
-
-      // Verify OTP
-      const otpResult = await AuthService.verifyOTP(phone, otp, PREFIX);
-      if (!otpResult.valid) {
-        return res.status(400).json({
-          success: false,
-          message: otpResult.message,
-        });
-      }
-
-      let customer = await Customer.findOne({ phone });
-      let isNewCustomer = false;
-
-      if (customer) {
-        if (!customer.isActive) {
-          return res.status(403).json({
-            success: false,
-            message:
-              "Your account has been deactivated. Please contact support.",
-          });
-        }
-
-        customer.lastLogin = new Date();
-        customer.isVerified = true;
-        await customer.save();
-
-        logger.info(`Customer logged in: ${phone}`);
-      } else {
-        if (!name || name.trim().length < 2) {
-          return res.status(400).json({
-            success: false,
-            message: "Name is required for registration (minimum 2 characters)",
-          });
-        }
-
-        // If username is provided, check for uniqueness
-        if (username) {
-          const existingCustomer = await Customer.findOne({
-            username: username.trim().toLowerCase(),
-          });
-          if (existingCustomer) {
-            return res.status(409).json({
-              success: false,
-              message:
-                "This username is already taken. Please choose another one.",
-            });
-          }
-        }
-
-        const customerData = {
-          phone,
-          name: name.trim(),
-          provider: Providers.PHONE,
-          isVerified: true,
-          lastLogin: new Date(),
-        };
-
-        if (username) {
-          customerData.username = username.trim().toLowerCase();
-        }
-        
-        // If password is provided during registration, add it
-        if (password) {
-          if (password.length < 6) {
-            return res.status(400).json({
-              success: false,
-              message: "Password must be at least 6 characters long",
-            });
-          }
-          customerData.password = password;
-          customerData.passwordChangedAt = new Date();
-        }
-
-        customer = new Customer(customerData);
-
-        await customer.save();
-        isNewCustomer = true;
-        logger.info(`New customer registered: ${phone}`);
-      }
-
-      // Generate tokens
-      const tokens = AuthService.generateTokens({
-        customerId: customer._id,
-        phone: customer.phone,
-        type: "customer",
-      });
-
-      // Store refresh token
-      await AuthService.storeRefreshToken(
-        customer._id,
-        tokens.refreshToken,
-        PREFIX,
-        {
-          customerId: customer._id.toString(),
-          userAgent: req.get("User-Agent") || "unknown",
-          ip: req.ip || req.connection.remoteAddress,
-        }
-      );
-
-      // Create session
-      const sessionId = await AuthService.createSession(customer._id, PREFIX, {
-        customerId: customer._id.toString(),
-        phone: customer.phone,
-        userAgent: req.get("User-Agent") || "unknown",
-        ip: req.ip || req.connection.remoteAddress,
-      });
-
-      res.status(200).json({
-        success: true,
-        message: isNewCustomer ? "Registration successful" : "Login successful",
-        data: {
-          customer: {
-            id: customer._id,
-            phone: customer.phone,
-            name: customer.name,
-            isVerified: customer.isVerified,
-            customerType: customer.customerType, // Add customerType to response
-          },
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          sessionId,
-        },
-      });
-    } catch (error) {
-      logger.error("Customer Verify OTP error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
-    }
-  }
-
-  // Authenticate/Register customer via Telegram
+  // Authenticate/Register customer via Telegram (Standard Widget)
   static async telegramLogin(req, res) {
     try {
-      const { telegramData } = req.body;
+      const {
+        id,
+        first_name,
+        last_name,
+        username,
+        photo_url,
+        auth_date,
+        hash,
+      } = req.body;
 
-      if (!telegramData) {
+      if (!id || !auth_date || !hash) {
         return res.status(400).json({
           success: false,
           message: "Telegram authentication data is required.",
@@ -248,8 +29,8 @@ class CustomerAuthController {
       }
 
       // 1. Validate Telegram data
-      const isValidHash = Telegram.validateTelegramAuth(telegramData);
-      const isValidDate = Telegram.isValidTelegramAuthDate(telegramData.auth_date);
+      const isValidHash = Telegram.validateTelegramAuth(req.body);
+      const isValidDate = Telegram.isValidTelegramAuthDate(Number(auth_date));
 
       if (!isValidHash || !isValidDate) {
         return res.status(401).json({
@@ -258,37 +39,30 @@ class CustomerAuthController {
         });
       }
 
-      const { id, first_name, last_name, username, photo_url } = telegramData;
-
       let customer = await Customer.findOne({ telegramId: id });
       let isNewCustomer = false;
 
+      const customerName =
+        `${first_name || ""} ${last_name || ""}`.trim() ||
+        username ||
+        `user_${id}`;
+
       if (customer) {
-        // Existing customer, update last login and details if necessary
         customer.lastLogin = new Date();
-        // Update name/username/photo_url if they changed in Telegram
-        customer.name = `${first_name || ''} ${last_name || ''}`.trim();
+        customer.name = customerName;
         customer.username = username || customer.username;
         customer.photoUrl = photo_url || customer.photoUrl;
         await customer.save();
         logger.info(`Customer logged in via Telegram: ${id}`);
       } else {
-        // New customer registration via Telegram
-        const customerName = `${first_name || ''} ${last_name || ''}`.trim();
-        if (!customerName) {
-          return res.status(400).json({
-            success: false,
-            message: "Name is required for registration.",
-          });
-        }
-
         const customerData = {
           telegramId: id,
           name: customerName,
           username: username,
           photoUrl: photo_url,
           provider: Providers.TELEGRAM,
-          isVerified: true, // Telegram auth implies verification
+          customerType: "member",
+          isVerified: true,
           lastLogin: new Date(),
         };
 
@@ -296,58 +70,27 @@ class CustomerAuthController {
         await customer.save();
         isNewCustomer = true;
         logger.info(`New customer registered via Telegram: ${id}`);
+
+        // Send welcome message
+        await Telegram.sendMessage(
+          id,
+          `🎉 <b>Welcome to Movie Booking, ${customer.name}!</b>\n\nYour account has been successfully registered via Telegram.`,
+        );
+
+        // Notify admins
+        await Telegram.sendNotificationToAdmins(
+          `🆕 <b>New Customer (via Telegram)</b>\nName: ${customer.name}\nProvider: telegram\nProvider ID: ${id}\nUser: @${username || "N/A"}`,
+        );
       }
 
-      // Generate tokens (assuming AuthService can handle customerId and optionally telegramId/phone)
-      const tokens = AuthService.generateTokens({
-        customerId: customer._id,
-        // Pass phone if it exists, otherwise telegramId for token payload
-        phone: customer.phone, // Can be null
-        telegramId: customer.telegramId,
-        type: "customer",
-      });
-
-      // Store refresh token
-      await AuthService.storeRefreshToken(
-        customer._id,
-        tokens.refreshToken,
-        PREFIX,
-        {
-          customerId: customer._id.toString(),
-          userAgent: req.get("User-Agent") || "unknown",
-          ip: req.ip || req.connection.remoteAddress,
-          loginType: "telegram",
-        }
+      // Handle session and tokens
+      return await CustomerAuthController.handleAuthSuccess(
+        req,
+        res,
+        customer,
+        isNewCustomer,
+        "telegram",
       );
-
-      // Create session
-      const sessionId = await AuthService.createSession(customer._id, PREFIX, {
-        customerId: customer._id.toString(),
-        userAgent: req.get("User-Agent") || "unknown",
-        ip: req.ip || req.connection.remoteAddress,
-        loginType: "telegram",
-      });
-
-      res.status(200).json({
-        success: true,
-        message: isNewCustomer ? "Telegram registration successful" : "Telegram login successful",
-        data: {
-          customer: {
-            id: customer._id,
-            phone: customer.phone, // Can be null
-            name: customer.name,
-            username: customer.username,
-            telegramId: customer.telegramId,
-            photoUrl: customer.photoUrl,
-            isVerified: customer.isVerified,
-            customerType: customer.customerType,
-          },
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          sessionId,
-        },
-      });
-
     } catch (error) {
       logger.error("Customer Telegram login error:", error);
       res.status(500).json({
@@ -357,115 +100,151 @@ class CustomerAuthController {
     }
   }
 
-  // Customer login with password (optional)
-  static async login(req, res) {
+  // Authenticate/Register customer via Telegram Mini App
+  static async telegramWebAppLogin(req, res) {
     try {
-      const { phone, password } = req.body || {};
+      const { initData, phone_number } = req.body;
 
-      if (!phone || !password) {
+      if (!initData) {
         return res.status(400).json({
           success: false,
-          message: "Phone number and password are required",
+          message: "Missing initData.",
         });
       }
 
-      const customer = await Customer.findOne({ phone }).select("+password");
+      // 1. Validate Telegram Mini App data
+      const userData = Telegram.validateTelegramWebAppAuth(initData);
 
-      if (!customer) {
+      if (!userData) {
         return res.status(401).json({
           success: false,
-          message: "Invalid credentials",
+          message: "Invalid Telegram Mini App data.",
         });
       }
 
-      if (!customer.isActive) {
-        return res.status(403).json({
-          success: false,
-          message: "Your account has been deactivated. Please contact support.",
-        });
-      }
+      const id = userData.id.toString();
+      const { first_name, last_name, username, photo_url } = userData;
 
-      // Ensure only 'member' customers can log in with a password
-      if (!customer.isMemberCustomer()) {
-        return res.status(403).json({
-          success: false,
-          message: "Password login is not available for this account type.",
-        });
-      }
+      let customer = await Customer.findOne({ telegramId: id });
+      let isNewCustomer = false;
 
-      if (!customer.requiresPassword()) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Password not set. Please use OTP login or set up a password first.",
-        });
-      }
+      const customerName =
+        `${first_name || ""} ${last_name || ""}`.trim() ||
+        username ||
+        `user_${id}`;
 
-      const isPasswordValid = await customer.comparePassword(password);
-      if (!isPasswordValid) {
-        return res.status(401).json({
-          success: false,
-          message: "Invalid credentials",
-        });
-      }
+      if (customer) {
+        customer.lastLogin = new Date();
+        customer.name = customerName;
+        customer.username = username || customer.username;
+        customer.photoUrl = photo_url || customer.photoUrl;
 
-      customer.lastLogin = new Date();
-      await customer.save();
-
-      // Generate tokens
-      const tokens = AuthService.generateTokens({
-        customerId: customer._id,
-        phone: customer.phone,
-        type: "customer",
-      });
-
-      // Store refresh token
-      await AuthService.storeRefreshToken(
-        customer._id,
-        tokens.refreshToken,
-        PREFIX,
-        {
-          customerId: customer._id.toString(),
-          userAgent: req.get("User-Agent") || "unknown",
-          ip: req.ip || req.connection.remoteAddress,
-          loginType: "password",
+        // Update phone number if provided by Mini App
+        if (phone_number) {
+          customer.phone = phone_number;
         }
+
+        await customer.save();
+        logger.info(`Customer logged in via Telegram Mini App: ${id}`);
+      } else {
+        const customerData = {
+          telegramId: id,
+          name: customerName,
+          username: username,
+          phone: phone_number,
+          photoUrl: photo_url,
+          provider: Providers.TELEGRAM,
+          customerType: "member",
+          isVerified: true,
+          lastLogin: new Date(),
+        };
+
+        customer = new Customer(customerData);
+        await customer.save();
+        isNewCustomer = true;
+        logger.info(`New customer registered via Telegram Mini App: ${id}`);
+
+        // Send welcome message
+        await Telegram.sendMessage(
+          id,
+          `🎉 <b>Welcome to Movie Booking, ${customer.name}!</b>\n\nYour account has been successfully registered via Telegram Mini App.`,
+        );
+
+        // Notify admins
+        await Telegram.sendNotificationToAdmins(
+          `🆕 <b>New Customer (via Mini App)</b>\nName: ${customer.name}\nProvider: telegram-webapp\nProvider ID: ${id}\nUser: @${username || "N/A"}\nPhone: ${phone_number || "N/A"}`,
+        );
+      }
+
+      // Handle session and tokens
+      return await CustomerAuthController.handleAuthSuccess(
+        req,
+        res,
+        customer,
+        isNewCustomer,
+        "telegram-webapp",
       );
-
-      // Create session
-      const sessionId = await AuthService.createSession(customer._id, PREFIX, {
-        customerId: customer._id.toString(),
-        phone: customer.phone,
-        userAgent: req.get("User-Agent") || "unknown",
-        ip: req.ip || req.connection.remoteAddress,
-        loginType: "password",
-      });
-
-      logger.info(`Customer logged in with password: ${phone}`);
-
-      res.status(200).json({
-        success: true,
-        message: "Login successful",
-        data: {
-          customer: {
-            id: customer._id,
-            phone: customer.phone,
-            name: customer.name,
-            isVerified: customer.isVerified,
-            customerType: customer.customerType, // Add customerType to response
-          },
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          sessionId,
-        },
-      });
     } catch (error) {
-      logger.error("Customer login error:", error);
+      logger.error("Customer Telegram WebApp login error:", error);
       res.status(500).json({
         success: false,
         message: "Internal server error",
       });
     }
+  }
+
+  // Helper method to handle successful authentication
+  static async handleAuthSuccess(req, res, customer, isNewCustomer, loginType) {
+    // Generate tokens
+    const tokens = AuthService.generateTokens({
+      customerId: customer._id,
+      phone: customer.phone,
+      telegramId: customer.telegramId,
+      type: "customer",
+    });
+
+    // Store refresh token
+    await AuthService.storeRefreshToken(
+      customer._id,
+      tokens.refreshToken,
+      PREFIX,
+      {
+        customerId: customer._id.toString(),
+        userAgent: req.get("User-Agent") || "unknown",
+        ip: req.ip || req.connection.remoteAddress,
+        loginType: loginType,
+      },
+    );
+
+    // Create session
+    const sessionId = await AuthService.createSession(customer._id, PREFIX, {
+      customerId: customer._id.toString(),
+      userAgent: req.get("User-Agent") || "unknown",
+      ip: req.ip || req.connection.remoteAddress,
+      loginType: loginType,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: isNewCustomer
+        ? `${loginType} registration successful`
+        : `${loginType} login successful`,
+      data: {
+        customer: {
+          id: customer._id,
+          phone: customer.phone,
+          name: customer.name,
+          username: customer.username,
+          telegramId: customer.telegramId,
+          photoUrl: customer.photoUrl,
+          isVerified: customer.isVerified,
+          customerType: customer.customerType,
+        },
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        sessionId,
+      },
+    });
   }
 
   // Logout customer
@@ -524,7 +303,7 @@ class CustomerAuthController {
   static async getProfile(req, res) {
     try {
       const customer = await Customer.findById(req.customer.customerId).select(
-        "-__v"
+        "-__v",
       );
 
       if (!customer) {
@@ -542,9 +321,11 @@ class CustomerAuthController {
             phone: customer.phone,
             name: customer.name,
             username: customer.username,
+            telegramId: customer.telegramId,
+            photoUrl: customer.photoUrl,
             isVerified: customer.isVerified,
             createdAt: customer.createdAt,
-            customerType: customer.customerType, // Add customerType to response
+            customerType: customer.customerType,
           },
         },
       });
@@ -590,7 +371,7 @@ class CustomerAuthController {
       const validation = await AuthService.validateRefreshToken(
         decoded.customerId,
         refreshToken,
-        PREFIX
+        PREFIX,
       );
       if (!validation.valid) {
         return res.status(401).json({
@@ -610,6 +391,7 @@ class CustomerAuthController {
       const newAccessToken = AuthService.generateAccessTokenOnly({
         customerId: customer._id,
         phone: customer.phone,
+        telegramId: customer.telegramId,
         type: "customer",
       });
 
@@ -672,7 +454,7 @@ class CustomerAuthController {
       const deleted = await AuthService.deleteSession(
         customerId,
         sessionId,
-        PREFIX
+        PREFIX,
       );
 
       if (deleted) {
@@ -689,277 +471,6 @@ class CustomerAuthController {
       }
     } catch (error) {
       logger.error("Customer logout session error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
-    }
-  }
-
-  // Change password for authenticated customer
-  static async changePassword(req, res) {
-    try {
-      const { currentPassword, newPassword } = req.body || {};
-      const customerId = req.customer.customerId;
-
-      if (!newPassword) {
-        return res.status(400).json({
-          success: false,
-          message: "New password is required",
-        });
-      }
-
-      const customer = await Customer.findById(customerId).select("+password");
-
-      if (!customer) {
-        return res.status(404).json({
-          success: false,
-          message: "Customer not found",
-        });
-      }
-
-      const hasPassword = customer.password && customer.password.length > 0;
-
-      if (hasPassword) {
-        if (!currentPassword) {
-          return res.status(400).json({
-            success: false,
-            message: "Current password is required to change password",
-          });
-        }
-
-        const isCurrentPasswordValid = await customer.comparePassword(
-          currentPassword
-        );
-        if (!isCurrentPasswordValid) {
-          return res.status(400).json({
-            success: false,
-            message: "Current password is incorrect",
-          });
-        }
-
-        const isSamePassword = await customer.comparePassword(newPassword);
-        if (isSamePassword) {
-          return res.status(400).json({
-            success: false,
-            message: "New password must be different from current password",
-          });
-        }
-      }
-
-      customer.password = newPassword;
-      customer.passwordChangedAt = new Date();
-      await customer.save();
-
-      const isFirstTimeSetup = !hasPassword;
-
-      if (hasPassword) {
-        await AuthService.deleteRefreshToken(customerId, PREFIX);
-        await AuthService.deleteAllSessions(customerId, PREFIX);
-        logger.info(
-          `All customer sessions cleared after password change: ${customerId}`
-        );
-      }
-
-      logger.info(
-        `Password ${isFirstTimeSetup ? "set up" : "changed"} for customer: ${
-          customer.phone
-        }`
-      );
-
-      const message = isFirstTimeSetup
-        ? "Password set up successfully. You can now login using your phone number and password."
-        : "Password changed successfully. Please login again with your new password.";
-
-      res.status(200).json({
-        success: true,
-        message,
-        data: {
-          isFirstTimeSetup,
-          requiresReauth: hasPassword,
-        },
-      });
-    } catch (error) {
-      logger.error("Customer change password error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
-    }
-  }
-
-  // Send OTP for password reset
-  static async sendResetOTP(req, res) {
-    try {
-      const { phone } = req.body || {};
-
-      if (!phone) {
-        return res.status(400).json({
-          success: false,
-          message: "Phone number is required",
-        });
-      }
-
-      if (!AuthService.isValidPhone(phone)) {
-        return res.status(400).json({
-          success: false,
-          message: "Please enter a valid phone number",
-        });
-      }
-
-      const customer = await Customer.findOne({ phone });
-
-      if (!customer) {
-        return res.status(404).json({
-          success: false,
-          message: "Customer not found",
-        });
-      }
-
-      const resetPrefix = `${PREFIX}reset_`;
-
-      // Check rate limiting
-      const rateLimit = await AuthService.checkOTPRateLimit(phone, resetPrefix);
-      if (!rateLimit.allowed) {
-        return res.status(429).json({
-          success: false,
-          message:
-            "Too many password reset requests. Please try again after an hour.",
-        });
-      }
-
-      // Check if OTP already sent recently
-      const existingOTP = await AuthService.checkExistingOTP(
-        phone,
-        resetPrefix
-      );
-      if (existingOTP.exists) {
-        return res.status(429).json({
-          success: false,
-          message: `Password reset OTP already sent. Please wait ${Math.ceil(
-            existingOTP.ttl / 60
-          )} minutes before requesting again.`,
-        });
-      }
-
-      // Generate and store OTP
-      const otp = AuthService.generateOTP();
-      const storeResult = await AuthService.storeOTP(
-        phone,
-        otp,
-        resetPrefix,
-        300,
-        "password_reset"
-      );
-
-      if (!storeResult.success) {
-        return res.status(500).json({
-          success: false,
-          message: "Failed to generate OTP. Please try again.",
-        });
-      }
-
-      // Update rate limit
-      await AuthService.updateRateLimit(phone, resetPrefix);
-
-      // Send OTP via SMS
-      const smsResult = await AuthService.sendOTP(phone, otp, "password_reset");
-
-      if (!smsResult.success) {
-        await AuthService.deleteOTP(phone, resetPrefix);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to send password reset OTP. Please try again.",
-        });
-      }
-
-      logger.info(`Customer password reset OTP sent to phone: ${phone}`);
-
-      res.status(200).json({
-        success: true,
-        message: "Password reset OTP sent successfully",
-        data: {
-          phone,
-          expiresIn: "5 minutes",
-        },
-      });
-    } catch (error) {
-      logger.error("Customer send reset OTP error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
-    }
-  }
-
-  // Reset password using OTP
-  static async resetPassword(req, res) {
-    try {
-      const { phone, otp, newPassword } = req.body || {};
-
-      if (!phone || !otp || !newPassword) {
-        return res.status(400).json({
-          success: false,
-          message: "Phone number, OTP, and new password are required",
-        });
-      }
-
-      if (!AuthService.isValidPhone(phone)) {
-        return res.status(400).json({
-          success: false,
-          message: "Please enter a valid phone number",
-        });
-      }
-
-      const resetPrefix = `${PREFIX}reset_`;
-
-      // Verify OTP
-      const otpResult = await AuthService.verifyOTP(phone, otp, resetPrefix);
-      if (!otpResult.valid) {
-        return res.status(400).json({
-          success: false,
-          message: otpResult.message,
-        });
-      }
-
-      const customer = await Customer.findOne({ phone }).select("+password");
-
-      if (!customer) {
-        return res.status(404).json({
-          success: false,
-          message: "Customer not found",
-        });
-      }
-
-      const hasPassword = customer.password && customer.password.length > 0;
-
-      if (hasPassword) {
-        const isSamePassword = await customer.comparePassword(newPassword);
-        if (isSamePassword) {
-          return res.status(400).json({
-            success: false,
-            message: "New password must be different from current password",
-          });
-        }
-      }
-
-      customer.password = newPassword;
-      customer.passwordChangedAt = new Date();
-      await customer.save();
-
-      // Clear all sessions
-      await AuthService.deleteRefreshToken(customer._id, PREFIX);
-      await AuthService.deleteAllSessions(customer._id, PREFIX);
-
-      logger.info(`Customer password reset: ${phone}`);
-
-      res.status(200).json({
-        success: true,
-        message:
-          "Password reset successfully. Please login with your new password.",
-      });
-    } catch (error) {
-      logger.error("Customer reset password error:", error);
       res.status(500).json({
         success: false,
         message: "Internal server error",

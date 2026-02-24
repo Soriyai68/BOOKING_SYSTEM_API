@@ -24,21 +24,27 @@ const envConfig = {
   env: NODE_ENV,
   cors: {
     origin: [
+      "https://janette-semiexposed-carline.ngrok-free.dev",
       "http://localhost:3000",
+      "http://admin.localhost:3000",
+      "https://movie-booking-ticket-9e569.web.app",
+      "https://movie-booking-ticket-9e569.firebaseapp.com",
       "http://localhost:8081",
       "http://localhost:5173", // Added for common Vite dev server port
-      "http://admin.localhost:3000",
 
       // Added for admin subdomain
       "http://127.0.0.1:3000",
       "http://127.0.0.1:8081",
-      "https://55383vkp-3000.asse.devtunnels.ms",
-      "https://bvs045xm-3000.asse.devtunnels.ms",
       CORS_ORIGIN, // Keep this for other potential origins from env var
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "ngrok-skip-browser-warning",
+    ],
   },
   // Telegram Bot
   telegram: {

@@ -84,16 +84,35 @@ const customerSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
-    // Track password changes
+    // Telegram integration fields
+    telegramId: {
+      type: String,
+      trim: true,
+      unique: true,
+      sparse: true,
+    },
+    photoUrl: {
+      type: String,
+      trim: true,
+    },
+    isTelegramNotificationsEnabled: {
+      type: Boolean,
+      default: true,
+    },
+
     passwordChangedAt: {
       type: Date,
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 customerSchema.pre("save", async function (next) {
+  // Handle telegramId similarly to username/email/phone
+  if (this.telegramId === "" || this.telegramId === null) {
+    this.telegramId = undefined;
+  }
   // If username is an empty string or null, set it to undefined to work with sparse index
   if (this.username === "" || this.username === null) {
     this.username = undefined;
@@ -176,6 +195,7 @@ customerSchema.statics.findDeleted = function (query = {}) {
 customerSchema.index({ phone: 1 }, { unique: true, sparse: true });
 customerSchema.index({ username: 1 }, { unique: true, sparse: true });
 customerSchema.index({ email: 1 }, { unique: true, sparse: true });
+customerSchema.index({ telegramId: 1 }, { unique: true, sparse: true });
 customerSchema.index({ isActive: 1, deletedAt: 1 });
 customerSchema.index({ otpExpiresAt: 1 });
 customerSchema.index({ lastLogin: -1 });
