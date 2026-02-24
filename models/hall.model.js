@@ -29,30 +29,30 @@ const hallSchema = new mongoose.Schema(
       enum: ["2d", "standard", "imax", "3d", "4dx", "vip"],
       default: "standard",
     },
-    capacity: {
-      type: Object,
-      default: {
-        standard: 0,
-        premium: 0,
-        vip: 0,
-        wheelchair: 0,
-        recliner: 0,
-      },
-    },
-    dimensions: {
-      width: {
-        type: Number,
-        min: 1,
-        max: 100,
-        default: 10,
-      },
-      height: {
-        type: Number,
-        min: 1,
-        max: 100,
-        default: 10,
-      },
-    },
+    // capacity: {
+    //   type: Object,
+    //   default: {
+    //     standard: 0,
+    //     premium: 0,
+    //     vip: 0,
+    //     wheelchair: 0,
+    //     recliner: 0,
+    //   },
+    // },
+    // dimensions: {
+    //   width: {
+    //     type: Number,
+    //     min: 1,
+    //     max: 100,
+    //     default: 10,
+    //   },
+    //   height: {
+    //     type: Number,
+    //     min: 1,
+    //     max: 100,
+    //     default: 10,
+    //   },
+    // },
     status: {
       type: String,
       enum: ["active", "maintenance", "closed", "renovation"],
