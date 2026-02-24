@@ -237,7 +237,7 @@ class BookingController {
                   status: 1,
                   noted: 1,
                   seat_identifier: {
-                    $concat: ["$row", { $toString: "$seat_number" }],
+                    $concat: ["$row", "-", { $toString: "$seat_number" }],
                   },
                 },
               },
@@ -346,7 +346,7 @@ class BookingController {
           seat_number: seatObj.seat_number,
           seat_type: seatObj.seat_type,
           status: seatObj.status,
-          seat_identifier: `${seatObj.row}${seatObj.seat_number}`,
+          seat_identifier: `${seatObj.row}-${seatObj.seat_number}`,
         };
       });
 
@@ -492,7 +492,7 @@ class BookingController {
         );
         const bookedSeatLabels = populatedBookings.map((sb) =>
           sb.seatId
-            ? `${sb.seatId.row}${sb.seatId.seat_number}`
+            ? `${sb.seatId.row}-${sb.seatId.seat_number}`
             : "UnknownSeat",
         );
         return res.status(409).json({
@@ -669,7 +669,7 @@ class BookingController {
             });
             const labels = populated.map((sb) =>
               sb.seatId
-                ? `${sb.seatId.row}${sb.seatId.seat_number}`
+                ? `${sb.seatId.row}-${sb.seatId.seat_number}`
                 : "Unknown",
             );
             throw new Error(

@@ -78,7 +78,9 @@ const seatSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  },
 );
 
 // Index for faster queries - Note: unique constraint will be handled in application logic for multi-seat
@@ -91,12 +93,14 @@ seatSchema.index({ seat_type: 1 });
 const dropOldIndex = async () => {
   try {
     if (mongoose.connection.readyState === 1) {
-      const collection = mongoose.connection.collection('seats');
+      const collection = mongoose.connection.collection("seats");
       const indexes = await collection.indexes();
-      const oldIndex = indexes.find(idx => idx.name === 'row_1_seat_number_1');
+      const oldIndex = indexes.find(
+        (idx) => idx.name === "row_1_seat_number_1",
+      );
       if (oldIndex) {
-        await collection.dropIndex('row_1_seat_number_1');
-        logger.info('Dropped old seat index: row_1_seat_number_1');
+        await collection.dropIndex("row_1_seat_number_1");
+        logger.info("Dropped old seat index: row_1_seat_number_1");
       }
     }
   } catch (error) {
@@ -108,7 +112,7 @@ const dropOldIndex = async () => {
 if (mongoose.connection.readyState === 1) {
   dropOldIndex();
 } else {
-  mongoose.connection.once('open', dropOldIndex);
+  mongoose.connection.once("open", dropOldIndex);
 }
 
 // Instance method to soft delete seat
@@ -138,12 +142,12 @@ seatSchema.statics.findByType = function (seatType) {
 
 // Virtual for full seat identifier
 seatSchema.virtual("seat_identifier").get(function () {
-  return `${this.row}${this.seat_number}`;
+  return `${this.row}-${this.seat_number}`;
 });
 
 // Virtual for seat display name
 seatSchema.virtual("display_name").get(function () {
-  return `Seat ${this.row}${this.seat_number} (${this.seat_type})`;
+  return `Seat ${this.row}-${this.seat_number} (${this.seat_type})`;
 });
 
 // Instance method to update status
@@ -171,12 +175,12 @@ seatSchema.post("save", async function () {
   try {
     await Hall.updateTotalSeatsForHall(this.hall_id);
     logger.info(
-      `Updated total_seats for hall ${this.hall_id} after seat save.`
+      `Updated total_seats for hall ${this.hall_id} after seat save.`,
     );
   } catch (error) {
     logger.error(
       `Failed to update total_seats for hall ${this.hall_id} after seat save:`,
-      error
+      error,
     );
     // Log the error but don't prevent the seat from being saved.
   }

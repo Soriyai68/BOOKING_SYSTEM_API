@@ -190,6 +190,7 @@ class SeatBookingController {
             "seatId.seat_identifier": {
               $concat: [
                 { $toString: "$seatId.row" },
+                "-",
                 { $toString: "$seatId.seat_number" },
               ],
             },
@@ -814,6 +815,7 @@ class SeatBookingController {
             "seat.seat_identifier": {
               $concat: [
                 { $toString: "$seat.row" },
+                "-",
                 { $toString: "$seat.seat_number" },
               ],
             },

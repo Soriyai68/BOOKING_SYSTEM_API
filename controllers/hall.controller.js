@@ -1,8 +1,7 @@
 const mongoose = require("mongoose");
-const { Hall, Showtime } = require("../models")
+const { Hall, Showtime } = require("../models");
 const { Role } = require("../data");
 const logger = require("../utils/logger");
-
 
 /**
  * HallController - Comprehensive CRUD operations for hall management
@@ -271,7 +270,7 @@ class HallController {
           }
         } catch (theaterError) {
           logger.error(
-            `Failed to update theater capacity: ${theaterError.message}`
+            `Failed to update theater capacity: ${theaterError.message}`,
           );
           // Don't fail the hall creation, just log the error
         }
@@ -383,9 +382,7 @@ class HallController {
             const oldTheater = await Theater.findById(oldTheaterId);
             if (oldTheater) {
               await oldTheater.updateTotalHalls();
-              logger.info(
-                `Updated hall count for old theater ${oldTheaterId}`
-              );
+              logger.info(`Updated hall count for old theater ${oldTheaterId}`);
             }
 
             // Recalculate for new theater
@@ -396,7 +393,7 @@ class HallController {
             }
           } catch (theaterError) {
             logger.error(
-              `Failed to update theater hall counts: ${theaterError.message}`
+              `Failed to update theater hall counts: ${theaterError.message}`,
             );
             // Don't fail the hall update, just log the error
           }
@@ -497,12 +494,12 @@ class HallController {
           if (theater) {
             await theater.updateTotalHalls();
             logger.info(
-              `Updated capacity for theater ${theater._id} after deleting hall ${deletedHall._id}`
+              `Updated capacity for theater ${theater._id} after deleting hall ${deletedHall._id}`,
             );
           }
         } catch (theaterError) {
           logger.error(
-            `Failed to update theater capacity after deleting hall: ${theaterError.message}`
+            `Failed to update theater capacity after deleting hall: ${theaterError.message}`,
           );
           // Don't fail the hall deletion, just log the error
         }
@@ -574,12 +571,12 @@ class HallController {
           if (theater) {
             await theater.updateTotalHalls();
             logger.info(
-              `Updated hall count for theater ${theater._id} after restoring hall ${restoredHall._id}`
+              `Updated hall count for theater ${theater._id} after restoring hall ${restoredHall._id}`,
             );
           }
         } catch (theaterError) {
           logger.error(
-            `Failed to update theater hall count after restoring hall: ${theaterError.message}`
+            `Failed to update theater hall count after restoring hall: ${theaterError.message}`,
           );
           // Don't fail the hall restoration, just log the error
         }
@@ -660,7 +657,7 @@ class HallController {
             deletedSeats: deletedSeats.length,
             seatIdentifiers: associatedSeats.map((seat) => ({
               identifier:
-                seat.seat_identifier || `${seat.row}${seat.seat_number}`,
+                seat.seat_identifier || `${seat.row}-${seat.seat_number}`,
               status: seat.deletedAt ? "deleted" : "active",
             })),
           },
@@ -673,8 +670,12 @@ class HallController {
       });
 
       if (associatedShowtimes.length > 0) {
-        const activeShowtimes = associatedShowtimes.filter((showtime) => !showtime.deletedAt);
-        const deletedShowtimes = associatedShowtimes.filter((showtime) => showtime.deletedAt);
+        const activeShowtimes = associatedShowtimes.filter(
+          (showtime) => !showtime.deletedAt,
+        );
+        const deletedShowtimes = associatedShowtimes.filter(
+          (showtime) => showtime.deletedAt,
+        );
 
         return res.status(409).json({
           success: false,
@@ -709,12 +710,12 @@ class HallController {
           if (theater) {
             await theater.updateTotalHalls();
             logger.info(
-              `Updated hall count for theater ${theater._id} before force deleting hall ${id}`
+              `Updated hall count for theater ${theater._id} before force deleting hall ${id}`,
             );
           }
         } catch (theaterError) {
           logger.error(
-            `Failed to update theater hall count during force delete: ${theaterError.message}`
+            `Failed to update theater hall count during force delete: ${theaterError.message}`,
           );
         }
       }
@@ -727,7 +728,7 @@ class HallController {
           deletedBy: req.user.userId,
           deletedAt: new Date().toISOString(),
           action: "FORCE_DELETE_HALL",
-        }
+        },
       );
 
       res.status(200).json({
@@ -792,8 +793,8 @@ class HallController {
           deletedBy: hall.deletedBy,
           daysSinceDeleted: hall.deletedAt
             ? Math.floor(
-              (Date.now() - new Date(hall.deletedAt)) / (1000 * 60 * 60 * 24)
-            )
+                (Date.now() - new Date(hall.deletedAt)) / (1000 * 60 * 60 * 24),
+              )
             : null,
         },
         restoreInfo: {
@@ -874,7 +875,7 @@ class HallController {
       const updatedHall = await hall.updateStatus(status, req.user?.userId);
 
       logger.info(
-        `Updated hall status: ${id} (${hall.hall_name}) to ${status}`
+        `Updated hall status: ${id} (${hall.hall_name}) to ${status}`,
       );
 
       res.status(200).json({
@@ -1190,7 +1191,9 @@ class HallController {
       HallController.validateObjectId(id);
       const hall = await Hall.findById(id);
       if (!hall) {
-        return res.status(404).json({ success: false, message: "Hall not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "Hall not found" });
       }
 
       const Seat = require("../models/seat.model");
@@ -1198,7 +1201,9 @@ class HallController {
       if (replaceExisting) {
         // If replacing, first delete all existing seats for the hall
         const deletionResult = await Seat.deleteMany({ hall_id: id });
-        logger.info(`Deleted ${deletionResult.deletedCount} existing seats from hall ${id} before generating new layout.`);
+        logger.info(
+          `Deleted ${deletionResult.deletedCount} existing seats from hall ${id} before generating new layout.`,
+        );
       }
 
       const seatsToCreate = [];
@@ -1220,28 +1225,41 @@ class HallController {
             hall_id: id,
             row: row.row.toUpperCase(),
             seat_number: [i.toString()], // Always store as array
-            seat_type: row.type || 'standard',
+            seat_type: row.type || "standard",
             price: row.price !== undefined ? row.price : defaultPrice || 0,
-            status: 'active',
+            status: "active",
             createdBy: req.user?.userId,
-            seat_identifier: identifier
+            seat_identifier: identifier,
           });
         }
       }
 
       if (seatsToCreate.length === 0) {
-        return res.status(400).json({ success: false, message: "No valid seats to create." });
+        return res
+          .status(400)
+          .json({ success: false, message: "No valid seats to create." });
       }
 
       // Check for existing seats if not replacing
       if (!replaceExisting) {
-        const existingSeats = await Seat.find({ hall_id: id }).select('seat_identifier');
-        const existingSeatSet = new Set(existingSeats.map(s => s.seat_identifier));
+        const existingSeats = await Seat.find({ hall_id: id }).select(
+          "seat_identifier",
+        );
+        const existingSeatSet = new Set(
+          existingSeats.map((s) => s.seat_identifier),
+        );
 
-        const newSeats = seatsToCreate.filter(s => !existingSeatSet.has(s.seat_identifier));
+        const newSeats = seatsToCreate.filter(
+          (s) => !existingSeatSet.has(s.seat_identifier),
+        );
 
         if (newSeats.length === 0) {
-          return res.status(409).json({ success: false, message: "All specified seats already exist in this hall." });
+          return res
+            .status(409)
+            .json({
+              success: false,
+              message: "All specified seats already exist in this hall.",
+            });
         }
 
         const createdSeats = await Seat.insertMany(newSeats);
@@ -1252,8 +1270,8 @@ class HallController {
           message: `Successfully created ${createdSeats.length} new seats. Skipped ${seatsToCreate.length - newSeats.length} existing seats.`,
           data: {
             createdCount: createdSeats.length,
-            skippedCount: seatsToCreate.length - newSeats.length
-          }
+            skippedCount: seatsToCreate.length - newSeats.length,
+          },
         });
       }
 
@@ -1268,19 +1286,20 @@ class HallController {
         message: `Successfully generated and created ${createdSeats.length} new seats.`,
         data: {
           createdCount: createdSeats.length,
-        }
+        },
       });
-
     } catch (error) {
       if (error.message.includes("Invalid hall ID format")) {
         return res.status(400).json({ success: false, message: error.message });
       }
-      if (error.code === 11000) { // Duplicate key error
+      if (error.code === 11000) {
+        // Duplicate key error
         await Hall.updateTotalSeatsForHall(id); // Recalculate seats just in case
         return res.status(409).json({
           success: false,
-          message: "Failed to create seats due to a conflict. Some seats might already exist.",
-          error: "Duplicate key error on seat_identifier."
+          message:
+            "Failed to create seats due to a conflict. Some seats might already exist.",
+          error: "Duplicate key error on seat_identifier.",
         });
       }
       logger.error("Generate seat layout error:", error);
