@@ -4,6 +4,8 @@ const logger = require("../utils/logger");
 const Providers = require("../data/providers");
 const jwt = require("jsonwebtoken");
 const Telegram = require("../utils/telegram");
+const { UAParser } = require("ua-parser-js");
+const crypto = require("crypto");
 
 const PREFIX = "customer_";
 
@@ -193,15 +195,39 @@ class CustomerAuthController {
     }
   }
 
-  // Helper method to handle successful authentication
   static async handleAuthSuccess(req, res, customer, isNewCustomer, loginType) {
-    // Generate tokens
+    // Prevent login if account is deactivated
+    if (!customer.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: "Your account has been deactivated. Please contact support.",
+      });
+    }
+
+    // Generate unique session ID first
+    const sessionId = crypto.randomUUID();
+
+    // Generate tokens including sessionId in payload
     const tokens = AuthService.generateTokens({
       customerId: customer._id,
       phone: customer.phone,
       telegramId: customer.telegramId,
+      sessionId, // Link JWT to specific session
       type: "customer",
     });
+
+    // Parse User-Agent for detailed device info
+    const userAgent = req.get("User-Agent") || "unknown";
+    const parser = new UAParser(userAgent);
+    const uaResult = parser.getResult();
+
+    const device = {
+      browser: uaResult.browser.name || "Unknown",
+      os: uaResult.os.name || "Unknown",
+      vendor: uaResult.device.vendor || "",
+      model: uaResult.device.model || "",
+      type: uaResult.device.type || "desktop",
+    };
 
     // Store refresh token
     await AuthService.storeRefreshToken(
@@ -210,19 +236,28 @@ class CustomerAuthController {
       PREFIX,
       {
         customerId: customer._id.toString(),
-        userAgent: req.get("User-Agent") || "unknown",
+        sessionId,
+        userAgent,
+        device,
         ip: req.ip || req.connection.remoteAddress,
         loginType: loginType,
       },
     );
 
-    // Create session
-    const sessionId = await AuthService.createSession(customer._id, PREFIX, {
-      customerId: customer._id.toString(),
-      userAgent: req.get("User-Agent") || "unknown",
-      ip: req.ip || req.connection.remoteAddress,
-      loginType: loginType,
-    });
+    // Create session using the SAME sessionId
+    await AuthService.createSession(
+      customer._id,
+      PREFIX,
+      {
+        customerId: customer._id.toString(),
+        userAgent,
+        device,
+        ip: req.ip || req.connection.remoteAddress,
+        loginType: loginType,
+      },
+      24 * 60 * 60, // 24 hours
+      sessionId,
+    );
 
     return res.status(200).json({
       success: true,
@@ -324,6 +359,7 @@ class CustomerAuthController {
             telegramId: customer.telegramId,
             photoUrl: customer.photoUrl,
             isVerified: customer.isVerified,
+            email: customer.email,
             createdAt: customer.createdAt,
             customerType: customer.customerType,
           },
@@ -471,6 +507,117 @@ class CustomerAuthController {
       }
     } catch (error) {
       logger.error("Customer logout session error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  }
+
+  // Update customer profile
+  static async updateProfile(req, res) {
+    try {
+      const { email, phone } = req.body;
+      const customerId = req.customer.customerId;
+
+      const customer = await Customer.findById(customerId);
+
+      if (!customer) {
+        return res.status(404).json({
+          success: false,
+          message: "Customer not found",
+        });
+      }
+
+      // Update allowed fields
+      if (email !== undefined) customer.email = email;
+      if (phone !== undefined) {
+        // Normalize phone number: remove non-digit characters except for leading '+'
+        let normalizedPhone = phone.trim().replace(/[^\d+]/g, "");
+
+        // If it starts with '0', assume local and convert to +855 (Cambodia)
+        if (normalizedPhone.startsWith("0")) {
+          normalizedPhone = "+855" + normalizedPhone.substring(1);
+        } else if (
+          normalizedPhone.length > 0 &&
+          !normalizedPhone.startsWith("+")
+        ) {
+          // If no '+' and not starting with 0, prepend '+' if it doesn't have it
+          normalizedPhone = "+" + normalizedPhone;
+        }
+
+        customer.phone = normalizedPhone;
+      }
+
+      await customer.save();
+
+      logger.info(`Customer profile updated: ${customerId}`);
+
+      res.status(200).json({
+        success: true,
+        message: "Profile updated successfully",
+        data: {
+          customer: {
+            id: customer._id,
+            phone: customer.phone,
+            email: customer.email,
+            name: customer.name,
+            username: customer.username,
+            telegramId: customer.telegramId,
+            photoUrl: customer.photoUrl,
+            isVerified: customer.isVerified,
+            customerType: customer.customerType,
+          },
+        },
+      });
+    } catch (error) {
+      logger.error("Update customer profile error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  }
+
+  // Delete customer account
+  static async deleteAccount(req, res) {
+    try {
+      const customerId = req.customer.customerId;
+      const token = req.header("Authorization")?.replace("Bearer ", "");
+
+      const customer = await Customer.findById(customerId);
+
+      if (!customer) {
+        return res.status(404).json({
+          success: false,
+          message: "Customer not found",
+        });
+      }
+
+      // 1. Soft delete the customer account
+      // This sets isActive: false and sets deletedAt timestamp
+      await customer.softDelete();
+
+      // 2. Blacklist current token
+      if (token) {
+        const decoded = jwt.decode(token);
+        if (decoded && decoded.exp) {
+          await AuthService.blacklistToken(token, decoded.exp * 1000, PREFIX);
+        }
+      }
+
+      // 3. Delete all sessions and refresh tokens
+      await AuthService.deleteAllSessions(customerId, PREFIX);
+      await AuthService.deleteRefreshToken(customerId, PREFIX);
+
+      logger.info(`Customer account soft-deleted: ${customerId}`);
+
+      res.status(200).json({
+        success: true,
+        message: "Account deleted successfully",
+      });
+    } catch (error) {
+      logger.error("Delete customer account error:", error);
       res.status(500).json({
         success: false,
         message: "Internal server error",

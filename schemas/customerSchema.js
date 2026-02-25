@@ -35,7 +35,7 @@ const createCustomerSchema = Joi.alternatives().try(
       "string.max": "Name cannot exceed 50 characters",
     }),
     phone: Joi.string()
-      .pattern(/^\+?[1-9]\d{1,14}$/)
+      .pattern(/^\+?\d{1,15}$/)
       .required()
       .messages({
         "any.required": "Phone number is required for member customers.",
@@ -53,7 +53,7 @@ const createCustomerSchema = Joi.alternatives().try(
     customerType: Joi.string().valid("walkin").required(),
     name: Joi.string().trim().min(2).max(50).optional().empty(["", null]),
     phone: Joi.string()
-      .pattern(/^\+?[1-9]\d{1,14}$/)
+      .pattern(/^\+?\d{1,15}$/)
       .optional()
       .empty(["", null])
       .messages({
@@ -72,7 +72,7 @@ const createCustomerSchema = Joi.alternatives().try(
     customerType: Joi.string().valid("guest").required(),
     name: Joi.string().trim().min(2).max(50).optional().empty(["", null]),
     phone: Joi.string()
-      .pattern(/^\+?[1-9]\d{1,14}$/)
+      .pattern(/^\+?\d{1,15}$/)
       .optional()
       .empty(["", null]), // Added .empty(['', null])
     email: Joi.string().email().required().messages({
@@ -81,7 +81,7 @@ const createCustomerSchema = Joi.alternatives().try(
     }),
     provider: Joi.string().valid(Providers.EMAIL).default(Providers.EMAIL),
     ...baseCustomerFields,
-  })
+  }),
 );
 
 // ------------------------
@@ -98,7 +98,7 @@ const updateCustomerSchema = Joi.alternatives().try(
       "string.max": "Name cannot exceed 50 characters",
     }),
     phone: Joi.string()
-      .pattern(/^\+?[1-9]\d{1,14}$/)
+      .pattern(/^\+?\d{1,15}$/)
       .required()
       .messages({
         "any.required": "Phone number is required for member customers.",
@@ -116,7 +116,7 @@ const updateCustomerSchema = Joi.alternatives().try(
     customerType: Joi.string().valid("walkin").required(),
     name: Joi.string().trim().min(2).max(50).optional().empty(["", null]),
     phone: Joi.string()
-      .pattern(/^\+?[1-9]\d{1,14}$/)
+      .pattern(/^\+?\d{1,15}$/)
       .optional()
       .empty(["", null])
       .messages({
@@ -135,7 +135,7 @@ const updateCustomerSchema = Joi.alternatives().try(
     customerType: Joi.string().valid("guest").required(),
     name: Joi.string().trim().min(2).max(50).optional().empty(["", null]),
     phone: Joi.string()
-      .pattern(/^\+?[1-9]\d{1,14}$/)
+      .pattern(/^\+?\d{1,15}$/)
       .optional()
       .empty(["", null]), // Added .empty(['', null])
     email: Joi.string().email().required().messages({
@@ -144,7 +144,7 @@ const updateCustomerSchema = Joi.alternatives().try(
     }),
     provider: Joi.string().valid(Providers.EMAIL).default(Providers.EMAIL),
     ...baseCustomerFields,
-  })
+  }),
 );
 
 // ------------------------

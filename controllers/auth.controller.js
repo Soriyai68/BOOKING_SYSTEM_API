@@ -1,22 +1,22 @@
-const User = require('../models/user.model');
-const { generateTokenPair, generateAccessToken } = require('../utils/jwt');
-const logger = require('../utils/logger');
-const Providers = require('../data/providers');
-const { getRedisClient } = require('../config/redis');
-const crypto = require('crypto');
-const jwt = require('jsonwebtoken');
+const User = require("../models/user.model");
+const { generateTokenPair, generateAccessToken } = require("../utils/jwt");
+const logger = require("../utils/logger");
+const Providers = require("../data/providers");
+const { getRedisClient } = require("../config/redis");
+const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
 
 class AuthController {
   // Logout user
   static async logout(req, res) {
     try {
-      const token = req.header('Authorization')?.replace('Bearer ', '');
+      const token = req.header("Authorization")?.replace("Bearer ", "");
       const { sessionId } = req.body || {}; // Optional: specific session to logout
 
       if (!token) {
         return res.status(400).json({
           success: false,
-          message: 'No token provided'
+          message: "No token provided",
         });
       }
 
@@ -25,7 +25,7 @@ class AuthController {
       if (!decoded) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid token'
+          message: "Invalid token",
         });
       }
 
@@ -40,7 +40,7 @@ class AuthController {
         const blacklistKey = `blacklist:${token}`;
         const ttl = Math.max(0, Math.floor((tokenExp - Date.now()) / 1000));
         if (ttl > 0) {
-          await redisClient.setEx(blacklistKey, ttl, 'blacklisted');
+          await redisClient.setEx(blacklistKey, ttl, "blacklisted");
         }
 
         // Remove refresh token
@@ -74,7 +74,7 @@ class AuthController {
           }
 
           // Delete all session keys
-          const sessionKeys = sessionIds.map(id => `session:${userId}:${id}`);
+          const sessionKeys = sessionIds.map((id) => `session:${userId}:${id}`);
           if (sessionKeys.length > 0) {
             await redisClient.del(sessionKeys);
           }
@@ -86,18 +86,21 @@ class AuthController {
         }
       } catch (redisError) {
         // Redis error - log but continue with logout
-        logger.warn('Redis operations failed during logout:', redisError.message);
+        logger.warn(
+          "Redis operations failed during logout:",
+          redisError.message,
+        );
       }
 
       res.status(200).json({
         success: true,
-        message: 'Logged out successfully'
+        message: "Logged out successfully",
       });
     } catch (error) {
-      logger.error('Logout error:', error);
+      logger.error("Logout error:", error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: "Internal server error",
       });
     }
   }
@@ -105,12 +108,12 @@ class AuthController {
   // Get current user profile
   static async getProfile(req, res) {
     try {
-      const user = await User.findById(req.user.userId).select('-__v');
+      const user = await User.findById(req.user.userId).select("-__v");
 
       if (!user) {
         return res.status(404).json({
           success: false,
-          message: 'User not found'
+          message: "User not found",
         });
       }
 
@@ -127,15 +130,15 @@ class AuthController {
             role: user.role,
             isVerified: user.isVerified,
             lastLogin: user.lastLogin,
-            createdAt: user.createdAt
-          }
-        }
+            createdAt: user.createdAt,
+          },
+        },
       });
     } catch (error) {
-      logger.error('Get profile error:', error);
+      logger.error("Get profile error:", error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: "Internal server error",
       });
     }
   }
@@ -148,23 +151,20 @@ class AuthController {
       if (!username || !password) {
         return res.status(400).json({
           success: false,
-          message: 'Username or Gmail and password are required'
+          message: "Username or Gmail and password are required",
         });
       }
 
       // Find user with password field included
       // Search by email or username
       const user = await User.findOne({
-        $or: [
-          { email: username.toLowerCase() },
-          { username: username }
-        ]
-      }).select('+password');
+        $or: [{ email: username.toLowerCase() }, { username: username }],
+      }).select("+password");
 
       if (!user) {
         return res.status(401).json({
           success: false,
-          message: 'Invalid credentials'
+          message: "Invalid credentials",
         });
       }
 
@@ -172,7 +172,7 @@ class AuthController {
       if (!user.isActive) {
         return res.status(403).json({
           success: false,
-          message: 'Your account has been deactivated. Please contact support.'
+          message: "Your account has been deactivated. Please contact support.",
         });
       }
 
@@ -180,7 +180,7 @@ class AuthController {
       if (!user.requiresPassword()) {
         return res.status(403).json({
           success: false,
-          message: 'This login method is only for admin users'
+          message: "This login method is only for admin users",
         });
       }
 
@@ -189,7 +189,7 @@ class AuthController {
       if (!isPasswordValid) {
         return res.status(401).json({
           success: false,
-          message: 'Invalid credentials'
+          message: "Invalid credentials",
         });
       }
 
@@ -201,7 +201,7 @@ class AuthController {
       const tokens = generateTokenPair({
         userId: user._id,
         username: user.username,
-        role: user.role
+        role: user.role,
       });
 
       // Try to store session data in Redis (with error handling)
@@ -215,14 +215,18 @@ class AuthController {
           token: tokens.refreshToken,
           userId: user._id.toString(),
           createdAt: Date.now(),
-          userAgent: req.get('User-Agent') || 'unknown',
+          userAgent: req.get("User-Agent") || "unknown",
           ip: req.ip || req.connection.remoteAddress,
-          loginType: 'admin'
+          loginType: "admin",
         };
 
-        await redisClient.setEx(refreshTokenKey, 7 * 24 * 60 * 60, JSON.stringify(refreshTokenData));
+        await redisClient.setEx(
+          refreshTokenKey,
+          7 * 24 * 60 * 60,
+          JSON.stringify(refreshTokenData),
+        );
 
-        // Create admin session in Redis
+        // Create admin session in Redis (manual way to avoid strict parity if not wanted)
         sessionId = crypto.randomUUID();
         const sessionKey = `admin_session:${user._id}:${sessionId}`;
         const sessionData = {
@@ -231,13 +235,17 @@ class AuthController {
           username: user.username,
           role: user.role,
           loginTime: Date.now(),
-          userAgent: req.get('User-Agent') || 'unknown',
+          userAgent: req.get("User-Agent") || "unknown",
           ip: req.ip || req.connection.remoteAddress,
           isActive: true,
-          loginType: 'admin'
+          loginType: "admin",
         };
 
-        await redisClient.setEx(sessionKey, 24 * 60 * 60, JSON.stringify(sessionData));
+        await redisClient.setEx(
+          sessionKey,
+          24 * 60 * 60,
+          JSON.stringify(sessionData),
+        );
 
         // Use sAdd method (capital A) for Redis sets
         const userSessionsKey = `admin_sessions:${user._id}`;
@@ -246,15 +254,19 @@ class AuthController {
         } else if (redisClient.sadd) {
           await redisClient.sadd(userSessionsKey, sessionId);
         } else {
-          // If neither method exists, log warning and continue without session tracking
-          logger.warn('Redis sAdd/sadd method not available, skipping session tracking');
+          logger.warn(
+            "Redis sAdd/sadd method not available, skipping session tracking",
+          );
         }
         await redisClient.expire(userSessionsKey, 7 * 24 * 60 * 60);
 
         logger.info(`Admin session stored in Redis: ${sessionId}`);
       } catch (redisError) {
         // Redis error - continue without Redis session management
-        logger.warn('Redis not available, continuing without session management:', redisError.message);
+        logger.warn(
+          "Redis not available, continuing without session management:",
+          redisError.message,
+        );
         sessionId = crypto.randomUUID(); // Generate session ID anyway for response
       }
 
@@ -262,7 +274,7 @@ class AuthController {
 
       res.status(200).json({
         success: true,
-        message: 'Login successful',
+        message: "Login successful",
         data: {
           user: {
             id: user._id,
@@ -273,18 +285,18 @@ class AuthController {
             photoUrl: user.photoUrl,
             role: user.role,
             isVerified: user.isVerified,
-            lastLogin: user.lastLogin
+            lastLogin: user.lastLogin,
           },
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
-          sessionId: sessionId
-        }
+          sessionId: sessionId,
+        },
       });
     } catch (error) {
-      logger.error('Admin login error:', error);
+      logger.error("Admin login error:", error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: "Internal server error",
       });
     }
   }
@@ -297,7 +309,7 @@ class AuthController {
       if (!refreshToken) {
         return res.status(400).json({
           success: false,
-          message: 'Refresh token is required'
+          message: "Refresh token is required",
         });
       }
 
@@ -308,7 +320,7 @@ class AuthController {
       } catch (error) {
         return res.status(401).json({
           success: false,
-          message: 'Invalid refresh token'
+          message: "Invalid refresh token",
         });
       }
 
@@ -326,19 +338,22 @@ class AuthController {
           if (tokenData.token !== refreshToken) {
             return res.status(401).json({
               success: false,
-              message: 'Invalid refresh token'
+              message: "Invalid refresh token",
             });
           }
         }
       } catch (redisError) {
-        logger.warn('Redis not available for token validation:', redisError.message);
+        logger.warn(
+          "Redis not available for token validation:",
+          redisError.message,
+        );
         // Continue without Redis validation
       }
 
       if (!storedTokenData) {
         return res.status(401).json({
           success: false,
-          message: 'Refresh token not found or expired'
+          message: "Refresh token not found or expired",
         });
       }
 
@@ -347,7 +362,7 @@ class AuthController {
       if (!user || !user.isActive) {
         return res.status(401).json({
           success: false,
-          message: 'User not found or inactive'
+          message: "User not found or inactive",
         });
       }
 
@@ -355,12 +370,12 @@ class AuthController {
       const newAccessToken = generateAccessToken({
         userId: user._id,
         username: user.username,
-        role: user.role
+        role: user.role,
       });
 
       res.status(200).json({
         success: true,
-        message: 'Token refreshed successfully',
+        message: "Token refreshed successfully",
         data: {
           accessToken: newAccessToken,
           user: {
@@ -368,15 +383,15 @@ class AuthController {
             username: user.username,
             email: user.email,
             name: user.name,
-            role: user.role
-          }
-        }
+            role: user.role,
+          },
+        },
       });
     } catch (error) {
-      logger.error('Refresh token error:', error);
+      logger.error("Refresh token error:", error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: "Internal server error",
       });
     }
   }
@@ -417,8 +432,8 @@ class AuthController {
             const session = JSON.parse(sessionData);
             allSessions.push({
               ...session,
-              type: 'user',
-              ttl: await redisClient.ttl(sessionKey)
+              type: "user",
+              ttl: await redisClient.ttl(sessionKey),
             });
           }
         }
@@ -431,13 +446,16 @@ class AuthController {
             const session = JSON.parse(sessionData);
             allSessions.push({
               ...session,
-              type: 'admin',
-              ttl: await redisClient.ttl(sessionKey)
+              type: "admin",
+              ttl: await redisClient.ttl(sessionKey),
             });
           }
         }
       } catch (redisError) {
-        logger.warn('Redis not available for session retrieval:', redisError.message);
+        logger.warn(
+          "Redis not available for session retrieval:",
+          redisError.message,
+        );
         // Return empty sessions if Redis is not available
       }
 
@@ -445,14 +463,14 @@ class AuthController {
         success: true,
         data: {
           sessions: allSessions,
-          totalSessions: allSessions.length
-        }
+          totalSessions: allSessions.length,
+        },
       });
     } catch (error) {
-      logger.error('Get sessions error:', error);
+      logger.error("Get sessions error:", error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: "Internal server error",
       });
     }
   }
@@ -466,7 +484,7 @@ class AuthController {
       if (!sessionId) {
         return res.status(400).json({
           success: false,
-          message: 'Session ID is required'
+          message: "Session ID is required",
         });
       }
 
@@ -498,7 +516,10 @@ class AuthController {
           logger.info(`Session ${sessionId} logged out for user: ${userId}`);
         }
       } catch (redisError) {
-        logger.warn('Redis operations failed during session logout:', redisError.message);
+        logger.warn(
+          "Redis operations failed during session logout:",
+          redisError.message,
+        );
         // Assume session was found if Redis is not available
         sessionFound = true;
       }
@@ -506,19 +527,19 @@ class AuthController {
       if (sessionFound) {
         res.status(200).json({
           success: true,
-          message: 'Session logged out successfully'
+          message: "Session logged out successfully",
         });
       } else {
         res.status(404).json({
           success: false,
-          message: 'Session not found'
+          message: "Session not found",
         });
       }
     } catch (error) {
-      logger.error('Logout session error:', error);
+      logger.error("Logout session error:", error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: "Internal server error",
       });
     }
   }
@@ -534,7 +555,7 @@ class AuthController {
         refreshTokenKeys: 0,
         blacklistedTokens: 0,
         rateLimitKeys: 0,
-        redisAvailable: false
+        redisAvailable: false,
       };
 
       // Try Redis operations with error handling
@@ -542,32 +563,38 @@ class AuthController {
         const redisClient = getRedisClient();
 
         // Get various auth-related counts from Redis
-        const keys = await redisClient.keys('*');
+        const keys = await redisClient.keys("*");
 
         stats = {
           totalKeys: keys.length,
-          otpKeys: keys.filter(key => key.startsWith('otp:')).length,
-          sessionKeys: keys.filter(key => key.startsWith('session:')).length,
-          adminSessionKeys: keys.filter(key => key.startsWith('admin_session:')).length,
-          refreshTokenKeys: keys.filter(key => key.startsWith('refresh_token:')).length,
-          blacklistedTokens: keys.filter(key => key.startsWith('blacklist:')).length,
-          rateLimitKeys: keys.filter(key => key.startsWith('otp_rate_limit:')).length,
-          redisAvailable: true
+          otpKeys: keys.filter((key) => key.startsWith("otp:")).length,
+          sessionKeys: keys.filter((key) => key.startsWith("session:")).length,
+          adminSessionKeys: keys.filter((key) =>
+            key.startsWith("admin_session:"),
+          ).length,
+          refreshTokenKeys: keys.filter((key) =>
+            key.startsWith("refresh_token:"),
+          ).length,
+          blacklistedTokens: keys.filter((key) => key.startsWith("blacklist:"))
+            .length,
+          rateLimitKeys: keys.filter((key) => key.startsWith("otp_rate_limit:"))
+            .length,
+          redisAvailable: true,
         };
       } catch (redisError) {
-        logger.warn('Redis not available for stats:', redisError.message);
+        logger.warn("Redis not available for stats:", redisError.message);
         // Return default stats indicating Redis is not available
       }
 
       res.status(200).json({
         success: true,
-        data: stats
+        data: stats,
       });
     } catch (error) {
-      logger.error('Get auth stats error:', error);
+      logger.error("Get auth stats error:", error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: "Internal server error",
       });
     }
   }
@@ -581,17 +608,17 @@ class AuthController {
       if (!newPassword) {
         return res.status(400).json({
           success: false,
-          message: 'New password is required'
+          message: "New password is required",
         });
       }
 
       // Get user with password field included
-      const user = await User.findById(userId).select('+password');
+      const user = await User.findById(userId).select("+password");
 
       if (!user) {
         return res.status(404).json({
           success: false,
-          message: 'User not found'
+          message: "User not found",
         });
       }
 
@@ -603,16 +630,17 @@ class AuthController {
         if (!currentPassword) {
           return res.status(400).json({
             success: false,
-            message: 'Current password is required to change password'
+            message: "Current password is required to change password",
           });
         }
 
         // Verify current password
-        const isCurrentPasswordValid = await user.comparePassword(currentPassword);
+        const isCurrentPasswordValid =
+          await user.comparePassword(currentPassword);
         if (!isCurrentPasswordValid) {
           return res.status(400).json({
             success: false,
-            message: 'Current password is incorrect'
+            message: "Current password is incorrect",
           });
         }
 
@@ -621,13 +649,15 @@ class AuthController {
         if (isSamePassword) {
           return res.status(400).json({
             success: false,
-            message: 'New password must be different from current password'
+            message: "New password must be different from current password",
           });
         }
       } else {
         // User doesn't have password - they're setting up their first password
         // No current password verification needed
-        logger.info(`User ${user.username || user.email} is setting up their first password`);
+        logger.info(
+          `User ${user.username || user.email} is setting up their first password`,
+        );
       }
 
       // Update password
@@ -656,17 +686,19 @@ class AuthController {
 
           // Handle different Redis versions
           if (redisClient.sMembers) {
-            sessionIds = await redisClient.sMembers(userSessionsKey) || [];
-            adminSessionIds = await redisClient.sMembers(adminSessionsKey) || [];
+            sessionIds = (await redisClient.sMembers(userSessionsKey)) || [];
+            adminSessionIds =
+              (await redisClient.sMembers(adminSessionsKey)) || [];
           } else if (redisClient.smembers) {
-            sessionIds = await redisClient.smembers(userSessionsKey) || [];
-            adminSessionIds = await redisClient.smembers(adminSessionsKey) || [];
+            sessionIds = (await redisClient.smembers(userSessionsKey)) || [];
+            adminSessionIds =
+              (await redisClient.smembers(adminSessionsKey)) || [];
           }
 
           // Delete all session keys
           const allSessionKeys = [
-            ...sessionIds.map(id => `session:${userId}:${id}`),
-            ...adminSessionIds.map(id => `admin_session:${userId}:${id}`)
+            ...sessionIds.map((id) => `session:${userId}:${id}`),
+            ...adminSessionIds.map((id) => `admin_session:${userId}:${id}`),
           ];
 
           if (allSessionKeys.length > 0) {
@@ -676,32 +708,39 @@ class AuthController {
           // Clear session sets
           await redisClient.del([userSessionsKey, adminSessionsKey]);
 
-          logger.info(`All sessions cleared for user ${userId} after password change`);
+          logger.info(
+            `All sessions cleared for user ${userId} after password change`,
+          );
         } catch (redisError) {
-          logger.warn('Redis operations failed during password change:', redisError.message);
+          logger.warn(
+            "Redis operations failed during password change:",
+            redisError.message,
+          );
           // Continue even if Redis operations fail
         }
       }
 
-      logger.info(`Password ${isFirstTimeSetup ? 'set up' : 'changed'} for user: ${user.username || user.email}`);
+      logger.info(
+        `Password ${isFirstTimeSetup ? "set up" : "changed"} for user: ${user.username || user.email}`,
+      );
 
       const message = isFirstTimeSetup
-        ? 'Password set up successfully. You can now login using your username or email and password.'
-        : 'Password changed successfully. Please login again with your new password.';
+        ? "Password set up successfully. You can now login using your username or email and password."
+        : "Password changed successfully. Please login again with your new password.";
 
       res.status(200).json({
         success: true,
         message,
         data: {
           isFirstTimeSetup,
-          requiresReauth: hasPassword // Only require re-auth if they had a password before
-        }
+          requiresReauth: hasPassword, // Only require re-auth if they had a password before
+        },
       });
     } catch (error) {
-      logger.error('Change password error:', error);
+      logger.error("Change password error:", error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: "Internal server error",
       });
     }
   }
@@ -714,22 +753,19 @@ class AuthController {
       if (!username || !newPassword) {
         return res.status(400).json({
           success: false,
-          message: 'Username or email and new password are required'
+          message: "Username or email and new password are required",
         });
       }
 
       // Find user by username or email
       const user = await User.findOne({
-        $or: [
-          { email: username.toLowerCase() },
-          { username: username }
-        ]
-      }).select('+password');
+        $or: [{ email: username.toLowerCase() }, { username: username }],
+      }).select("+password");
 
       if (!user) {
         return res.status(404).json({
           success: false,
-          message: 'User not found'
+          message: "User not found",
         });
       }
 
@@ -739,7 +775,7 @@ class AuthController {
         if (isSamePassword) {
           return res.status(400).json({
             success: false,
-            message: 'New password must be different from current password'
+            message: "New password must be different from current password",
           });
         }
       }
@@ -763,16 +799,18 @@ class AuthController {
         let adminSessionIds = [];
 
         if (redisClient.sMembers) {
-          sessionIds = await redisClient.sMembers(userSessionsKey) || [];
-          adminSessionIds = await redisClient.sMembers(adminSessionsKey) || [];
+          sessionIds = (await redisClient.sMembers(userSessionsKey)) || [];
+          adminSessionIds =
+            (await redisClient.sMembers(adminSessionsKey)) || [];
         } else if (redisClient.smembers) {
-          sessionIds = await redisClient.smembers(userSessionsKey) || [];
-          adminSessionIds = await redisClient.smembers(adminSessionsKey) || [];
+          sessionIds = (await redisClient.smembers(userSessionsKey)) || [];
+          adminSessionIds =
+            (await redisClient.smembers(adminSessionsKey)) || [];
         }
 
         const allSessionKeys = [
-          ...sessionIds.map(id => `session:${user._id}:${id}`),
-          ...adminSessionIds.map(id => `admin_session:${user._id}:${id}`)
+          ...sessionIds.map((id) => `session:${user._id}:${id}`),
+          ...adminSessionIds.map((id) => `admin_session:${user._id}:${id}`),
         ];
 
         if (allSessionKeys.length > 0) {
@@ -781,27 +819,31 @@ class AuthController {
 
         await redisClient.del([userSessionsKey, adminSessionsKey]);
 
-        logger.info(`All sessions cleared for user ${user._id} after password reset`);
+        logger.info(
+          `All sessions cleared for user ${user._id} after password reset`,
+        );
       } catch (redisError) {
-        logger.warn('Redis operations failed during password reset:', redisError.message);
+        logger.warn(
+          "Redis operations failed during password reset:",
+          redisError.message,
+        );
       }
 
       logger.info(`Password reset for user: ${user.username || user.email}`);
 
       res.status(200).json({
         success: true,
-        message: 'Password reset successfully. Please login with your new password.'
+        message:
+          "Password reset successfully. Please login with your new password.",
       });
     } catch (error) {
-      logger.error('Reset password error:', error);
+      logger.error("Reset password error:", error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: "Internal server error",
       });
     }
   }
 }
 
 module.exports = AuthController;
-
-

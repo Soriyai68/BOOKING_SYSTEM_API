@@ -1,7 +1,7 @@
-const { getRedisClient } = require('../config/redis');
-const { generateTokenPair, generateAccessToken } = require('../utils/jwt');
-const logger = require('../utils/logger');
-const crypto = require('crypto');
+const { getRedisClient } = require("../config/redis");
+const { generateTokenPair, generateAccessToken } = require("../utils/jwt");
+const logger = require("../utils/logger");
+const crypto = require("crypto");
 
 class AuthService {
   /**
@@ -37,7 +37,13 @@ class AuthService {
    * @param {Object} metadata - Additional metadata
    * @param {number} expirySeconds - Expiry time in seconds
    */
-  static async storeRefreshToken(id, token, prefix = '', metadata = {}, expirySeconds = 7 * 24 * 60 * 60) {
+  static async storeRefreshToken(
+    id,
+    token,
+    prefix = "",
+    metadata = {},
+    expirySeconds = 7 * 24 * 60 * 60,
+  ) {
     try {
       const redisClient = getRedisClient();
       const refreshTokenKey = `${prefix}refresh_token:${id}`;
@@ -46,13 +52,17 @@ class AuthService {
         token,
         id: id.toString(),
         createdAt: Date.now(),
-        ...metadata
+        ...metadata,
       };
 
-      await redisClient.setEx(refreshTokenKey, expirySeconds, JSON.stringify(refreshTokenData));
+      await redisClient.setEx(
+        refreshTokenKey,
+        expirySeconds,
+        JSON.stringify(refreshTokenData),
+      );
       return { success: true };
     } catch (error) {
-      logger.warn('Failed to store refresh token:', error.message);
+      logger.warn("Failed to store refresh token:", error.message);
       return { success: false };
     }
   }
@@ -63,25 +73,25 @@ class AuthService {
    * @param {string} token - Refresh token to validate
    * @param {string} prefix - Redis key prefix
    */
-  static async validateRefreshToken(id, token, prefix = '') {
+  static async validateRefreshToken(id, token, prefix = "") {
     try {
       const redisClient = getRedisClient();
       const refreshTokenKey = `${prefix}refresh_token:${id}`;
       const storedTokenData = await redisClient.get(refreshTokenKey);
 
       if (!storedTokenData) {
-        return { valid: false, message: 'Refresh token not found or expired' };
+        return { valid: false, message: "Refresh token not found or expired" };
       }
 
       const tokenData = JSON.parse(storedTokenData);
       if (tokenData.token !== token) {
-        return { valid: false, message: 'Invalid refresh token' };
+        return { valid: false, message: "Invalid refresh token" };
       }
 
       return { valid: true };
     } catch (error) {
-      logger.warn('Refresh token validation failed:', error.message);
-      return { valid: false, message: 'Unable to validate token' };
+      logger.warn("Refresh token validation failed:", error.message);
+      return { valid: false, message: "Unable to validate token" };
     }
   }
 
@@ -90,13 +100,13 @@ class AuthService {
    * @param {string} id - User ID
    * @param {string} prefix - Redis key prefix
    */
-  static async deleteRefreshToken(id, prefix = '') {
+  static async deleteRefreshToken(id, prefix = "") {
     try {
       const redisClient = getRedisClient();
       const refreshTokenKey = `${prefix}refresh_token:${id}`;
       await redisClient.del(refreshTokenKey);
     } catch (error) {
-      logger.warn('Failed to delete refresh token:', error.message);
+      logger.warn("Failed to delete refresh token:", error.message);
     }
   }
 
@@ -108,8 +118,14 @@ class AuthService {
    * @param {number} expirySeconds - Expiry time in seconds
    * @returns {Promise<string>} - Session ID
    */
-  static async createSession(id, prefix = '', sessionData = {}, expirySeconds = 24 * 60 * 60) {
-    const sessionId = crypto.randomUUID();
+  static async createSession(
+    id,
+    prefix = "",
+    sessionData = {},
+    expirySeconds = 24 * 60 * 60,
+    providedSessionId = null,
+  ) {
+    const sessionId = providedSessionId || crypto.randomUUID();
 
     try {
       const redisClient = getRedisClient();
@@ -120,7 +136,7 @@ class AuthService {
         id: id.toString(),
         loginTime: Date.now(),
         isActive: true,
-        ...sessionData
+        ...sessionData,
       };
 
       await redisClient.setEx(sessionKey, expirySeconds, JSON.stringify(data));
@@ -136,7 +152,7 @@ class AuthService {
 
       return sessionId;
     } catch (error) {
-      logger.warn('Failed to create session:', error.message);
+      logger.warn("Failed to create session:", error.message);
       return sessionId;
     }
   }
@@ -146,7 +162,7 @@ class AuthService {
    * @param {string} id - User ID
    * @param {string} prefix - Redis key prefix
    */
-  static async getSessions(id, prefix = '') {
+  static async getSessions(id, prefix = "") {
     const sessions = [];
 
     try {
@@ -167,12 +183,12 @@ class AuthService {
           const session = JSON.parse(sessionData);
           sessions.push({
             ...session,
-            ttl: await redisClient.ttl(sessionKey)
+            ttl: await redisClient.ttl(sessionKey),
           });
         }
       }
     } catch (error) {
-      logger.warn('Failed to get sessions:', error.message);
+      logger.warn("Failed to get sessions:", error.message);
     }
 
     return sessions;
@@ -184,7 +200,7 @@ class AuthService {
    * @param {string} sessionId - Session ID to delete
    * @param {string} prefix - Redis key prefix
    */
-  static async deleteSession(id, sessionId, prefix = '') {
+  static async deleteSession(id, sessionId, prefix = "") {
     try {
       const redisClient = getRedisClient();
       const sessionKey = `${prefix}session:${id}:${sessionId}`;
@@ -201,7 +217,7 @@ class AuthService {
       }
       return false;
     } catch (error) {
-      logger.warn('Failed to delete session:', error.message);
+      logger.warn("Failed to delete session:", error.message);
       return false;
     }
   }
@@ -211,7 +227,7 @@ class AuthService {
    * @param {string} id - User ID
    * @param {string} prefix - Redis key prefix
    */
-  static async deleteAllSessions(id, prefix = '') {
+  static async deleteAllSessions(id, prefix = "") {
     try {
       const redisClient = getRedisClient();
       const sessionsKey = `${prefix}sessions:${id}`;
@@ -223,7 +239,9 @@ class AuthService {
         sessionIds = await redisClient.smembers(sessionsKey);
       }
 
-      const sessionKeys = sessionIds.map(sid => `${prefix}session:${id}:${sid}`);
+      const sessionKeys = sessionIds.map(
+        (sid) => `${prefix}session:${id}:${sid}`,
+      );
       if (sessionKeys.length > 0) {
         await redisClient.del(sessionKeys);
       }
@@ -231,7 +249,7 @@ class AuthService {
       await redisClient.del(sessionsKey);
       return true;
     } catch (error) {
-      logger.warn('Failed to delete all sessions:', error.message);
+      logger.warn("Failed to delete all sessions:", error.message);
       return false;
     }
   }
@@ -242,17 +260,17 @@ class AuthService {
    * @param {number} expMs - Token expiry in milliseconds
    * @param {string} prefix - Redis key prefix
    */
-  static async blacklistToken(token, expMs, prefix = '') {
+  static async blacklistToken(token, expMs, prefix = "") {
     try {
       const redisClient = getRedisClient();
       const blacklistKey = `${prefix}blacklist:${token}`;
       const ttl = Math.max(0, Math.floor((expMs - Date.now()) / 1000));
 
       if (ttl > 0) {
-        await redisClient.setEx(blacklistKey, ttl, 'blacklisted');
+        await redisClient.setEx(blacklistKey, ttl, "blacklisted");
       }
     } catch (error) {
-      logger.warn('Failed to blacklist token:', error.message);
+      logger.warn("Failed to blacklist token:", error.message);
     }
   }
 
@@ -261,14 +279,14 @@ class AuthService {
    * @param {string} token - Token to check
    * @param {string} prefix - Redis key prefix
    */
-  static async isTokenBlacklisted(token, prefix = '') {
+  static async isTokenBlacklisted(token, prefix = "") {
     try {
       const redisClient = getRedisClient();
       const blacklistKey = `${prefix}blacklist:${token}`;
       const result = await redisClient.get(blacklistKey);
       return !!result;
     } catch (error) {
-      logger.warn('Failed to check blacklist:', error.message);
+      logger.warn("Failed to check blacklist:", error.message);
       return false;
     }
   }

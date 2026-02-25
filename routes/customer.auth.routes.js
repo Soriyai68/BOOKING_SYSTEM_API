@@ -41,5 +41,16 @@ router.delete(
 // Common routes
 router.post("/logout", authenticateCustomer, CustomerAuthController.logout);
 router.get("/profile", authenticateCustomer, CustomerAuthController.getProfile);
+router.put(
+  "/profile",
+  authenticateCustomer,
+  CustomerAuthController.updateProfile,
+);
+
+router.delete(
+  "/account",
+  authenticateCustomer,
+  CustomerAuthController.deleteAccount,
+);
 
 module.exports = router;

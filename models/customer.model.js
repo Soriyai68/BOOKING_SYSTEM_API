@@ -7,7 +7,7 @@ const customerSchema = new mongoose.Schema(
     phone: {
       type: String,
       trim: true,
-      match: [/^\+?[1-9]\d{1,14}$/, "Invalid phone number"],
+      match: [/^\+?\d{1,15}$/, "Invalid phone number"],
     },
     // For customer type guest, email is optional
     email: {

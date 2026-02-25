@@ -1,9 +1,9 @@
-const mongoose = require('mongoose');
-const User = require('../models/user.model');
-const { Role } = require('../data');
-const Providers = require('../data/providers');
-const logger = require('../utils/logger');
-const { createPhoneRegex } = require('../utils/helpers');
+const mongoose = require("mongoose");
+const User = require("../models/user.model");
+const { Role } = require("../data");
+const Providers = require("../data/providers");
+const logger = require("../utils/logger");
+const { createPhoneRegex } = require("../utils/helpers");
 
 /**
  * UserController - Comprehensive CRUD operations without Redis
@@ -13,7 +13,7 @@ class UserController {
   // Helper method to validate ObjectId
   static validateObjectId(id) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error('Invalid user ID format');
+      throw new Error("Invalid user ID format");
     }
   }
 
@@ -21,12 +21,12 @@ class UserController {
   static buildSearchQuery(search) {
     if (!search) return {};
     const searchConditions = [
-      { name: { $regex: search, $options: 'i' } },
-      { username: { $regex: search, $options: 'i' } },
-      { email: { $regex: search, $options: 'i' } }
+      { name: { $regex: search, $options: "i" } },
+      { username: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
     ];
     return {
-      $or: searchConditions
+      $or: searchConditions,
     };
   }
 
@@ -40,18 +40,22 @@ class UserController {
     }
 
     // Handle provider filter
-    if (filters.provider && Object.values(Providers).includes(filters.provider)) {
+    if (
+      filters.provider &&
+      Object.values(Providers).includes(filters.provider)
+    ) {
       query.provider = filters.provider;
     }
 
     // Handle status filter
     if (filters.status !== undefined) {
-      query.isActive = filters.status === 'true' || filters.status === true;
+      query.isActive = filters.status === "true" || filters.status === true;
     }
 
     // Handle verification status filter
     if (filters.isVerified !== undefined) {
-      query.isVerified = filters.isVerified === 'true' || filters.isVerified === true;
+      query.isVerified =
+        filters.isVerified === "true" || filters.isVerified === true;
     }
 
     // Handle date range filters
@@ -74,8 +78,8 @@ class UserController {
       const {
         page = 1,
         limit = 10,
-        sortBy = 'createdAt',
-        sortOrder = 'desc',
+        sortBy = "createdAt",
+        sortOrder = "desc",
         search,
         includeDeleted = false,
         ...filters
@@ -98,23 +102,23 @@ class UserController {
       query = { ...query, ...UserController.buildFilterQuery(filters) };
 
       // Handle soft deleted records
-      if (!includeDeleted || includeDeleted === 'false') {
+      if (!includeDeleted || includeDeleted === "false") {
         query.deletedAt = null; // Only get non-deleted users
       }
 
       // Build sort object
       const sortObj = {};
-      sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
+      sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
 
       // Execute queries
       const [users, totalCount] = await Promise.all([
         User.find(query)
-          .select('-password') // Never return passwords
+          .select("-password") // Never return passwords
           .sort(sortObj)
           .skip(skip)
           .limit(limitNum)
           .lean(),
-        User.countDocuments(query)
+        User.countDocuments(query),
       ]);
 
       // Calculate pagination info
@@ -136,15 +140,15 @@ class UserController {
             hasNextPage,
             hasPrevPage,
             nextPage: hasNextPage ? pageNum + 1 : null,
-            prevPage: hasPrevPage ? pageNum - 1 : null
-          }
-        }
+            prevPage: hasPrevPage ? pageNum - 1 : null,
+          },
+        },
       });
     } catch (error) {
-      logger.error('Get all users error:', error);
+      logger.error("Get all users error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve users'
+        message: "Failed to retrieve users",
       });
     }
   }
@@ -158,15 +162,15 @@ class UserController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'User ID is required'
+          message: "User ID is required",
         });
       }
 
       UserController.validateObjectId(id);
 
-      let selectFields = '-password';
-      if (includePassword === 'true' && req.user?.role === Role.SUPERADMIN) {
-        selectFields = '+password';
+      let selectFields = "-password";
+      if (includePassword === "true" && req.user?.role === Role.SUPERADMIN) {
+        selectFields = "+password";
       }
 
       const user = await User.findById(id).select(selectFields).lean();
@@ -174,7 +178,7 @@ class UserController {
       if (!user) {
         return res.status(404).json({
           success: false,
-          message: 'User not found'
+          message: "User not found",
         });
       }
 
@@ -182,20 +186,20 @@ class UserController {
 
       res.status(200).json({
         success: true,
-        data: { user }
+        data: { user },
       });
     } catch (error) {
-      if (error.message === 'Invalid user ID format') {
+      if (error.message === "Invalid user ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Get user by ID error:', error);
+      logger.error("Get user by ID error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve user'
+        message: "Failed to retrieve user",
       });
     }
   }
@@ -209,25 +213,29 @@ class UserController {
       if (!userData.username || !userData.email || !userData.name) {
         return res.status(400).json({
           success: false,
-          message: 'Username, email, and name are required'
+          message: "Username, email, and name are required",
         });
       }
 
       // Check if username already exists
-      const existingUsername = await User.findOne({ username: userData.username.toLowerCase() });
+      const existingUsername = await User.findOne({
+        username: userData.username.toLowerCase(),
+      });
       if (existingUsername) {
         return res.status(409).json({
           success: false,
-          message: 'Username already exists'
+          message: "Username already exists",
         });
       }
 
       // Check if email already exists
-      const existingEmail = await User.findOne({ email: userData.email.toLowerCase() });
+      const existingEmail = await User.findOne({
+        email: userData.email.toLowerCase(),
+      });
       if (existingEmail) {
         return res.status(409).json({
           success: false,
-          message: 'Email already exists'
+          message: "Email already exists",
         });
       }
 
@@ -239,7 +247,7 @@ class UserController {
         role: userData.role || Role.USER,
         provider: userData.provider || Providers.PHONE,
         isVerified: userData.isVerified || false,
-        isActive: userData.isActive !== undefined ? userData.isActive : true
+        isActive: userData.isActive !== undefined ? userData.isActive : true,
       };
 
       // Add creator info if available
@@ -258,15 +266,15 @@ class UserController {
 
       res.status(201).json({
         success: true,
-        message: 'User created successfully',
-        data: { user: userResponse }
+        message: "User created successfully",
+        data: { user: userResponse },
       });
     } catch (error) {
-      if (error.name === 'ValidationError') {
+      if (error.name === "ValidationError") {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
-          errors: Object.values(error.errors).map(err => err.message)
+          message: "Validation error",
+          errors: Object.values(error.errors).map((err) => err.message),
         });
       }
 
@@ -274,14 +282,14 @@ class UserController {
         const field = Object.keys(error.keyPattern)[0];
         return res.status(409).json({
           success: false,
-          message: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`
+          message: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`,
         });
       }
 
-      logger.error('Create user error:', error);
+      logger.error("Create user error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to create user'
+        message: "Failed to create user",
       });
     }
   }
@@ -295,7 +303,7 @@ class UserController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'User ID is required'
+          message: "User ID is required",
         });
       }
 
@@ -317,19 +325,19 @@ class UserController {
         if (!phoneRegex.test(updateData.phone)) {
           return res.status(400).json({
             success: false,
-            message: 'Please enter a valid phone number'
+            message: "Please enter a valid phone number",
           });
         }
 
         // Check if phone is already taken by another user
         const existingUser = await User.findOne({
           phone: updateData.phone,
-          _id: { $ne: id }
+          _id: { $ne: id },
         });
         if (existingUser) {
           return res.status(409).json({
             success: false,
-            message: 'Phone number is already in use'
+            message: "Phone number is already in use",
           });
         }
       }
@@ -339,12 +347,12 @@ class UserController {
         updateData.username = updateData.username.toLowerCase();
         const existingUsername = await User.findOne({
           username: updateData.username,
-          _id: { $ne: id }
+          _id: { $ne: id },
         });
         if (existingUsername) {
           return res.status(409).json({
             success: false,
-            message: 'Username is already in use'
+            message: "Username is already in use",
           });
         }
       }
@@ -354,12 +362,12 @@ class UserController {
         updateData.email = updateData.email.toLowerCase();
         const existingEmail = await User.findOne({
           email: updateData.email,
-          _id: { $ne: id }
+          _id: { $ne: id },
         });
         if (existingEmail) {
           return res.status(409).json({
             success: false,
-            message: 'Email is already in use'
+            message: "Email is already in use",
           });
         }
       }
@@ -371,7 +379,7 @@ class UserController {
         if (!user) {
           return res.status(404).json({
             success: false,
-            message: 'User not found'
+            message: "User not found",
           });
         }
 
@@ -388,25 +396,21 @@ class UserController {
 
         return res.status(200).json({
           success: true,
-          message: 'User updated successfully',
-          data: { user: userResponse }
+          message: "User updated successfully",
+          data: { user: userResponse },
         });
       }
 
-      const user = await User.findByIdAndUpdate(
-        id,
-        updateData,
-        {
-          new: true,
-          runValidators: true,
-          context: 'query'
-        }
-      ).select('-password');
+      const user = await User.findByIdAndUpdate(id, updateData, {
+        new: true,
+        runValidators: true,
+        context: "query",
+      }).select("-password");
 
       if (!user) {
         return res.status(404).json({
           success: false,
-          message: 'User not found'
+          message: "User not found",
         });
       }
 
@@ -414,29 +418,29 @@ class UserController {
 
       res.status(200).json({
         success: true,
-        message: 'User updated successfully',
-        data: { user }
+        message: "User updated successfully",
+        data: { user },
       });
     } catch (error) {
-      if (error.message === 'Invalid user ID format') {
+      if (error.message === "Invalid user ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      if (error.name === 'ValidationError') {
+      if (error.name === "ValidationError") {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
-          errors: Object.values(error.errors).map(err => err.message)
+          message: "Validation error",
+          errors: Object.values(error.errors).map((err) => err.message),
         });
       }
 
-      logger.error('Update user error:', error);
+      logger.error("Update user error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to update user'
+        message: "Failed to update user",
       });
     }
   }
@@ -449,19 +453,19 @@ class UserController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'User ID is required'
+          message: "User ID is required",
         });
       }
 
       UserController.validateObjectId(id);
 
       // Find the user first
-      const user = await User.findById(id).select('-password');
+      const user = await User.findById(id).select("-password");
 
       if (!user) {
         return res.status(404).json({
           success: false,
-          message: 'User not found'
+          message: "User not found",
         });
       }
 
@@ -469,7 +473,7 @@ class UserController {
       if (user.isDeleted()) {
         return res.status(409).json({
           success: false,
-          message: 'User is already deactivated'
+          message: "User is already deactivated",
         });
       }
 
@@ -477,7 +481,7 @@ class UserController {
       if (id === req.user?.userId) {
         return res.status(403).json({
           success: false,
-          message: 'Cannot delete your own account'
+          message: "Cannot delete your own account",
         });
       }
 
@@ -485,7 +489,7 @@ class UserController {
       if (user.role === Role.SUPERADMIN && req.user?.role !== Role.SUPERADMIN) {
         return res.status(403).json({
           success: false,
-          message: 'Only SuperAdmin can delete other SuperAdmin accounts'
+          message: "Only SuperAdmin can delete other SuperAdmin accounts",
         });
       }
 
@@ -496,26 +500,26 @@ class UserController {
 
       res.status(200).json({
         success: true,
-        message: 'User deactivated successfully',
+        message: "User deactivated successfully",
         data: {
           user: {
             ...deletedUser.toObject(),
-            password: undefined // Ensure password is not returned
-          }
-        }
+            password: undefined, // Ensure password is not returned
+          },
+        },
       });
     } catch (error) {
-      if (error.message === 'Invalid user ID format') {
+      if (error.message === "Invalid user ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Delete user error:', error);
+      logger.error("Delete user error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to deactivate user'
+        message: "Failed to deactivate user",
       });
     }
   }
@@ -528,19 +532,19 @@ class UserController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'User ID is required'
+          message: "User ID is required",
         });
       }
 
       UserController.validateObjectId(id);
 
       // Find the user first
-      const user = await User.findById(id).select('-password');
+      const user = await User.findById(id).select("-password");
 
       if (!user) {
         return res.status(404).json({
           success: false,
-          message: 'User not found'
+          message: "User not found",
         });
       }
 
@@ -548,7 +552,7 @@ class UserController {
       if (!user.isDeleted()) {
         return res.status(409).json({
           success: false,
-          message: 'User is already active'
+          message: "User is already active",
         });
       }
 
@@ -559,26 +563,26 @@ class UserController {
 
       res.status(200).json({
         success: true,
-        message: 'User restored successfully',
+        message: "User restored successfully",
         data: {
           user: {
             ...restoredUser.toObject(),
-            password: undefined // Ensure password is not returned
-          }
-        }
+            password: undefined, // Ensure password is not returned
+          },
+        },
       });
     } catch (error) {
-      if (error.message === 'Invalid user ID format') {
+      if (error.message === "Invalid user ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Restore user error:', error);
+      logger.error("Restore user error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to restore user'
+        message: "Failed to restore user",
       });
     }
   }
@@ -591,7 +595,7 @@ class UserController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'User ID is required'
+          message: "User ID is required",
         });
       }
 
@@ -599,7 +603,7 @@ class UserController {
       if (req.user?.role !== Role.SUPERADMIN) {
         return res.status(403).json({
           success: false,
-          message: 'Only SuperAdmin can permanently delete users'
+          message: "Only SuperAdmin can permanently delete users",
         });
       }
 
@@ -611,7 +615,7 @@ class UserController {
       if (!user) {
         return res.status(404).json({
           success: false,
-          message: 'User not found'
+          message: "User not found",
         });
       }
 
@@ -619,7 +623,7 @@ class UserController {
       if (id === req.user?.userId) {
         return res.status(403).json({
           success: false,
-          message: 'Cannot permanently delete your own account'
+          message: "Cannot permanently delete your own account",
         });
       }
 
@@ -627,7 +631,8 @@ class UserController {
       if (user.role === Role.ADMIN || user.role === Role.SUPERADMIN) {
         return res.status(403).json({
           success: false,
-          message: 'Cannot permanently delete admin or superadmin users. This is a safety restriction.'
+          message:
+            "Cannot permanently delete admin or superadmin users. This is a safety restriction.",
         });
       }
 
@@ -638,45 +643,48 @@ class UserController {
         email: user.email,
         name: user.name,
         role: user.role,
-        wasDeleted: user.isDeleted()
+        wasDeleted: user.isDeleted(),
       };
 
       // Perform permanent deletion
       const deletedUser = await User.findByIdAndDelete(id);
 
-      logger.warn(`⚠️  PERMANENT DELETION: User permanently deleted by SuperAdmin ${req.user.userId}`, {
-        deletedUser: userInfo,
-        deletedBy: req.user.userId,
-        deletedAt: new Date().toISOString(),
-        action: 'FORCE_DELETE_USER'
-      });
+      logger.warn(
+        `⚠️  PERMANENT DELETION: User permanently deleted by SuperAdmin ${req.user.userId}`,
+        {
+          deletedUser: userInfo,
+          deletedBy: req.user.userId,
+          deletedAt: new Date().toISOString(),
+          action: "FORCE_DELETE_USER",
+        },
+      );
 
       res.status(200).json({
         success: true,
-        message: 'User permanently deleted',
+        message: "User permanently deleted",
         data: {
           deletedUser: {
             id: userInfo.id,
             username: userInfo.username,
             email: userInfo.email,
             name: userInfo.name,
-            role: userInfo.role
+            role: userInfo.role,
           },
-          warning: 'This action is irreversible'
-        }
+          warning: "This action is irreversible",
+        },
       });
     } catch (error) {
-      if (error.message === 'Invalid user ID format') {
+      if (error.message === "Invalid user ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Force delete user error:', error);
+      logger.error("Force delete user error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to permanently delete user'
+        message: "Failed to permanently delete user",
       });
     }
   }
@@ -689,8 +697,8 @@ class UserController {
         fields = [],
         page = 1,
         limit = 10,
-        sortBy = 'createdAt',
-        sortOrder = 'desc',
+        sortBy = "createdAt",
+        sortOrder = "desc",
         exact = false,
         caseSensitive = false,
         dateFrom,
@@ -698,13 +706,13 @@ class UserController {
         role,
         provider,
         isActive,
-        isVerified
+        isVerified,
       } = req.body;
 
       if (!searchQuery) {
         return res.status(400).json({
           success: false,
-          message: 'Search query is required'
+          message: "Search query is required",
         });
       }
 
@@ -718,12 +726,15 @@ class UserController {
       const queryConditions = [];
 
       // Handle text search
-      const searchFields = fields.length > 0 ? fields : ['name', 'username', 'email'];
-      const searchOptions = caseSensitive ? '' : 'i';
+      const searchFields =
+        fields.length > 0 ? fields : ["name", "username", "email"];
+      const searchOptions = caseSensitive ? "" : "i";
       const searchPattern = exact ? `^${searchQuery}$` : searchQuery;
 
-      searchFields.forEach(field => {
-        queryConditions.push({ [field]: { $regex: searchPattern, $options: searchOptions } });
+      searchFields.forEach((field) => {
+        queryConditions.push({
+          [field]: { $regex: searchPattern, $options: searchOptions },
+        });
       });
       if (queryConditions.length > 0) {
         query.$or = queryConditions;
@@ -744,17 +755,17 @@ class UserController {
 
       // Build sort object
       const sortObj = {};
-      sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
+      sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
 
       // Execute search
       const [users, totalCount] = await Promise.all([
         User.find(query)
-          .select('-password')
+          .select("-password")
           .sort(sortObj)
           .skip(skip)
           .limit(limitNum)
           .lean(),
-        User.countDocuments(query)
+        User.countDocuments(query),
       ]);
 
       // Calculate pagination
@@ -769,21 +780,21 @@ class UserController {
           search: {
             query: searchQuery,
             totalResults: totalCount,
-            resultCount: users.length
+            resultCount: users.length,
           },
           pagination: {
             currentPage: pageNum,
             totalPages,
             totalCount,
-            limit: limitNum
-          }
-        }
+            limit: limitNum,
+          },
+        },
       });
     } catch (error) {
-      logger.error('Search users error:', error);
+      logger.error("Search users error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to search users'
+        message: "Failed to search users",
       });
     }
   }
@@ -796,8 +807,8 @@ class UserController {
       const {
         page = 1,
         limit = 10,
-        sortBy = 'deletedAt',
-        sortOrder = 'desc'
+        sortBy = "deletedAt",
+        sortOrder = "desc",
       } = req.query;
 
       const pageNum = Math.max(1, parseInt(page));
@@ -807,30 +818,34 @@ class UserController {
       // Query for soft deleted users only
       const query = { deletedAt: { $ne: null } };
       const sortObj = {};
-      sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
+      sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
 
       const [users, totalCount] = await Promise.all([
         User.find(query)
-          .select('-password')
+          .select("-password")
           .sort(sortObj)
           .skip(skip)
           .limit(limitNum)
           .lean(),
-        User.countDocuments(query)
+        User.countDocuments(query),
       ]);
 
       // Add delete info to each user
-      const usersWithDeleteInfo = users.map(user => ({
+      const usersWithDeleteInfo = users.map((user) => ({
         ...user,
         deleteInfo: {
           deletedAt: user.deletedAt,
           deletedBy: user.deletedBy,
-          daysSinceDeleted: user.deletedAt ? Math.floor((Date.now() - new Date(user.deletedAt)) / (1000 * 60 * 60 * 24)) : null
+          daysSinceDeleted: user.deletedAt
+            ? Math.floor(
+                (Date.now() - new Date(user.deletedAt)) / (1000 * 60 * 60 * 24),
+              )
+            : null,
         },
         restoreInfo: {
           restoredAt: user.restoredAt,
-          restoredBy: user.restoredBy
-        }
+          restoredBy: user.restoredBy,
+        },
       }));
 
       const totalPages = Math.ceil(totalCount / limitNum);
@@ -847,15 +862,15 @@ class UserController {
             totalCount,
             limit: limitNum,
             hasNextPage: pageNum < totalPages,
-            hasPrevPage: pageNum > 1
-          }
-        }
+            hasPrevPage: pageNum > 1,
+          },
+        },
       });
     } catch (error) {
-      logger.error('Get deleted users error:', error);
+      logger.error("Get deleted users error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve deleted users'
+        message: "Failed to retrieve deleted users",
       });
     }
   }
@@ -881,21 +896,35 @@ class UserController {
                   $cond: [
                     {
                       $gte: [
-                        '$createdAt',
-                        new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-                      ]
+                        "$createdAt",
+                        new Date(
+                          new Date().getFullYear(),
+                          new Date().getMonth(),
+                          1,
+                        ),
+                      ],
                     },
                     1,
-                    0
-                  ]
-                }
-              }
-            }
-          }
-        ])
+                    0,
+                  ],
+                },
+              },
+            },
+          },
+        ]),
       ]);
 
-      const [total, active, inactive, users, admins, superAdmins, verified, phoneUsers, monthlyStats] = stats;
+      const [
+        total,
+        active,
+        inactive,
+        users,
+        admins,
+        superAdmins,
+        verified,
+        phoneUsers,
+        monthlyStats,
+      ] = stats;
 
       res.status(200).json({
         success: true,
@@ -910,14 +939,15 @@ class UserController {
           phoneUsers,
           createdThisMonth: monthlyStats[0]?.avgCreatedThisMonth || 0,
           percentageActive: total > 0 ? Math.round((active / total) * 100) : 0,
-          percentageVerified: total > 0 ? Math.round((verified / total) * 100) : 0
-        }
+          percentageVerified:
+            total > 0 ? Math.round((verified / total) * 100) : 0,
+        },
       });
     } catch (error) {
-      logger.error('Get user stats error:', error);
+      logger.error("Get user stats error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve user statistics'
+        message: "Failed to retrieve user statistics",
       });
     }
   }
@@ -931,7 +961,7 @@ class UserController {
       if (!Object.values(Role).includes(role)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid role specified'
+          message: "Invalid role specified",
         });
       }
 
@@ -943,12 +973,12 @@ class UserController {
 
       const [users, totalCount] = await Promise.all([
         User.find(query)
-          .select('-password')
+          .select("-password")
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limitNum)
           .lean(),
-        User.countDocuments(query)
+        User.countDocuments(query),
       ]);
 
       res.status(200).json({
@@ -960,15 +990,15 @@ class UserController {
             currentPage: pageNum,
             totalPages: Math.ceil(totalCount / limitNum),
             totalCount,
-            limit: limitNum
-          }
-        }
+            limit: limitNum,
+          },
+        },
       });
     } catch (error) {
-      logger.error('Get users by role error:', error);
+      logger.error("Get users by role error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve users by role'
+        message: "Failed to retrieve users by role",
       });
     }
   }
@@ -981,28 +1011,28 @@ class UserController {
       if (!phone) {
         return res.status(400).json({
           success: false,
-          message: 'Phone number is required'
+          message: "Phone number is required",
         });
       }
 
-      const user = await User.findOne({ phone }).select('-password').lean();
+      const user = await User.findOne({ phone }).select("-password").lean();
 
       if (!user) {
         return res.status(404).json({
           success: false,
-          message: 'User not found'
+          message: "User not found",
         });
       }
 
       res.status(200).json({
         success: true,
-        data: { user }
+        data: { user },
       });
     } catch (error) {
-      logger.error('Get user by phone error:', error);
+      logger.error("Get user by phone error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve user'
+        message: "Failed to retrieve user",
       });
     }
   }
@@ -1017,26 +1047,26 @@ class UserController {
       const user = await User.findByIdAndUpdate(
         id,
         { lastLogin: new Date() },
-        { new: true }
-      ).select('-password');
+        { new: true },
+      ).select("-password");
 
       if (!user) {
         return res.status(404).json({
           success: false,
-          message: 'User not found'
+          message: "User not found",
         });
       }
 
       res.status(200).json({
         success: true,
-        message: 'Last login updated successfully',
-        data: { user }
+        message: "Last login updated successfully",
+        data: { user },
       });
     } catch (error) {
-      logger.error('Update last login error:', error);
+      logger.error("Update last login error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to update last login'
+        message: "Failed to update last login",
       });
     }
   }
@@ -1050,14 +1080,14 @@ class UserController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'User ID is required'
+          message: "User ID is required",
         });
       }
 
       if (!photoUrl) {
         return res.status(400).json({
           success: false,
-          message: 'Photo URL is required'
+          message: "Photo URL is required",
         });
       }
 
@@ -1068,7 +1098,7 @@ class UserController {
       if (!user) {
         return res.status(404).json({
           success: false,
-          message: 'User not found'
+          message: "User not found",
         });
       }
 
@@ -1087,21 +1117,21 @@ class UserController {
 
       res.status(200).json({
         success: true,
-        message: 'Profile photo updated successfully',
-        data: { user: userResponse }
+        message: "Profile photo updated successfully",
+        data: { user: userResponse },
       });
     } catch (error) {
-      if (error.message === 'Invalid user ID format') {
+      if (error.message === "Invalid user ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Update profile photo error:', error);
+      logger.error("Update profile photo error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to update profile photo'
+        message: "Failed to update profile photo",
       });
     }
   }

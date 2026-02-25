@@ -5,6 +5,9 @@ const logger = require("../utils/logger");
 const { Providers } = require("../data");
 const { createPhoneRegex } = require("../utils/helpers");
 const Telegram = require("../utils/telegram");
+const AuthService = require("../service/auth.service");
+
+const PREFIX = "customer_";
 
 class CustomerController {
   static validateObjectId(id) {
@@ -79,7 +82,9 @@ class CustomerController {
       }
       query = { ...query, ...CustomerController.buildFilterQuery(filters) };
 
-      if (includeDeleted !== "true") {
+      if (includeDeleted === "only") {
+        query.deletedAt = { $ne: null };
+      } else if (includeDeleted !== "true") {
         query.deletedAt = null;
       }
 
@@ -263,6 +268,14 @@ class CustomerController {
           .json({ success: false, message: "Customer not found" });
       }
 
+      // If account is being deactivated, clear all sessions immediately
+      if (updateData.isActive === false) {
+        await AuthService.deleteAllSessions(id, PREFIX);
+        logger.info(
+          `Customer account deactivated: ${id}. Cleared all sessions.`,
+        );
+      }
+
       res.status(200).json({
         success: true,
         message: "Customer updated successfully",
@@ -291,6 +304,13 @@ class CustomerController {
       }
 
       await customer.softDelete(req.user?.userId);
+
+      // Clear all sessions immediately after soft delete
+      await AuthService.deleteAllSessions(id, PREFIX);
+      logger.info(
+        `Customer account soft-deleted: ${id}. Cleared all sessions.`,
+      );
+
       res
         .status(200)
         .json({ success: true, message: "Customer deactivated successfully" });
