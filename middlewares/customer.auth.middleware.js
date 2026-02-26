@@ -2,25 +2,35 @@ const jwt = require("jsonwebtoken");
 const Customer = require("../models/customer.model");
 const logger = require("../utils/logger");
 const { getRedisClient } = require("../config/redis");
+const { JWT_SECRET } = require("../config/env");
 
 const authenticateCustomer = async (req, res, next) => {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
 
     if (!token) {
+      logger.warn(
+        `Customer Auth: No token provided for ${req.method} ${req.originalUrl} from ${req.ip}`,
+      );
       return res.status(401).json({
         success: false,
         message: "Access denied. No token provided.",
       });
     }
 
+    logger.debug(
+      `Customer Auth: Verifying token ${token.substring(0, 5)}... for ${req.method} ${req.originalUrl}`,
+    );
+
     // Check if token is blacklisted
     let isBlacklisted = false;
     try {
       const redisClient = getRedisClient();
-      const blacklistKey = `customer_blacklist:${token}`;
-      const blacklistResult = await redisClient.get(blacklistKey);
-      isBlacklisted = !!blacklistResult;
+      if (redisClient && redisClient.isReady) {
+        const blacklistKey = `customer_blacklist:${token}`;
+        const blacklistResult = await redisClient.get(blacklistKey);
+        isBlacklisted = !!blacklistResult;
+      }
     } catch (redisError) {
       logger.warn(
         "Redis not available for customer blacklist check:",
@@ -29,6 +39,7 @@ const authenticateCustomer = async (req, res, next) => {
     }
 
     if (isBlacklisted) {
+      logger.warn("Customer Auth: Token is blacklisted");
       return res.status(401).json({
         success: false,
         message: "Token has been invalidated. Please login again.",
@@ -36,10 +47,23 @@ const authenticateCustomer = async (req, res, next) => {
     }
 
     // Verify JWT token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (jwtError) {
+      logger.error("Customer Auth: JWT verification failed:", jwtError.message);
+      return res.status(401).json({
+        success: false,
+        message:
+          jwtError.name === "TokenExpiredError"
+            ? "Token expired."
+            : "Invalid token.",
+      });
+    }
 
     // Ensure this is a customer token
     if (decoded.type !== "customer") {
+      logger.warn(`Customer Auth: Invalid token type: ${decoded.type}`);
       return res.status(401).json({
         success: false,
         message: "Invalid token type. Customer token required.",
@@ -49,7 +73,16 @@ const authenticateCustomer = async (req, res, next) => {
     // Check if customer exists and is active
     const customer = await Customer.findById(decoded.customerId);
 
-    if (!customer || !customer.isActive) {
+    if (!customer) {
+      logger.warn(`Customer Auth: Customer not found: ${decoded.customerId}`);
+      return res.status(401).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    if (!customer.isActive) {
+      logger.warn(`Customer Auth: Account deactivated: ${decoded.customerId}`);
       return res.status(401).json({
         success: false,
         message: "Your account has been deactivated. Please contact support.",
@@ -59,18 +92,23 @@ const authenticateCustomer = async (req, res, next) => {
     // Enforce strict session validation for customers
     try {
       const redisClient = getRedisClient();
-      // Prefix is 'customer_' for customer sessions
-      const sessionId = decoded.sessionId;
-      const sessionKey = `customer_session:${decoded.customerId}:${sessionId}`;
+      if (redisClient && redisClient.isReady) {
+        // Prefix is 'customer_' for customer sessions
+        const sessionId = decoded.sessionId;
+        const sessionKey = `customer_session:${decoded.customerId}:${sessionId}`;
 
-      const sessionData = await redisClient.get(sessionKey);
+        const sessionData = await redisClient.get(sessionKey);
 
-      if (!sessionData) {
-        return res.status(401).json({
-          success: false,
-          message:
-            "Your session has been terminated or expired. Please login again.",
-        });
+        if (!sessionData) {
+          logger.warn(
+            `Customer Auth: Session not found in Redis: ${sessionKey}`,
+          );
+          return res.status(401).json({
+            success: false,
+            message:
+              "Your session has been terminated or expired. Please login again.",
+          });
+        }
       }
     } catch (redisError) {
       logger.warn(
@@ -83,17 +121,10 @@ const authenticateCustomer = async (req, res, next) => {
     req.token = token;
     next();
   } catch (error) {
-    if (error.name === "TokenExpiredError") {
-      return res.status(401).json({
-        success: false,
-        message: "Token expired. Please refresh your token or login again.",
-      });
-    }
-
-    logger.error("Customer authentication error:", error);
+    logger.error("Customer authentication unexpected error:", error);
     res.status(401).json({
       success: false,
-      message: "Invalid token.",
+      message: "Authentication failed.",
     });
   }
 };

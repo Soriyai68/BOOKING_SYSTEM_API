@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
 const logger = require("../utils/logger");
 const { getRedisClient } = require("../config/redis");
+const { JWT_SECRET } = require("../config/env");
 
 const authenticate = async (req, res, next) => {
   try {
@@ -40,7 +41,7 @@ const authenticate = async (req, res, next) => {
     }
 
     // Verify JWT token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     // Check if user exists and is active
     const user = await User.findById(decoded.userId);

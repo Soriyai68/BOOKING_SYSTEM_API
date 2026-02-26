@@ -9,6 +9,7 @@ const {
 const { Role, Providers } = require("../data");
 const logger = require("../utils/logger");
 const { createPhoneRegex } = require("../utils/helpers");
+const NotificationController = require("./notification.controller");
 
 class BookingController {
   // Helper method to validate ObjectId
@@ -581,6 +582,41 @@ class BookingController {
         },
       ]);
 
+      // Manually populate seats for notification helper (since seats is [String])
+      const Seat = mongoose.model("Seat");
+      const seatDocs = await Seat.find({ _id: { $in: booking.seats } }).select(
+        "row seat_number",
+      );
+      booking.populatedSeats = seatDocs.map((s) => ({
+        ...s.toObject(),
+        seat_identifier: `${s.row}-${s.seat_number}`,
+      }));
+
+      // Notify admins of new booking
+      NotificationController.notifyAdmins({
+        type: "booking_created",
+        title: "New Booking Created",
+        message: `New booking ${booking.reference_code} created by ${booking.customerId?.name || "Guest"}.`,
+        relatedId: booking._id,
+      });
+
+      // Notify customer of new booking
+      if (booking.customerId) {
+        const movieTitle = booking.showtimeId?.movie_id?.title || "Movie";
+        const {
+          message: dynamicMessage,
+          metadata,
+          type: notifType,
+        } = NotificationController.generateBookingMessage(booking, movieTitle);
+        NotificationController.notifyCustomer(booking.customerId._id, {
+          type: notifType,
+          title: "Booking Confirmed",
+          message: dynamicMessage,
+          metadata,
+          relatedId: booking._id,
+        });
+      }
+
       res.status(201).json({
         success: true,
         message: expirationMessage,
@@ -709,8 +745,7 @@ class BookingController {
 
       await booking.save();
 
-      // Populate for response
-      await booking.populate([
+      const populatedBooking = await booking.populate([
         { path: "customerId", select: "name email phone" },
         {
           path: "showtimeId",
@@ -721,10 +756,51 @@ class BookingController {
         },
       ]);
 
+      // Manually populate seats for notification helper
+      const updatedSeats = await mongoose
+        .model("Seat")
+        .find({ _id: { $in: booking.seats } })
+        .select("row seat_number");
+      populatedBooking.populatedSeats = updatedSeats.map((s) => ({
+        ...s.toObject(),
+        seat_identifier: `${s.row}-${s.seat_number}`,
+      }));
+
+      // Notify customer of booking update
+      if (booking.customerId) {
+        const movieTitle =
+          populatedBooking.showtimeId?.movie_id?.title || "Movie";
+        const {
+          message: dynamicMessage,
+          metadata,
+          type: notifType,
+        } = NotificationController.generateBookingMessage(
+          populatedBooking,
+          movieTitle,
+        );
+
+        // Use the correct title based on actual notification type
+        const titleMap = {
+          booking_cancelled: "Booking Cancelled",
+          booking_confirmed: "Payment Confirmed",
+          pay_at_cinema: "Booking Confirmed",
+          pending_payment: "Booking Created",
+          booking_created: "Booking Confirmed",
+        };
+
+        NotificationController.notifyCustomer(booking.customerId._id, {
+          type: notifType,
+          title: titleMap[notifType] || "Booking Updated",
+          message: dynamicMessage,
+          metadata,
+          relatedId: booking._id,
+        });
+      }
+
       res.status(200).json({
         success: true,
         message: "Booking updated successfully",
-        data: { booking },
+        data: { booking: populatedBooking },
       });
     } catch (error) {
       logger.error("Update booking error:", error);
@@ -836,6 +912,29 @@ class BookingController {
       }
 
       await booking.cancelBooking("Cancelled by admin");
+
+      // Notify customer of cancellation
+      if (booking.customerId) {
+        // Populate showtime + movie for the notification message
+        const populatedBooking = await Booking.findById(booking._id).populate({
+          path: "showtimeId",
+          populate: { path: "movie_id", select: "title" },
+        });
+
+        const movieTitle =
+          populatedBooking?.showtimeId?.movie_id?.title || "Movie";
+
+        NotificationController.notifyCustomer(booking.customerId, {
+          type: "booking_cancelled",
+          title: "Booking Cancelled",
+          message: `Your booking ${booking.reference_code} for "${movieTitle}" has been cancelled.`,
+          metadata: {
+            ref: booking.reference_code,
+            movie: movieTitle,
+          },
+          relatedId: booking._id,
+        });
+      }
 
       res.status(200).json({
         success: true,

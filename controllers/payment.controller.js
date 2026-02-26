@@ -3,6 +3,7 @@ const { Payment, Booking } = require("../models");
 const { Role } = require("../data");
 const logger = require("../utils/logger");
 const { BakongKHQR, khqrData, IndividualInfo } = require("bakong-khqr");
+const NotificationController = require("./notification.controller");
 
 class PaymentController {
   // Helper method to validate ObjectId
@@ -180,7 +181,7 @@ class PaymentController {
 
       const payment = await Payment.findById(id).populate(
         "bookingId",
-        "reference_code booking_status total_price"
+        "reference_code booking_status total_price",
       );
 
       if (!payment) {
@@ -260,7 +261,7 @@ class PaymentController {
           process.env.BAKONG_ACCOUNT_USERNAME,
           "Movie Booking System", // Using a placeholder name
           "BATTAMBANG", // Using a placeholder city
-          optionalData
+          optionalData,
         );
         // generate qr
         const khqr = new BakongKHQR();
@@ -274,10 +275,10 @@ class PaymentController {
         }
 
         const deepLink = `bakong://khqr?qr=${encodeURIComponent(
-          qrData.data.qr
+          qrData.data.qr,
         )}`;
         const deepLinkWeb = `https://www.bakong.com.kh/khqr?qr=${encodeURIComponent(
-          qrData.data.qr
+          qrData.data.qr,
         )}`;
 
         const payment = new Payment({
@@ -297,7 +298,7 @@ class PaymentController {
 
         const populatedPayment = await Payment.findById(payment._id).populate(
           "bookingId",
-          "reference_code booking_status total_price"
+          "reference_code booking_status total_price",
         );
 
         return res.status(201).json({
@@ -322,7 +323,7 @@ class PaymentController {
 
         const populatedPayment = await Payment.findById(payment._id).populate(
           "bookingId",
-          "reference_code booking_status total_price"
+          "reference_code booking_status total_price",
         );
 
         return res.status(201).json({
@@ -349,108 +350,141 @@ class PaymentController {
     return PaymentController.checkBakongPayment(req, res);
   }
 
-static async checkBakongPayment(req, res) {
-  const { md5 } = req.body;
+  static async checkBakongPayment(req, res) {
+    const { md5 } = req.body;
 
-  try {
-    // 1. Find payment
-    const payment = await Payment.findOne({ md5 });
-    if (!payment) {
-      return res.status(404).json({
-        success: false,
-        message: "Payment not found",
-      });
-    }
-
-    // 2. Call Bakong API
-    const response = await fetch(
-      `${process.env.BAKONG_PROD_BASE_API_URL}/check_transaction_by_md5`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.BAKONG_ACCESS_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ md5: payment.md5 }),
+    try {
+      // 1. Find payment
+      const payment = await Payment.findOne({ md5 });
+      if (!payment) {
+        return res.status(404).json({
+          success: false,
+          message: "Payment not found",
+        });
       }
-    );
 
-    // 3. Handle Bakong HTTP errors
-    if (!response.ok) {
-      const text = await response.text();
-      logger.error("Bakong HTTP error:", response.status, text);
+      // 2. Call Bakong API
+      const response = await fetch(
+        `${process.env.BAKONG_PROD_BASE_API_URL}/check_transaction_by_md5`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.BAKONG_ACCESS_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ md5: payment.md5 }),
+        },
+      );
 
-      return res.status(502).json({
-        success: false,
-        message: "Bakong service error",
-        status: response.status,
-      });
-    }
+      // 3. Handle Bakong HTTP errors
+      if (!response.ok) {
+        const text = await response.text();
+        logger.error("Bakong HTTP error:", response.status, text);
 
-    const data = await response.json();
-    logger.info("Bakong response:", data);
+        return res.status(502).json({
+          success: false,
+          message: "Bakong service error",
+          status: response.status,
+        });
+      }
 
-    /**
-     * Bakong responseCode meaning (common pattern)
-     * 0 = completed
-     * 1 = pending / not found yet
-     * others = error
-     */
+      const data = await response.json();
+      logger.info("Bakong response:", data);
 
-    // 4. Payment COMPLETED
-    if (data.responseCode === 0) {
-      // Avoid double update
-      if (payment.status !== "Completed") {
-        payment.status = "Completed";
-        payment.paid = true;
-        payment.paidAt = new Date();
+      /**
+       * Bakong responseCode meaning (common pattern)
+       * 0 = completed
+       * 1 = pending / not found yet
+       * others = error
+       */
 
-        payment.bakongHash = data.data?.hash || null;
-        payment.fromAccount_id = data.data?.fromAccountId || null;
-        payment.toAccount_id = data.data?.toAccountId || null;
+      // 4. Payment COMPLETED
+      if (data.responseCode === 0) {
+        // Avoid double update
+        if (payment.status !== "Completed") {
+          payment.status = "Completed";
+          payment.paid = true;
+          payment.paidAt = new Date();
 
-        await payment.save();
+          payment.bakongHash = data.data?.hash || null;
+          payment.fromAccount_id = data.data?.fromAccountId || null;
+          payment.toAccount_id = data.data?.toAccountId || null;
 
-        // Update booking if exists
-        if (payment.bookingId) {
-          const booking = await Booking.findById(payment.bookingId);
-          if (booking && booking.booking_status !== "Confirmed") {
-            await booking.markAsCompleted(payment._id);
+          await payment.save();
+
+          // Update booking if exists
+          if (payment.bookingId) {
+            const booking = await Booking.findById(payment.bookingId).populate({
+              path: "showtimeId",
+              populate: { path: "movie_id", select: "title" },
+            });
+
+            if (booking && booking.booking_status !== "Confirmed") {
+              await booking.markAsCompleted(payment._id);
+
+              // Manually populate seats for notification
+              const Seat = mongoose.model("Seat");
+              const seatDocs = await Seat.find({
+                _id: { $in: booking.seats },
+              }).select("row seat_number");
+              booking.populatedSeats = seatDocs.map((s) => ({
+                ...s.toObject(),
+                seat_identifier: `${s.row}-${s.seat_number}`,
+              }));
+
+              const movieTitle = booking.showtimeId?.movie_id?.title || "Movie";
+              const {
+                message: dynamicMessage,
+                metadata,
+                type: notifType,
+              } = NotificationController.generateBookingMessage(
+                booking,
+                movieTitle,
+              );
+
+              // Notify customer
+              NotificationController.notifyCustomer(booking.customerId, {
+                type: notifType,
+                title: "Payment Confirmed",
+                message: dynamicMessage,
+                metadata,
+                relatedId: booking._id,
+              });
+            }
           }
         }
+
+        return res.status(200).json({
+          success: true,
+          status: "COMPLETED",
+          message: "Payment confirmed",
+          data: payment,
+        });
       }
 
-      return res.status(200).json({
-        success: true,
-        status: "COMPLETED",
-        message: "Payment confirmed",
-        data: payment,
-      });
-    }
-
-    // 5. Payment PENDING (NOT an error)
-    if (data.responseCode === 1) {
-      return res.status(200).json({
+      // 5. Payment PENDING (NOT an error)
+      if (data.responseCode === 1) {
+        return res.status(200).json({
+          success: false,
+          status: "PENDING",
+          message: data.message || "Payment is pending",
+        });
+      }
+      // 6. Other Bakong errors
+      return res.status(400).json({
         success: false,
-        status: "PENDING",
-        message: data.message || "Payment is pending",
+        status: "FAILED",
+        message: data.message || "Payment failed",
+        code: data.responseCode,
+      });
+    } catch (error) {
+      logger.error("Error in checkBakongPayment:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error",
       });
     }
-    // 6. Other Bakong errors
-    return res.status(400).json({
-      success: false,
-      status: "FAILED",
-      message: data.message || "Payment failed",
-      code: data.responseCode,
-    });
-  } catch (error) {
-    logger.error("Error in checkBakongPayment:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
   }
-}
 
   // 5. UPDATE PAYMENT
   static async update(req, res) {
@@ -465,7 +499,7 @@ static async checkBakongPayment(req, res) {
       const payment = await Payment.findByIdAndUpdate(
         id,
         { $set: updateData },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       ).populate("bookingId", "reference_code booking_status total_price");
 
       if (!payment) {
@@ -501,7 +535,7 @@ static async checkBakongPayment(req, res) {
       const payment = await Payment.findByIdAndUpdate(
         id,
         { $set: { status } },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       ).populate("bookingId", "reference_code booking_status total_price");
 
       if (!payment) {
@@ -512,9 +546,42 @@ static async checkBakongPayment(req, res) {
 
       // If status is updated to 'Completed', update the booking as well
       if (status === "Completed" && payment.bookingId) {
-        const booking = await Booking.findById(payment.bookingId);
+        const booking = await Booking.findById(payment.bookingId).populate({
+          path: "showtimeId",
+          populate: { path: "movie_id", select: "title" },
+        });
+
         if (booking) {
           await booking.markAsCompleted(payment._id);
+
+          // Manually populate seats for notification
+          const Seat = mongoose.model("Seat");
+          const seatDocs = await Seat.find({
+            _id: { $in: booking.seats },
+          }).select("row seat_number");
+          booking.populatedSeats = seatDocs.map((s) => ({
+            ...s.toObject(),
+            seat_identifier: `${s.row}-${s.seat_number}`,
+          }));
+
+          const movieTitle = booking.showtimeId?.movie_id?.title || "Movie";
+          const {
+            message: dynamicMessage,
+            metadata,
+            type: notifType,
+          } = NotificationController.generateBookingMessage(
+            booking,
+            movieTitle,
+          );
+
+          // Notify customer
+          NotificationController.notifyCustomer(booking.customerId, {
+            type: notifType,
+            title: "Payment Confirmed",
+            message: dynamicMessage,
+            metadata,
+            relatedId: booking._id,
+          });
         }
       }
 
@@ -540,7 +607,7 @@ static async checkBakongPayment(req, res) {
       const payment = await Payment.findByIdAndUpdate(
         id,
         { deletedAt: new Date() },
-        { new: true }
+        { new: true },
       );
 
       if (!payment) {
@@ -570,7 +637,7 @@ static async checkBakongPayment(req, res) {
       const payment = await Payment.findByIdAndUpdate(
         id,
         { deletedAt: null },
-        { new: true }
+        { new: true },
       );
 
       if (!payment) {
@@ -612,12 +679,10 @@ static async checkBakongPayment(req, res) {
       });
     } catch (error) {
       logger.error("Force delete payment error:", error);
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to permanently delete payment",
-        });
+      res.status(500).json({
+        success: false,
+        message: "Failed to permanently delete payment",
+      });
     }
   }
 
@@ -661,12 +726,10 @@ static async checkBakongPayment(req, res) {
       });
     } catch (error) {
       logger.error("List deleted payments error:", error);
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to retrieve deleted payments",
-        });
+      res.status(500).json({
+        success: false,
+        message: "Failed to retrieve deleted payments",
+      });
     }
   }
 
@@ -728,12 +791,10 @@ static async checkBakongPayment(req, res) {
       });
     } catch (error) {
       logger.error("Get payment analytics error:", error);
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to retrieve payment analytics",
-        });
+      res.status(500).json({
+        success: false,
+        message: "Failed to retrieve payment analytics",
+      });
     }
   }
 }

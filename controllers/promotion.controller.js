@@ -1,6 +1,7 @@
-const mongoose = require('mongoose');
-const Promotion = require('../models/promotion.model');
-const logger = require('../utils/logger');
+const mongoose = require("mongoose");
+const Promotion = require("../models/promotion.model");
+const logger = require("../utils/logger");
+const NotificationController = require("./notification.controller");
 
 /**
  * PromotionController - CRUD operations for promotion management
@@ -10,7 +11,7 @@ class PromotionController {
   // Helper: validate ObjectId
   static validateObjectId(id) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error('Invalid promotion ID format');
+      throw new Error("Invalid promotion ID format");
     }
   }
 
@@ -20,8 +21,8 @@ class PromotionController {
 
     return {
       $or: [
-        { code: { $regex: search, $options: 'i' } },
-        { title: { $regex: search, $options: 'i' } },
+        { code: { $regex: search, $options: "i" } },
+        { title: { $regex: search, $options: "i" } },
       ],
     };
   }
@@ -57,9 +58,9 @@ class PromotionController {
     }
 
     // Active-only filter: status=Active and current date within range
-    if (filters.activeOnly === 'true' || filters.activeOnly === true) {
+    if (filters.activeOnly === "true" || filters.activeOnly === true) {
       const now = new Date();
-      query.status = 'Active';
+      query.status = "Active";
 
       query.start_date = query.start_date || {};
       query.end_date = query.end_date || {};
@@ -77,8 +78,8 @@ class PromotionController {
       const {
         page = 1,
         limit = 10,
-        sortBy = 'start_date',
-        sortOrder = 'desc',
+        sortBy = "start_date",
+        sortOrder = "desc",
         search,
         ...filters
       } = req.query;
@@ -94,14 +95,10 @@ class PromotionController {
       }
 
       const sortObj = {};
-      sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
+      sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
 
       const [promotions, totalCount] = await Promise.all([
-        Promotion.find(query)
-          .sort(sortObj)
-          .skip(skip)
-          .limit(limitNum)
-          .lean(),
+        Promotion.find(query).sort(sortObj).skip(skip).limit(limitNum).lean(),
         Promotion.countDocuments(query),
       ]);
 
@@ -128,10 +125,10 @@ class PromotionController {
         },
       });
     } catch (error) {
-      logger.error('Get all promotions error:', error);
+      logger.error("Get all promotions error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve promotions',
+        message: "Failed to retrieve promotions",
       });
     }
   }
@@ -144,7 +141,7 @@ class PromotionController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Promotion ID is required',
+          message: "Promotion ID is required",
         });
       }
 
@@ -155,7 +152,7 @@ class PromotionController {
       if (!promotion) {
         return res.status(404).json({
           success: false,
-          message: 'Promotion not found',
+          message: "Promotion not found",
         });
       }
 
@@ -164,14 +161,14 @@ class PromotionController {
         data: { promotion },
       });
     } catch (error) {
-      if (error.message === 'Invalid promotion ID format') {
+      if (error.message === "Invalid promotion ID format") {
         return res.status(400).json({ success: false, message: error.message });
       }
 
-      logger.error('Get promotion by ID error:', error);
+      logger.error("Get promotion by ID error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve promotion',
+        message: "Failed to retrieve promotion",
       });
     }
   }
@@ -185,7 +182,7 @@ class PromotionController {
       if (!code || !start_date || !end_date) {
         return res.status(400).json({
           success: false,
-          message: 'code, start_date and end_date are required',
+          message: "code, start_date and end_date are required",
         });
       }
 
@@ -196,7 +193,10 @@ class PromotionController {
       }
 
       // Normalize empty image_url to null so it behaves like Movie.poster_url
-      if (promotionData.image_url === '' || promotionData.image_url === undefined) {
+      if (
+        promotionData.image_url === "" ||
+        promotionData.image_url === undefined
+      ) {
         promotionData.image_url = null;
       }
 
@@ -205,33 +205,54 @@ class PromotionController {
       if (existing) {
         return res.status(409).json({
           success: false,
-          message: 'Promotion with this code already exists',
+          message: "Promotion with this code already exists",
         });
       }
 
       const promotion = new Promotion(promotionData);
       await promotion.save();
 
-      logger.info(`Created new promotion: ${promotion._id} (${promotion.code})`);
+      logger.info(
+        `Created new promotion: ${promotion._id} (${promotion.code})`,
+      );
+
+      // Notify customers if promotion is created as Active
+      if (promotion.status === "Active") {
+        NotificationController.notifyAllCustomers({
+          type: "promotion_new",
+          title: "New Promotion!",
+          message:
+            promotion.description ||
+            (promotion.title
+              ? `${promotion.title} (Code: ${promotion.code})`
+              : `New promotion available: ${promotion.code}`),
+          metadata: {
+            promoTitle: promotion.title || "",
+            code: promotion.code,
+            description: promotion.description || "",
+          },
+          relatedId: promotion._id,
+        });
+      }
 
       res.status(201).json({
         success: true,
-        message: 'Promotion created successfully',
+        message: "Promotion created successfully",
         data: { promotion },
       });
     } catch (error) {
-      if (error.name === 'ValidationError') {
+      if (error.name === "ValidationError") {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
+          message: "Validation error",
           errors: Object.values(error.errors).map((err) => err.message),
         });
       }
 
-      logger.error('Create promotion error:', error);
+      logger.error("Create promotion error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to create promotion',
+        message: "Failed to create promotion",
       });
     }
   }
@@ -245,7 +266,7 @@ class PromotionController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Promotion ID is required',
+          message: "Promotion ID is required",
         });
       }
 
@@ -269,7 +290,7 @@ class PromotionController {
         if (existing) {
           return res.status(409).json({
             success: false,
-            message: 'Another promotion with this code already exists',
+            message: "Another promotion with this code already exists",
           });
         }
       }
@@ -279,8 +300,8 @@ class PromotionController {
       }
 
       // Normalize image_url if explicitly cleared
-      if (Object.prototype.hasOwnProperty.call(updateData, 'image_url')) {
-        if (updateData.image_url === '' || updateData.image_url === undefined) {
+      if (Object.prototype.hasOwnProperty.call(updateData, "image_url")) {
+        if (updateData.image_url === "" || updateData.image_url === undefined) {
           updateData.image_url = null;
         }
       }
@@ -288,40 +309,59 @@ class PromotionController {
       const promotion = await Promotion.findByIdAndUpdate(id, updateData, {
         new: true,
         runValidators: true,
-        context: 'query',
+        context: "query",
       });
 
       if (!promotion) {
         return res.status(404).json({
           success: false,
-          message: 'Promotion not found',
+          message: "Promotion not found",
         });
       }
 
       logger.info(`Updated promotion: ${id} (${promotion.code})`);
 
+      // Notify customers if status changed to Active
+      if (updateData.status === "Active") {
+        NotificationController.notifyAllCustomers({
+          type: "promotion_new",
+          title: "New Promotion Active!",
+          message:
+            promotion.description ||
+            (promotion.title
+              ? `${promotion.title} (Code: ${promotion.code})`
+              : `Promotion active: ${promotion.code}`),
+          metadata: {
+            promoTitle: promotion.title || "",
+            code: promotion.code,
+            description: promotion.description || "",
+          },
+          relatedId: promotion._id,
+        });
+      }
+
       res.status(200).json({
         success: true,
-        message: 'Promotion updated successfully',
+        message: "Promotion updated successfully",
         data: { promotion },
       });
     } catch (error) {
-      if (error.message === 'Invalid promotion ID format') {
+      if (error.message === "Invalid promotion ID format") {
         return res.status(400).json({ success: false, message: error.message });
       }
 
-      if (error.name === 'ValidationError') {
+      if (error.name === "ValidationError") {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
+          message: "Validation error",
           errors: Object.values(error.errors).map((err) => err.message),
         });
       }
 
-      logger.error('Update promotion error:', error);
+      logger.error("Update promotion error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to update promotion',
+        message: "Failed to update promotion",
       });
     }
   }
@@ -334,7 +374,7 @@ class PromotionController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Promotion ID is required',
+          message: "Promotion ID is required",
         });
       }
 
@@ -345,7 +385,7 @@ class PromotionController {
       if (!promotion) {
         return res.status(404).json({
           success: false,
-          message: 'Promotion not found',
+          message: "Promotion not found",
         });
       }
 
@@ -353,17 +393,17 @@ class PromotionController {
 
       res.status(200).json({
         success: true,
-        message: 'Promotion deleted successfully',
+        message: "Promotion deleted successfully",
       });
     } catch (error) {
-      if (error.message === 'Invalid promotion ID format') {
+      if (error.message === "Invalid promotion ID format") {
         return res.status(400).json({ success: false, message: error.message });
       }
 
-      logger.error('Delete promotion error:', error);
+      logger.error("Delete promotion error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to delete promotion',
+        message: "Failed to delete promotion",
       });
     }
   }
@@ -376,7 +416,7 @@ class PromotionController {
       if (!Array.isArray(ids) || ids.length === 0) {
         return res.status(400).json({
           success: false,
-          message: 'A non-empty array of promotion IDs is required',
+          message: "A non-empty array of promotion IDs is required",
         });
       }
 
@@ -385,7 +425,7 @@ class PromotionController {
 
       const result = await Promotion.deleteMany({ _id: { $in: objectIds } });
 
-      logger.warn('Bulk deleted promotions', {
+      logger.warn("Bulk deleted promotions", {
         requestedCount: ids.length,
         deletedCount: result.deletedCount,
       });
@@ -400,10 +440,10 @@ class PromotionController {
         },
       });
     } catch (error) {
-      logger.error('Bulk delete promotions error:', error);
+      logger.error("Bulk delete promotions error:", error);
       return res.status(500).json({
         success: false,
-        message: 'Failed to bulk delete promotions',
+        message: "Failed to bulk delete promotions",
       });
     }
   }

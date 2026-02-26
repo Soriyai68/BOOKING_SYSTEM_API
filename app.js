@@ -12,30 +12,25 @@ const mongoose = require("mongoose");
 const { envConfig } = require("./config/env");
 const { getRedisClient } = require("./config/redis");
 
+// Trace middleware to debug routing issues
+const traceMiddleware = (req, res, next) => {
+  if (req.url.includes("notifications")) {
+    logger.info(`[TRACE] Request ${req.method} ${req.url}`);
+  }
+  next();
+};
+
 // Import middlewares
 const { error, sanitize, morgan } = require("./middlewares");
 const { logger } = require("./utils");
 
 // Import routes
 const apiRoutes = require("./routes");
-const authRoutes = require("./routes/auth.routes");
-const userRoutes = require("./routes/users.routes");
-const seatRoutes = require("./routes/seats.routes");
-const hallRoutes = require("./routes/halls.routes");
-const theaterRoutes = require("./routes/theaters.routes");
-const showtimeRoutes = require("./routes/showtime.routes");
-const permissionRoutes = require("./routes/permission.routes");
-const bookingRoutes = require("./routes/bookings.routes");
-const bookingDetailRoutes = require("./routes/bookingDetails.routes");
-const paymentRoutes = require("./routes/payments.routes");
-const seatBookingsRoutes = require("./routes/seatBookings.routes");
-const customerRoutes = require("./routes/customer.routes");
-const customerAuthRoutes = require("./routes/customer.auth.routes");
-const previewRoutes = require("./routes/previews.routes");
-
-const { custom } = require("joi");
-
+const notificationRoutes = require("./routes/notifications.routes");
+const { authenticate, authenticateCustomer } = require("./middlewares");
 const app = express();
+
+app.use(traceMiddleware);
 
 // Ensure logs directory exists
 const logsDir = path.join(__dirname, "logs");
@@ -67,7 +62,7 @@ app.use(
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       sameSite: envConfig.env === "production" ? "strict" : "lax",
     },
-  })
+  }),
 );
 
 app.use(sanitize); // Request sanitization
@@ -117,36 +112,16 @@ app.get("/", (req, res) => {
 
 app.get("/favicon.ico", (req, res) => res.status(204).send());
 
+// Notification routes (MUST be before general routes to avoid shadowing)
+app.use("/api/v1/notifications", authenticate, notificationRoutes);
+app.use(
+  "/api/v1/customers/notifications",
+  authenticateCustomer,
+  notificationRoutes,
+);
+
 // API Routes
 app.use("/api/v1", apiRoutes);
-// auth
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/customers/auth", customerAuthRoutes);
-// users
-app.use("/api/v1/users", userRoutes);
-// seats
-app.use("/api/v1/seats", seatRoutes);
-// theaters
-app.use("/api/v1/theaters", theaterRoutes);
-// halls
-app.use("/api/v1/halls", hallRoutes);
-// showtimes
-app.use("/api/v1/showtimes", showtimeRoutes);
-// permission
-app.use("/api/v1/permissions", permissionRoutes);
-// booking
-app.use("/api/v1/bookings", bookingRoutes);
-// bookingDetails
-app.use("/api/v1/bookingDetails", bookingDetailRoutes);
-// payment
-app.use("/api/v1/payments", paymentRoutes);
-// seatBooking
-app.use("/api/v1/seatBookings", seatBookingsRoutes);
-// customer
-app.use("/api/v1/customers", customerRoutes);
-// preview
-app.use("/api/v1/previews", previewRoutes);
-
 // 404 handler for undefined routes
 app.use((req, res) => {
   logger.warn(`404 - Route not found: ${req.method} ${req.originalUrl}`);

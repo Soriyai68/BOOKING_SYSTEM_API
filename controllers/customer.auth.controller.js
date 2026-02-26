@@ -8,6 +8,7 @@ const { UAParser } = require("ua-parser-js");
 const crypto = require("crypto");
 
 const PREFIX = "customer_";
+const NotificationController = require("./notification.controller");
 
 class CustomerAuthController {
   // Authenticate/Register customer via Telegram (Standard Widget)
@@ -83,6 +84,13 @@ class CustomerAuthController {
         await Telegram.sendNotificationToAdmins(
           `🆕 <b>New Customer (via Telegram)</b>\nName: ${customer.name}\nProvider: telegram\nProvider ID: ${id}\nUser: @${username || "N/A"}`,
         );
+
+        // Welcome Notification (Internal)
+        NotificationController.notifyCustomer(customer._id, {
+          type: "welcome",
+          title: "Welcome to Movie Booking!",
+          message: `Hello ${customer.name}, welcome to our platform! Enjoy your movie experience.`,
+        });
       }
 
       // Handle session and tokens
@@ -176,6 +184,13 @@ class CustomerAuthController {
         await Telegram.sendNotificationToAdmins(
           `🆕 <b>New Customer (via Mini App)</b>\nName: ${customer.name}\nProvider: telegram-webapp\nProvider ID: ${id}\nUser: @${username || "N/A"}\nPhone: ${phone_number || "N/A"}`,
         );
+
+        // Welcome Notification (Internal)
+        NotificationController.notifyCustomer(customer._id, {
+          type: "welcome",
+          title: "Welcome to Movie Booking!",
+          message: `Hello ${customer.name}, welcome to our platform! Enjoy your movie experience.`,
+        });
       }
 
       // Handle session and tokens
@@ -273,6 +288,8 @@ class CustomerAuthController {
           telegramId: customer.telegramId,
           photoUrl: customer.photoUrl,
           isVerified: customer.isVerified,
+          email: customer.email,
+          createdAt: customer.createdAt,
           customerType: customer.customerType,
         },
         accessToken: tokens.accessToken,
