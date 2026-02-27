@@ -597,13 +597,22 @@ class BookingController {
       }));
 
       // Notify admins of new booking
+      const movieTitle = booking.showtimeId?.movie_id?.title || "Movie";
+      const seatsLabel = (booking.populatedSeats || [])
+        .map((s) => s.seat_identifier)
+        .join(", ");
+
       NotificationController.notifyAdmins({
-        type: "booking_created",
+        type: "admin_booking_created",
         title: "New Booking Created",
-        message: `New booking ${booking.reference_code} created by ${booking.customerId?.name || "Guest"}.`,
+        message: `New booking ${booking.reference_code} for "${movieTitle}" by ${
+          booking.customerId?.name || "Guest"
+        }. Seats: ${seatsLabel}`,
         metadata: {
           ref: booking.reference_code,
           customer: booking.customerId?.name || "Guest",
+          movie: movieTitle,
+          seats: seatsLabel,
         },
         relatedId: booking._id,
       });

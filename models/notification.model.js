@@ -18,6 +18,7 @@ const notificationSchema = new mongoose.Schema(
       required: true,
       enum: [
         "booking_created",
+        "admin_booking_created",
         "booking_confirmed",
         "booking_cancelled",
         "booking_updated",
