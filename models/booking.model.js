@@ -27,7 +27,14 @@ const bookingSchema = new mongoose.Schema(
     },
     payment_method: {
       type: String,
-      enum: ["Bakong", "Cash", "Card", "Mobile Banking", "Bank Transfer", "PayAtCinema"],
+      enum: [
+        "Bakong",
+        "Cash",
+        "Card",
+        "Mobile Banking",
+        "Bank Transfer",
+        "PayAtCinema",
+      ],
     },
     seats: {
       type: [String],
@@ -67,6 +74,10 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    isHiddenForCustomer: {
+      type: Boolean,
+      default: false,
+    },
     deletedAt: {
       type: Date,
       default: null,
@@ -74,7 +85,7 @@ const bookingSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Static methods
@@ -133,7 +144,7 @@ bookingSchema.methods.isExpired = function () {
 bookingSchema.methods.markAsCompleted = async function (paymentId) {
   if (this.booking_status === "Confirmed") {
     logger.warn(
-      `Booking ${this.reference_code} (ID: ${this._id}) is already confirmed. Skipping ticket generation.`
+      `Booking ${this.reference_code} (ID: ${this._id}) is already confirmed. Skipping ticket generation.`,
     );
     return this;
   }
@@ -151,21 +162,21 @@ bookingSchema.methods.markAsCompleted = async function (paymentId) {
         status: "booked",
       },
       $unset: { locked_until: "" },
-    }
+    },
   );
 
   if (updateResult.modifiedCount > 0) {
     logger.info(
-      `${updateResult.modifiedCount} seat bookings for Booking ID: ${this._id} updated from 'locked' to 'booked'.`
+      `${updateResult.modifiedCount} seat bookings for Booking ID: ${this._id} updated from 'locked' to 'booked'.`,
     );
   } else {
     logger.warn(
-      `No 'locked' seat bookings found for Booking ID: ${this._id} to update to 'booked'.`
+      `No 'locked' seat bookings found for Booking ID: ${this._id} to update to 'booked'.`,
     );
   }
 
   logger.info(
-    `Booking ${this.reference_code} (ID: ${this._id}) status updated to Completed. Payment ID: ${paymentId}.`
+    `Booking ${this.reference_code} (ID: ${this._id}) status updated to Completed. Payment ID: ${paymentId}.`,
   );
 
   // Fetch seat documents to generate tickets
@@ -180,7 +191,7 @@ bookingSchema.methods.markAsCompleted = async function (paymentId) {
 };
 
 bookingSchema.methods.cancelBooking = async function (
-  reason = "Cancelled by user"
+  reason = "Cancelled by user",
 ) {
   this.booking_status = "Cancelled";
   this.noted = reason;
@@ -190,7 +201,7 @@ bookingSchema.methods.cancelBooking = async function (
   const SeatBookingHistory = mongoose.model("SeatBookingHistory");
   await SeatBookingHistory.updateMany(
     { bookingId: this._id, action: "booked" },
-    { $set: { action: "canceled" } }
+    { $set: { action: "canceled" } },
   );
 
   // New logic: Release the seats by deleting the corresponding SeatBooking documents.
@@ -199,7 +210,6 @@ bookingSchema.methods.cancelBooking = async function (
 
   return this.save();
 };
-
 
 // Mongoose middleware for auto-updating seat status has been removed.
 // The new design uses a separate SeatBooking collection to manage seat reservations per showtime.

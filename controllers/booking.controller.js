@@ -597,6 +597,10 @@ class BookingController {
         type: "booking_created",
         title: "New Booking Created",
         message: `New booking ${booking.reference_code} created by ${booking.customerId?.name || "Guest"}.`,
+        metadata: {
+          ref: booking.reference_code,
+          customer: booking.customerId?.name || "Guest",
+        },
         relatedId: booking._id,
       });
 

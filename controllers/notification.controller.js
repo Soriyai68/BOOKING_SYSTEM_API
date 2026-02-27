@@ -227,6 +227,8 @@ class NotificationController {
       seats,
       amount: booking.total_price,
       method: method || "",
+      status,
+      payment_status: booking.payment_status || "",
     };
 
     let message = "";
@@ -379,6 +381,7 @@ class NotificationController {
         type,
         title,
         message,
+        description,
         metadata,
         relatedId,
         relatedModel: relatedId ? relatedModel : null,
