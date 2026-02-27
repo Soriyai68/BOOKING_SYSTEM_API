@@ -2,19 +2,24 @@ const { Role } = require("../data");
 
 function authorize(...allowedRoles) {
   return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).send({error: "Authentication required."});
+    const user = req.user || req.customer;
+    if (!user) {
+      return res.status(401).send({ error: "Authentication required." });
     }
 
-    if (req.user.role === Role.SUPERADMIN) {
+    const userRole = user.role || (req.customer ? Role.CUSTOMER : null);
+
+    if (userRole === Role.SUPERADMIN) {
       return next();
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).send({error: "You do not have permission to access this resource"});
+    if (!allowedRoles.includes(userRole)) {
+      return res.status(403).send({
+        error: "You do not have permission to access this resource",
+      });
     }
 
     next();
   };
 }
-module.exports = authorize
+module.exports = authorize;

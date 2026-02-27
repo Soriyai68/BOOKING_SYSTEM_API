@@ -366,6 +366,10 @@ class BookingController {
   // --- CREATE BOOKING ---
   static async create(req, res) {
     try {
+      console.log(
+        "POST /bookings request body:",
+        JSON.stringify(req.body, null, 2),
+      );
       const {
         customerId,
         guestEmail,
@@ -627,6 +631,7 @@ class BookingController {
         data: { booking },
       });
     } catch (error) {
+      console.error("Create booking error detail:", error);
       logger.error("Create booking error:", error);
       res
         .status(500)

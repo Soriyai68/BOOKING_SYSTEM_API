@@ -12,7 +12,7 @@ const router = express.Router();
 router.post(
   "/check-payment",
   middlewares.authenticate,
-  PaymentController.checkPayment
+  PaymentController.checkPayment,
 );
 
 // GET /api/payments/analytics - Get payment analytics (Admin/SuperAdmin/Cashier only)
@@ -20,7 +20,7 @@ router.get(
   "/analytics",
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
-  PaymentController.getAnalytics
+  PaymentController.getAnalytics,
 );
 
 // GET /api/payments/deleted - Get deleted payments (Admin/SuperAdmin only)
@@ -29,9 +29,8 @@ router.get(
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
   middlewares.validator(paymentSchema.paginationSchema, "query"),
-  PaymentController.listDeleted
+  PaymentController.listDeleted,
 );
-
 
 // GET /api/payments/booking/:bookingId - Get all payments for a specific booking
 router.get(
@@ -39,7 +38,7 @@ router.get(
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.USER, Role.CASHIER),
   middlewares.validator(paymentSchema.bookingIdParamSchema, "params"),
-  PaymentController.getByBookingId
+  PaymentController.getByBookingId,
 );
 
 // PUT /api/payments/:id/restore - Restore a deleted payment (Admin/SuperAdmin only)
@@ -48,7 +47,7 @@ router.put(
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
   middlewares.validator(paymentSchema.paymentIdParamSchema, "params"),
-  PaymentController.restore
+  PaymentController.restore,
 );
 
 // PUT /api/payments/:id/status - Update payment status
@@ -58,7 +57,7 @@ router.put(
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(paymentSchema.paymentIdParamSchema, "params"),
   middlewares.validator(paymentSchema.updatePaymentStatusSchema),
-  PaymentController.updateStatus
+  PaymentController.updateStatus,
 );
 
 // DELETE /api/payments/:id/force-delete - Permanently delete a payment (Admin/SuperAdmin only)
@@ -67,7 +66,7 @@ router.delete(
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
   middlewares.validator(paymentSchema.paymentIdParamSchema, "params"),
-  PaymentController.forceDelete
+  PaymentController.forceDelete,
 );
 
 // === Standard CRUD Routes ===
@@ -78,16 +77,21 @@ router.get(
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(paymentSchema.getAllPaymentsQuerySchema, "query"),
-  PaymentController.getAll
+  PaymentController.getAll,
 );
 
 // POST /api/payments - Create a new payment
 router.post(
   "/",
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+  middlewares.authorize(
+    Role.ADMIN,
+    Role.SUPERADMIN,
+    Role.CASHIER,
+    Role.CUSTOMER,
+  ),
   middlewares.validator(paymentSchema.createPaymentSchema),
-  PaymentController.create
+  PaymentController.create,
 );
 
 // GET /api/payments/:id - Get a single payment by ID
@@ -96,7 +100,7 @@ router.get(
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(paymentSchema.paymentIdParamSchema, "params"),
-  PaymentController.getById
+  PaymentController.getById,
 );
 
 // PUT /api/payments/:id - Update a payment
@@ -106,7 +110,7 @@ router.put(
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(paymentSchema.paymentIdParamSchema, "params"),
   middlewares.validator(paymentSchema.updatePaymentSchema),
-  PaymentController.update
+  PaymentController.update,
 );
 
 // DELETE /api/payments/:id - Soft delete a payment
@@ -115,7 +119,7 @@ router.delete(
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(paymentSchema.paymentIdParamSchema, "params"),
-  PaymentController.delete
+  PaymentController.delete,
 );
 
 module.exports = router;

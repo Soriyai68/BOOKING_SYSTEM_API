@@ -20,17 +20,21 @@ const authenticate = async (req, res, next) => {
     let isBlacklisted = false;
     try {
       const redisClient = getRedisClient();
-
-      // Check if token is blacklisted in Redis
+      // Check both blacklists (just in case)
       const blacklistKey = `blacklist:${token}`;
-      const blacklistResult = await redisClient.get(blacklistKey);
-      isBlacklisted = !!blacklistResult;
+      const customerBlacklistKey = `customer_blacklist:${token}`;
+
+      const [staffResult, customerResult] = await Promise.all([
+        redisClient.get(blacklistKey),
+        redisClient.get(customerBlacklistKey),
+      ]);
+
+      isBlacklisted = !!staffResult || !!customerResult;
     } catch (redisError) {
       logger.warn(
         "Redis not available for blacklist check:",
         redisError.message,
       );
-      // Continue without Redis blacklist check
     }
 
     if (isBlacklisted) {
@@ -43,60 +47,39 @@ const authenticate = async (req, res, next) => {
     // Verify JWT token
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // Check if user exists and is active
-    const user = await User.findById(decoded.userId);
+    // Flexible handling for both Users and Customers
+    if (decoded.type === "customer") {
+      const Customer = require("../models/customer.model");
+      const customer = await Customer.findById(decoded.customerId);
+      if (!customer || !customer.isActive) {
+        return res.status(410).json({
+          // Using 410 or similar could help frontend distinguish but 401 is standard
+          success: false,
+          message: "Customer account not found or inactive.",
+        });
+      }
+      req.customer = decoded;
+      req.token = token;
+      return next();
+    }
 
+    // Default to User (Staff)
+    const user = await User.findById(decoded.userId);
     if (!user || !user.isActive) {
       return res.status(401).json({
         success: false,
-        message: "Invalid token or user not found.",
+        message: "Invalid token or user not found/inactive.",
       });
     }
 
-    // Optional: Validate session exists in Redis (for extra security)
-    if (process.env.STRICT_SESSION_VALIDATION === "true") {
-      try {
-        const redisClient = getRedisClient();
-        const userSessionsKey = `user_sessions:${decoded.userId}`;
-        const adminSessionsKey = `admin_sessions:${decoded.userId}`;
-
-        let userSessions = [];
-        let adminSessions = [];
-
-        // Handle different Redis versions
-        if (redisClient.sMembers) {
-          userSessions = await redisClient.sMembers(userSessionsKey);
-          adminSessions = await redisClient.sMembers(adminSessionsKey);
-        } else if (redisClient.smembers) {
-          userSessions = await redisClient.smembers(userSessionsKey);
-          adminSessions = await redisClient.smembers(adminSessionsKey);
-        }
-
-        const hasActiveSession =
-          userSessions.length > 0 || adminSessions.length > 0;
-
-        if (!hasActiveSession) {
-          return res.status(401).json({
-            success: false,
-            message: "No active session found. Please login again.",
-          });
-        }
-      } catch (redisError) {
-        logger.warn(
-          "Redis not available for session validation:",
-          redisError.message,
-        );
-      }
-    }
-
     req.user = decoded;
-    req.token = token; // Store token for potential blacklisting
+    req.token = token;
     next();
   } catch (error) {
     if (error.name === "TokenExpiredError") {
       return res.status(401).json({
         success: false,
-        message: "Token expired. Please refresh your token or login again.",
+        message: "Token expired. Please login again.",
       });
     }
 

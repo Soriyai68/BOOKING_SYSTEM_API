@@ -69,7 +69,13 @@ router.get(
 router.post(
   "/",
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.USER, Role.CASHIER),
+  middlewares.authorize(
+    Role.ADMIN,
+    Role.SUPERADMIN,
+    Role.USER,
+    Role.CASHIER,
+    Role.CUSTOMER,
+  ),
   middlewares.validator(bookingSchema.createBookingSchema),
   BookingController.create,
 );
@@ -78,7 +84,13 @@ router.post(
 router.get(
   "/:id",
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.USER, Role.CASHIER),
+  middlewares.authorize(
+    Role.ADMIN,
+    Role.SUPERADMIN,
+    Role.USER,
+    Role.CASHIER,
+    Role.CUSTOMER,
+  ),
   middlewares.validator(bookingSchema.bookingIdParamSchema, "params"),
   BookingController.getById,
 );
