@@ -54,14 +54,14 @@ const showtimeSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Indexes
 showtimeSchema.index({ movie_id: 1, start_time: 1, status: 1 });
 showtimeSchema.index(
   { hall_id: 1, show_date: 1, start_time: 1 },
-  { unique: true }
+  { unique: true },
 );
 showtimeSchema.index({ hall_id: 1, start_time: 1 });
 showtimeSchema.index({ start_time: 1 });
@@ -75,7 +75,7 @@ showtimeSchema.statics.findOverlappingShowtimes = function (
   showDate,
   startTime,
   endTime,
-  showtimeId = null
+  showtimeId = null,
 ) {
   const query = {
     hall_id: hallId,
@@ -304,6 +304,13 @@ showtimeSchema.pre(/^find/, function (next) {
 
 // Pre-save: auto-calculate end time, validate overlapping, auto-update status
 showtimeSchema.pre("save", async function (next) {
+  // Normalize show_date to start of day (00:00:00.000)
+  if (this.show_date) {
+    const d = new Date(this.show_date);
+    d.setHours(0, 0, 0, 0);
+    this.show_date = d;
+  }
+
   // Auto-calculate end_time from movie duration if not provided or if dependencies change
   if (
     this.isNew ||
@@ -324,20 +331,20 @@ showtimeSchema.pre("save", async function (next) {
             showDate.getMonth(),
             showDate.getDate(),
             startHours,
-            startMinutes
+            startMinutes,
           );
           const totalDuration = movie.duration_minutes;
           const endDateTime = new Date(
-            startDateTime.getTime() + totalDuration * 60000
+            startDateTime.getTime() + totalDuration * 60000,
           );
           this.end_time = `${String(endDateTime.getHours()).padStart(
             2,
-            "0"
+            "0",
           )}:${String(endDateTime.getMinutes()).padStart(2, "0")}`;
         }
       } catch (error) {
         return next(
-          new Error(`Failed to calculate end time: ${error.message}`)
+          new Error(`Failed to calculate end time: ${error.message}`),
         );
       }
     }
@@ -346,8 +353,8 @@ showtimeSchema.pre("save", async function (next) {
   if (!this.end_time) {
     return next(
       new Error(
-        "Showtime end_time is required but was not provided and could not be calculated."
-      )
+        "Showtime end_time is required but was not provided and could not be calculated.",
+      ),
     );
   }
 
@@ -363,11 +370,11 @@ showtimeSchema.pre("save", async function (next) {
       showDate.getMonth(),
       showDate.getDate(),
       startHours,
-      startMinutes
+      startMinutes,
     );
     if (startDateTime < new Date()) {
       return next(
-        new Error("Showtime start date and time cannot be in the past.")
+        new Error("Showtime start date and time cannot be in the past."),
       );
     }
   }
@@ -383,13 +390,13 @@ showtimeSchema.pre("save", async function (next) {
       this.show_date,
       this.start_time,
       this.end_time,
-      this._id
+      this._id,
     );
     if (overlapping.length > 0) {
       return next(
         new Error(
-          "Showtime overlaps with an existing showtime in the same hall."
-        )
+          "Showtime overlaps with an existing showtime in the same hall.",
+        ),
       );
     }
   }
@@ -412,17 +419,17 @@ showtimeSchema.pre("save", async function (next) {
 
     try {
       logger.info(
-        `Showtime ${this._id} completed. Deleting associated seat bookings.`
+        `Showtime ${this._id} completed. Deleting associated seat bookings.`,
       );
       const { deletedCount } = await SeatBooking.deleteMany({
         showtimeId: this._id,
       });
       logger.info(
-        `Deleted ${deletedCount} seat bookings for completed showtime ${this._id}.`
+        `Deleted ${deletedCount} seat bookings for completed showtime ${this._id}.`,
       );
     } catch (error) {
       logger.error(
-        `Error deleting seat bookings for showtime ${this._id}: ${error.message}`
+        `Error deleting seat bookings for showtime ${this._id}: ${error.message}`,
       );
     }
   }
@@ -435,7 +442,7 @@ showtimeSchema.pre("save", async function (next) {
 
     try {
       logger.info(
-        `Showtime ${this._id} cancelled. Cancelling associated bookings.`
+        `Showtime ${this._id} cancelled. Cancelling associated bookings.`,
       );
       const bookingsToCancel = await Booking.find({
         showtimeId: this._id,
@@ -444,18 +451,18 @@ showtimeSchema.pre("save", async function (next) {
 
       if (bookingsToCancel.length > 0) {
         const cancellationPromises = bookingsToCancel.map((booking) =>
-          booking.cancelBooking(`Showtime was cancelled.`)
+          booking.cancelBooking(`Showtime was cancelled.`),
         );
         await Promise.all(cancellationPromises);
         logger.info(
-          `Cancelled ${bookingsToCancel.length} bookings for showtime ${this._id}.`
+          `Cancelled ${bookingsToCancel.length} bookings for showtime ${this._id}.`,
         );
       } else {
         logger.info(`No active bookings to cancel for showtime ${this._id}.`);
       }
     } catch (error) {
       logger.error(
-        `Error cancelling bookings for showtime ${this._id}: ${error.message}`
+        `Error cancelling bookings for showtime ${this._id}: ${error.message}`,
       );
     }
   }

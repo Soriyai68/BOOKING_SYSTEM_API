@@ -35,14 +35,14 @@ class ShowtimeController {
     const todayStart = new Date(
       today.getFullYear(),
       today.getMonth(),
-      today.getDate()
+      today.getDate(),
     );
     const tomorrowStart = new Date(todayStart);
     tomorrowStart.setDate(todayStart.getDate() + 1);
 
     // current time in HH:mm format, zero-padded
     const currentTime = `${String(today.getHours()).padStart(2, "0")}:${String(
-      today.getMinutes()
+      today.getMinutes(),
     ).padStart(2, "0")}`;
 
     const isForBooking =
@@ -566,7 +566,7 @@ class ShowtimeController {
         showtime.hall_id,
         showtime.show_date,
         showtime.start_time,
-        showtime.end_time
+        showtime.end_time,
       );
 
       if (overlapping.length > 0) {
@@ -639,7 +639,7 @@ class ShowtimeController {
       // Delete associated SeatBooking records
       await SeatBooking.deleteMany({ showtimeId: id });
       logger.info(
-        `Deleted SeatBooking records for permanently deleted showtime ID: ${id}`
+        `Deleted SeatBooking records for permanently deleted showtime ID: ${id}`,
       );
 
       await Showtime.findByIdAndDelete(id);
@@ -655,7 +655,7 @@ class ShowtimeController {
           },
           deletedBy: req.user.userId,
           deletedAt: new Date().toISOString(),
-        }
+        },
       );
 
       res.status(200).json({
@@ -760,7 +760,7 @@ class ShowtimeController {
 
       const updatedShowtime = await showtime.updateStatus(
         status,
-        req.user?.userId
+        req.user?.userId,
       );
 
       logger.info(`Updated showtime status: ${id} to ${status}`);
@@ -828,7 +828,10 @@ class ShowtimeController {
 
         // Check required fields
         if (!movie_id || !hall_id || !show_date || !start_time) {
-          errors.push({ index: i, error: "Missing required fields." });
+          errors.push({
+            index: i,
+            error: `Row ${i + 1}: Missing required fields (Movie, Hall, Date, or Start Time).`,
+          });
           continue;
         }
 
@@ -847,7 +850,10 @@ class ShowtimeController {
         // Check duplicates in this batch
         const key = `${hall_id}_${show_date}_${start_time}`;
         if (batchKeys.has(key))
-          errors.push({ index: i, error: "Duplicate in batch." });
+          errors.push({
+            index: i,
+            error: `Row ${i + 1}: Duplicate showtime (${start_time}) already exists in this list.`,
+          });
         else batchKeys.add(key);
       }
 
@@ -867,9 +873,12 @@ class ShowtimeController {
               (s) =>
                 s.hall_id.toString() === e.hall_id.toString() &&
                 s.show_date === e.show_date &&
-                s.start_time === e.start_time
+                s.start_time === e.start_time,
             );
-            errors.push({ index: idx, error: "Duplicate in database." });
+            errors.push({
+              index: idx,
+              error: `Row ${idx + 1}: Showtime at ${e.start_time} already exists in the database for this hall and date.`,
+            });
           });
         }
       }
@@ -1060,7 +1069,7 @@ class ShowtimeController {
             },
             deletedBy: req.user.userId,
             deletedAt: new Date().toISOString(),
-          }
+          },
         );
       }
 
@@ -1082,7 +1091,7 @@ class ShowtimeController {
       }
 
       logger.info(
-        `Bulk permanently deleted ${deletedShowtimes.length} showtimes.`
+        `Bulk permanently deleted ${deletedShowtimes.length} showtimes.`,
       );
       res.status(200).json({
         success: true,
@@ -1125,7 +1134,7 @@ class ShowtimeController {
         originalShowtimes.map((showtime) => [
           showtime._id.toString(),
           showtime.toObject(),
-        ])
+        ]),
       );
 
       const duplicatedShowtimes = showtimesToDuplicate
@@ -1200,7 +1209,6 @@ class ShowtimeController {
           });
           continue;
         }
-
         try {
           const showtime = new Showtime({ ...showtimeData, createdBy });
           await showtime.save();
@@ -1208,11 +1216,11 @@ class ShowtimeController {
         } catch (error) {
           let errorMessage = error.message;
           if (error.message.includes("cannot be in the past")) {
-            errorMessage =
-              "Showtime start date and time cannot be in the past.";
+            errorMessage = `Row ${i + 1}: Showtime start time (${showtimeData.start_time}) cannot be in the past.`;
           } else if (error.message.includes("overlaps")) {
-            errorMessage =
-              "Showtime overlaps with an existing showtime in the same hall.";
+            errorMessage = `Row ${i + 1}: Showtime at ${showtimeData.start_time} overlaps with an existing showtime in this hall.`;
+          } else if (error.code === 11000) {
+            errorMessage = `Row ${i + 1}: A showtime at ${showtimeData.start_time} already exists for this hall and date.`;
           }
           errors.push({
             index: i,
@@ -1247,7 +1255,7 @@ class ShowtimeController {
       }
 
       logger.info(
-        `Bulk duplicated/created ${createdShowtimes.length} showtimes.`
+        `Bulk duplicated/created ${createdShowtimes.length} showtimes.`,
       );
       res.status(201).json({
         success: true,
