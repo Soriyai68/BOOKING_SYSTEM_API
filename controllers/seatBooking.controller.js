@@ -338,8 +338,15 @@ class SeatBookingController {
         deletedAt: null,
       }).lean();
 
-      // 2. Get all seat bookings for the showtime
-      const seatBookings = await SeatBooking.find({ showtimeId: id }).lean();
+      // 2. Get active seat bookings (booked or currently locked)
+      const now = new Date();
+      const seatBookings = await SeatBooking.find({
+        showtimeId: id,
+        $or: [
+          { status: "booked" },
+          { status: "locked", locked_until: { $gt: now } },
+        ],
+      }).lean();
 
       // 3. Create a map of seatId -> status for quick lookup
       const seatStatusMap = new Map(
@@ -356,7 +363,8 @@ class SeatBookingController {
         if (physicalSeatStatus !== "active") {
           finalStatus = physicalSeatStatus;
         } else if (bookingStatus) {
-          finalStatus = bookingStatus;
+          // Both booked and active locked seats are treated as 'booked' (unavailable) by the client UI
+          finalStatus = "booked";
         }
 
         return {
@@ -397,7 +405,14 @@ class SeatBookingController {
       const { id } = req.params;
       SeatBookingController.validateObjectId(id);
 
-      const seatBookings = await SeatBooking.find({ showtimeId: id })
+      const now = new Date();
+      const seatBookings = await SeatBooking.find({
+        showtimeId: id,
+        $or: [
+          { status: "booked" },
+          { status: "locked", locked_until: { $gt: now } },
+        ],
+      })
         .populate({
           path: "seatId",
           select: "row seat_number seat_type",
