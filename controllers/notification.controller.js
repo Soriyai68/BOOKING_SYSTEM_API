@@ -381,7 +381,6 @@ class NotificationController {
         type,
         title,
         message,
-        description,
         metadata,
         relatedId,
         relatedModel: relatedId ? relatedModel : null,

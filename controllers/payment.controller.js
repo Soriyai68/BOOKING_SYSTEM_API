@@ -260,7 +260,7 @@ class PaymentController {
         const individualInfo = new IndividualInfo(
           process.env.BAKONG_ACCOUNT_USERNAME,
           "Movie Booking System", // Using a placeholder name
-          "BATTAMBANG", // Using a placeholder city
+          "Battambang", // Using a placeholder city
           optionalData,
         );
         // generate qr

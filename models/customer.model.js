@@ -95,11 +95,6 @@ const customerSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    isTelegramNotificationsEnabled: {
-      type: Boolean,
-      default: true,
-    },
-
     passwordChangedAt: {
       type: Date,
       default: null,

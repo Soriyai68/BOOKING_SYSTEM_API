@@ -19,6 +19,32 @@ class BookingController {
     }
   }
 
+  // Helper to validate seat rules (Max 10, Same row, No gaps)
+  static validateSeatRules(seats) {
+    if (seats.length > 10) {
+      throw new Error("A maximum of 10 seats can be booked at a time.");
+    }
+
+    if (seats.length > 1) {
+      const firstRow = seats[0].row;
+      if (!seats.every((s) => s.row === firstRow)) {
+        throw new Error("All selected seats must be in the same row.");
+      }
+
+      // Sort seats by seat_number to check for gaps
+      const sortedSeats = [...seats].sort(
+        (a, b) => a.seat_number - b.seat_number,
+      );
+      for (let i = 0; i < sortedSeats.length - 1; i++) {
+        if (sortedSeats[i].seat_number + 1 !== sortedSeats[i + 1].seat_number) {
+          throw new Error(
+            "Seats must be continuous. No gaps are allowed between selected seats.",
+          );
+        }
+      }
+    }
+  }
+
   // Build filter query
   static buildFilterQuery(filters) {
     const query = {};
@@ -484,6 +510,19 @@ class BookingController {
         (id) => new mongoose.Types.ObjectId(id),
       );
 
+      // --- Seat Rule Validation ---
+      const SeatModel = mongoose.model("Seat");
+      const validationSeatDocs = await SeatModel.find({
+        _id: { $in: seatObjectIds },
+      });
+      try {
+        BookingController.validateSeatRules(validationSeatDocs);
+      } catch (validationError) {
+        return res
+          .status(400)
+          .json({ success: false, message: validationError.message });
+      }
+
       // 3. Check Seat Availability
       const existingSeatBookings = await SeatBooking.find({
         showtimeId: showtimeId,
@@ -686,10 +725,15 @@ class BookingController {
         ? updateData.seats.map((s) => s.toString())
         : originalSeatIds;
 
-      // If showtime changed OR seats changed, we need to update SeatBookings
+      const statusChangedToCancelled =
+        updateData.booking_status === "Cancelled" &&
+        booking.booking_status !== "Cancelled";
+
+      // If showtime changed OR seats changed OR status changed to cancelled, we need to update SeatBookings
       if (
         showtimeChanged ||
-        JSON.stringify(newSeatIds) !== JSON.stringify(originalSeatIds)
+        JSON.stringify(newSeatIds) !== JSON.stringify(originalSeatIds) ||
+        statusChangedToCancelled
       ) {
         // 1. Release all original seats and update history
         if (originalSeatIds.length > 0) {
@@ -709,8 +753,24 @@ class BookingController {
           );
         }
 
+        if (statusChangedToCancelled) {
+          booking.deletedAt = new Date();
+          booking.noted = "Cancelled by admin (Edit)";
+        }
+
         // 2. Check availability of new seats for the potentially new showtime
-        if (newSeatIds.length > 0) {
+        // ONLY if the booking is NOT being cancelled
+        if (
+          newSeatIds.length > 0 &&
+          updateData.booking_status !== "Cancelled"
+        ) {
+          // --- Seat Rule Validation ---
+          const SeatModel = mongoose.model("Seat");
+          const validationSeatDocs = await SeatModel.find({
+            _id: { $in: newSeatIds },
+          });
+          BookingController.validateSeatRules(validationSeatDocs);
+
           const existingBookings = await SeatBooking.find({
             showtimeId: booking.showtimeId,
             seatId: { $in: newSeatIds },
@@ -923,13 +983,25 @@ class BookingController {
           .json({ success: false, message: "Booking not found" });
       }
 
-      if (booking.deletedAt) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Booking is already cancelled" });
+      const userRole = req.user?.role;
+      const userId = req.user?.id || req.user?._id;
+
+      // Ownership check for normal users/customers
+      if (
+        (userRole === Role.USER || userRole === Role.CUSTOMER) &&
+        booking.customerId.toString() !== userId.toString()
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Forbidden: You can only cancel your own bookings",
+        });
       }
 
-      await booking.cancelBooking("Cancelled by admin");
+      await booking.cancelBooking(
+        userRole === Role.USER || userRole === Role.CUSTOMER
+          ? "Cancelled by user"
+          : "Cancelled by admin",
+      );
 
       // Notify customer of cancellation
       if (booking.customerId) {

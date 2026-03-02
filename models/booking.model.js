@@ -74,10 +74,6 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    isHiddenForCustomer: {
-      type: Boolean,
-      default: false,
-    },
     deletedAt: {
       type: Date,
       default: null,

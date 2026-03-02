@@ -17,7 +17,7 @@ const seatBookingSchema = new mongoose.Schema({
         ref: 'Booking',
         default: null,
         index: true,
-    },
+},
     status: {
         type: String,
         enum: ['locked', 'booked'],

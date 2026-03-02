@@ -49,7 +49,7 @@ router.delete(
 router.patch(
   "/my-bookings/:id/cancel",
   middlewares.authenticate,
-  middlewares.authorize(Role.USER), // Ensure only users can access
+  middlewares.authorize(Role.USER, Role.CUSTOMER), // Ensure only users can access
   middlewares.validator(bookingSchema.bookingIdParamSchema, "params"),
   BookingController.cancelUserBooking,
 );
@@ -118,7 +118,13 @@ router.patch(
 router.patch(
   "/:id/cancel",
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+  middlewares.authorize(
+    Role.ADMIN,
+    Role.SUPERADMIN,
+    Role.CASHIER,
+    Role.USER,
+    Role.CUSTOMER,
+  ),
   middlewares.validator(bookingSchema.bookingIdParamSchema, "params"),
   BookingController.cancel,
 );

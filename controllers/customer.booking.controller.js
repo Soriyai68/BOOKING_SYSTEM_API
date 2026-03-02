@@ -1,4 +1,4 @@
-const { Booking, BookingTicket } = require("../models");
+const { Booking, BookingTicket } = require("../models/index");
 const logger = require("../utils/logger");
 const mongoose = require("mongoose");
 
@@ -102,6 +102,24 @@ class CustomerBookingController {
             as: "populatedSeats",
           },
         },
+        // Lookup latest payment
+        {
+          $lookup: {
+            from: "payments",
+            let: { bId: "$_id" },
+            pipeline: [
+              { $match: { $expr: { $eq: ["$bookingId", "$$bId"] } } },
+              { $sort: { createdAt: -1 } },
+              { $limit: 1 },
+            ],
+            as: "latestPayment",
+          },
+        },
+        {
+          $addFields: {
+            payment: { $arrayElemAt: ["$latestPayment", 0] },
+          },
+        },
         {
           $sort: {
             "showtime.show_date": type === "upcoming" ? 1 : -1,
@@ -184,6 +202,96 @@ class CustomerBookingController {
       res
         .status(500)
         .json({ success: false, message: "Failed to fetch tickets" });
+    }
+  }
+
+  // --- SOFT DELETE A BOOKING ---
+  static async softDeleteBooking(req, res) {
+    try {
+      const customerId = req.customer.customerId;
+      const { id } = req.params;
+
+      const booking = await Booking.findOneAndUpdate(
+        { _id: id, customerId: customerId },
+        { deletedAt: new Date() },
+        { new: true },
+      );
+
+      if (!booking) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Booking not found" });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Booking removed from history",
+      });
+    } catch (error) {
+      logger.error("Soft delete booking error:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to delete booking" });
+    }
+  }
+
+  // --- SOFT DELETE ALL HISTORY ---
+  static async softDeleteAllHistory(req, res) {
+    try {
+      const customerId = req.customer.customerId;
+      const now = new Date();
+
+      // Find all bookings that are considered "history"
+      // We need to lookup showtimes to check date
+      const historyBookings = await Booking.aggregate([
+        {
+          $match: {
+            customerId: new mongoose.Types.ObjectId(customerId),
+            deletedAt: null,
+          },
+        },
+        {
+          $lookup: {
+            from: "showtimes",
+            localField: "showtimeId",
+            foreignField: "_id",
+            as: "showtime",
+          },
+        },
+        { $unwind: "$showtime" },
+        {
+          $match: {
+            $or: [
+              {
+                "showtime.show_date": {
+                  $lt: new Date(now.setHours(0, 0, 0, 0)),
+                },
+              },
+              { booking_status: { $in: ["Cancelled", "Completed"] } },
+            ],
+          },
+        },
+        { $project: { _id: 1 } },
+      ]);
+
+      const bookingIds = historyBookings.map((b) => b._id);
+
+      if (bookingIds.length > 0) {
+        await Booking.updateMany(
+          { _id: { $in: bookingIds } },
+          { $set: { deletedAt: new Date() } },
+        );
+      }
+
+      res.status(200).json({
+        success: true,
+        message: `${bookingIds.length} bookings removed from history`,
+      });
+    } catch (error) {
+      logger.error("Soft delete all history error:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to clear history" });
     }
   }
 }
