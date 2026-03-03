@@ -3,6 +3,8 @@ const Customer = require("../models/customer.model");
 const logger = require("../utils/logger");
 const { getRedisClient } = require("../config/redis");
 const { JWT_SECRET } = require("../config/env");
+const fs = require("fs");
+const DEBUG_LOG_PATH = "d:/BOOKING_SYSTEM/auth_debug.log";
 
 const authenticateCustomer = async (req, res, next) => {
   try {
@@ -80,6 +82,9 @@ const authenticateCustomer = async (req, res, next) => {
         message: "User not found.",
       });
     }
+
+    const debugMsg = `[${new Date().toISOString()}] [MIDDLEWARE] Customer ${customer._id} isActive: ${customer.isActive}, Name: ${customer.name}\n`;
+    fs.appendFileSync(DEBUG_LOG_PATH, debugMsg);
 
     if (!customer.isActive) {
       logger.warn(`Customer Auth: Account deactivated: ${decoded.customerId}`);

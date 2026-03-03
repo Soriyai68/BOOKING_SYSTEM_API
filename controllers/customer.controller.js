@@ -150,20 +150,8 @@ class CustomerController {
     try {
       const { phone, name, email, username, customerType, provider } = req.body;
 
-      // Validate required fields
-      if (customerType === "member" && (!phone || !name)) {
-        return res.status(400).json({
-          success: false,
-          message: "Phone and name are required for member customers.",
-        });
-      }
-
-      if (customerType === "guest" && !email) {
-        return res.status(400).json({
-          success: false,
-          message: "Email is required for guest customers.",
-        });
-      }
+      // Note: Identification fields (phone, email, name) are now optional as per user feedback.
+      // Validation is primarily handled by the Joi schema.
 
       // Check uniqueness
       const orConditions = [];
