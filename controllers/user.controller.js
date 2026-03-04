@@ -264,6 +264,19 @@ class UserController {
 
       logger.info(`Created new user: ${user._id}`);
 
+      // Log activity
+      const { logActivity } = require("../utils/activityLogger");
+      await logActivity({
+        userId: req.user?.userId,
+        action: "USER_CREATE",
+        targetId: user._id,
+        req,
+        metadata: {
+          username: user.username,
+          role: user.role,
+        },
+      });
+
       res.status(201).json({
         success: true,
         message: "User created successfully",
@@ -394,6 +407,19 @@ class UserController {
 
         logger.info(`Updated user with password: ${id}`);
 
+        // Log activity
+        const { logActivity } = require("../utils/activityLogger");
+        await logActivity({
+          userId: req.user?.userId,
+          action: "USER_UPDATE",
+          targetId: user._id,
+          req,
+          metadata: {
+            username: user.username,
+            passwordChanged: true,
+          },
+        });
+
         return res.status(200).json({
           success: true,
           message: "User updated successfully",
@@ -415,6 +441,19 @@ class UserController {
       }
 
       logger.info(`Updated user: ${id}`);
+
+      // Log activity
+      const { logActivity } = require("../utils/activityLogger");
+      await logActivity({
+        userId: req.user?.userId,
+        action: "USER_UPDATE",
+        targetId: user._id,
+        req,
+        metadata: {
+          username: user.username,
+          fields: Object.keys(updateData),
+        },
+      });
 
       res.status(200).json({
         success: true,
@@ -498,6 +537,18 @@ class UserController {
 
       logger.info(`Soft deleted user: ${id} (${deletedUser.username})`);
 
+      // Log activity
+      const { logActivity } = require("../utils/activityLogger");
+      await logActivity({
+        userId: req.user?.userId,
+        action: "USER_DELETE",
+        targetId: deletedUser._id,
+        req,
+        metadata: {
+          username: deletedUser.username,
+        },
+      });
+
       res.status(200).json({
         success: true,
         message: "User deactivated successfully",
@@ -560,6 +611,18 @@ class UserController {
       const restoredUser = await user.restore(req.user?.userId);
 
       logger.info(`Restored user: ${id} (${restoredUser.username})`);
+
+      // Log activity
+      const { logActivity } = require("../utils/activityLogger");
+      await logActivity({
+        userId: req.user?.userId,
+        action: "USER_RESTORE",
+        targetId: restoredUser._id,
+        req,
+        metadata: {
+          username: restoredUser.username,
+        },
+      });
 
       res.status(200).json({
         success: true,

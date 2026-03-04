@@ -5,9 +5,11 @@ const {
   Customer,
   SeatBooking,
   SeatBookingHistory,
+  ActivityLog,
 } = require("../models");
 const { Role, Providers } = require("../data");
 const logger = require("../utils/logger");
+const { logActivity } = require("../utils/activityLogger");
 const { createPhoneRegex } = require("../utils/helpers");
 const NotificationController = require("./notification.controller");
 
@@ -485,7 +487,68 @@ class BookingController {
         });
       }
 
+      // --- NEW: Booking Rule - One booking per showtime per customer ---
+      if (customer && customer._id && customer.customerType !== "walkin") {
+        const existingBooking = await Booking.findOne({
+          customerId: customer._id,
+          showtimeId: showtimeId,
+          booking_status: { $in: ["Pending", "Confirmed", "Completed"] },
+          deletedAt: null,
+        });
+
+        if (existingBooking) {
+          await logActivity({
+            customerId: customer._id,
+            userId: req.user?.userId,
+            action: "BOOK_CREATE_PENDING",
+            status: "FAILED",
+            targetId: showtimeId,
+            req,
+            metadata: {
+              reason: "Already has an active booking for this showtime",
+              showtimeId,
+            },
+          });
+          return res.status(400).json({
+            success: false,
+            message:
+              "You already have an active booking for this showtime. One customer can only book once per showtime.",
+          });
+        }
+
+        // --- NEW: PayAtCinema Guard - Max 3 pending bookings ---
+        if (payment_method === "PayAtCinema") {
+          const pendingPayAtCinemaCount = await Booking.countDocuments({
+            customerId: customer._id,
+            payment_method: "PayAtCinema",
+            booking_status: "Pending",
+            deletedAt: null,
+          });
+
+          if (pendingPayAtCinemaCount >= 3) {
+            await logActivity({
+              customerId: customer._id,
+              userId: req.user?.userId,
+              action: "BOOK_CREATE_PENDING",
+              status: "FAILED",
+              targetId: showtimeId,
+              req,
+              metadata: {
+                reason: "Too many pending PayAtCinema bookings",
+                count: pendingPayAtCinemaCount,
+              },
+            });
+            return res.status(400).json({
+              success: false,
+              message:
+                "You have too many pending 'Pay At Cinema' bookings. Please complete or cancel your existing bookings before making a new one.",
+            });
+          }
+        }
+      }
+
       const showtime = await Showtime.findById(showtimeId);
+
       if (!showtime) {
         return res
           .status(404)
@@ -670,6 +733,22 @@ class BookingController {
           message: dynamicMessage,
           metadata,
           relatedId: booking._id,
+        });
+      }
+
+      if (booking.customerId) {
+        await logActivity({
+          customerId: booking.customerId._id,
+          userId: req.user?.userId,
+          action: "BOOK_CREATE_PENDING",
+          status: "SUCCESS",
+          targetId: booking._id,
+          req,
+          metadata: {
+            referenceCode: booking.reference_code,
+            totalPrice: booking.total_price,
+            paymentMethod: booking.payment_method,
+          },
         });
       }
 
@@ -875,6 +954,20 @@ class BookingController {
         });
       }
 
+      // Log activity
+      await logActivity({
+        customerId: booking.customerId,
+        userId: req.user?.userId,
+        action: "BOOK_UPDATE",
+        status: "SUCCESS",
+        targetId: booking._id,
+        req,
+        metadata: {
+          referenceCode: booking.reference_code,
+          updatedFields: Object.keys(updateData),
+        },
+      });
+
       res.status(200).json({
         success: true,
         message: "Booking updated successfully",
@@ -963,6 +1056,20 @@ class BookingController {
         message: "Seats updated successfully",
         data: { booking },
       });
+
+      // Log activity
+      await logActivity({
+        customerId: booking.customerId,
+        userId: req.user?.userId,
+        action: "BOOK_UPDATE_SEATS",
+        status: "SUCCESS",
+        targetId: booking._id,
+        req,
+        metadata: {
+          referenceCode: booking.reference_code,
+          seatCount: booking.seat_count,
+        },
+      });
     } catch (error) {
       logger.error("Change seat error:", error);
       res.status(500).json({ success: false, message: error.message });
@@ -1026,6 +1133,23 @@ class BookingController {
         });
       }
 
+      // Log activity
+      await logActivity({
+        customerId: booking.customerId,
+        userId: req.user?.userId,
+        action: "BOOK_CANCEL",
+        status: "SUCCESS",
+        targetId: booking._id,
+        req,
+        metadata: {
+          referenceCode: booking.reference_code,
+          reason:
+            userRole === Role.USER || userRole === Role.CUSTOMER
+              ? "Cancelled by user"
+              : "Cancelled by admin",
+        },
+      });
+
       res.status(200).json({
         success: true,
         message: "Booking cancelled successfully",
@@ -1060,6 +1184,19 @@ class BookingController {
         success: true,
         message: "Booking restored successfully",
         data: { booking },
+      });
+
+      // Log activity
+      await logActivity({
+        customerId: booking.customerId,
+        userId: req.user?.userId,
+        action: "BOOK_RESTORE",
+        status: "SUCCESS",
+        targetId: booking._id,
+        req,
+        metadata: {
+          referenceCode: booking.reference_code,
+        },
       });
     } catch (error) {
       logger.error("Restore booking error:", error);
@@ -1105,6 +1242,19 @@ class BookingController {
       res.status(200).json({
         success: true,
         message: "Booking permanently deleted",
+      });
+
+      // Log activity
+      await logActivity({
+        customerId: booking.customerId,
+        userId: req.user?.userId,
+        action: "BOOK_DELETE",
+        status: "SUCCESS",
+        targetId: booking._id,
+        req,
+        metadata: {
+          referenceCode: booking.reference_code,
+        },
       });
     } catch (error) {
       logger.error("Force delete booking error:", error);
@@ -1298,6 +1448,18 @@ class BookingController {
       // Optional: Add logic here to prevent cancellation if the showtime is too close
 
       await booking.cancelBooking("Cancelled by user");
+
+      await logActivity({
+        customerId: customerId,
+        action: "BOOK_CANCEL",
+        status: "SUCCESS",
+        targetId: booking._id,
+        req,
+        metadata: {
+          referenceCode: booking.reference_code,
+          reason: "Cancelled by user",
+        },
+      });
 
       res.status(200).json({
         success: true,

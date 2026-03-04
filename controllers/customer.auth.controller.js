@@ -1,4 +1,6 @@
 const Customer = require("../models/customer.model");
+const { ActivityLog } = require("../models/index");
+
 const AuthService = require("../service/auth.service");
 const logger = require("../utils/logger");
 const Providers = require("../data/providers");
@@ -6,8 +8,10 @@ const jwt = require("jsonwebtoken");
 const Telegram = require("../utils/telegram");
 const { UAParser } = require("ua-parser-js");
 const crypto = require("crypto");
+const { logActivity } = require("../utils/activityLogger");
 
 const PREFIX = "customer_";
+
 const NotificationController = require("./notification.controller");
 
 class CustomerAuthController {
@@ -274,6 +278,24 @@ class CustomerAuthController {
       sessionId,
     );
 
+    // Update lastLogin timestamp
+    customer.lastLogin = new Date();
+    await customer.save();
+
+    // Log activity
+    await logActivity({
+      customerId: customer._id,
+      action: "LOGIN",
+      status: "SUCCESS",
+      req,
+      metadata: {
+        loginType,
+        device: device.type,
+        os: device.os,
+        browser: device.browser,
+      },
+    });
+
     return res.status(200).json({
       success: true,
       message: isNewCustomer
@@ -341,6 +363,22 @@ class CustomerAuthController {
       res.status(200).json({
         success: true,
         message: "Logged out successfully",
+      });
+
+      // Log activity
+      await logActivity({
+        customerId: customerId,
+        action: "LOGOUT",
+        status: "SUCCESS",
+        req,
+      });
+
+      // Log activity
+      await logActivity({
+        customerId: customerId,
+        action: "LOGOUT",
+        status: "SUCCESS",
+        req,
       });
     } catch (error) {
       logger.error("Customer logout error:", error);
@@ -635,6 +673,45 @@ class CustomerAuthController {
       });
     } catch (error) {
       logger.error("Delete customer account error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  }
+
+  // Get customer's activity logs
+
+  static async getActivityLogs(req, res) {
+    try {
+      const customerId = req.customer.customerId;
+      const { page = 1, limit = 20, action } = req.query;
+
+      const query = { customerId };
+      if (action) {
+        query.action = action;
+      }
+
+      const totalLogs = await ActivityLog.countDocuments(query);
+      const logs = await ActivityLog.find(query)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(Number(limit));
+
+      res.status(200).json({
+        success: true,
+        data: {
+          logs,
+          pagination: {
+            totalCount: totalLogs,
+            currentPage: Number(page),
+            limit: Number(limit),
+            totalPages: Math.ceil(totalLogs / limit),
+          },
+        },
+      });
+    } catch (error) {
+      logger.error("Get activity logs error:", error);
       res.status(500).json({
         success: false,
         message: "Internal server error",

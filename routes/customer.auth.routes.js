@@ -47,6 +47,12 @@ router.put(
   CustomerAuthController.updateProfile,
 );
 
+router.get(
+  "/activity-logs",
+  authenticateCustomer,
+  CustomerAuthController.getActivityLogs,
+);
+
 router.delete(
   "/account",
   authenticateCustomer,

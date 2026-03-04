@@ -84,6 +84,14 @@ class AuthController {
 
           logger.info(`All sessions logged out for user: ${userId}`);
         }
+
+        // Log activity
+        const { logActivity } = require("../utils/activityLogger");
+        await logActivity({
+          userId: userId,
+          action: "USER_LOGOUT",
+          req,
+        });
       } catch (redisError) {
         // Redis error - log but continue with logout
         logger.warn(
@@ -272,6 +280,18 @@ class AuthController {
 
       logger.info(`Admin logged in: ${user.username} (${user.role})`);
 
+      // Log activity
+      const { logActivity } = require("../utils/activityLogger");
+      await logActivity({
+        userId: user._id,
+        action: "USER_LOGIN",
+        req,
+        metadata: {
+          role: user.role,
+          username: user.username,
+        },
+      });
+
       res.status(200).json({
         success: true,
         message: "Login successful",
@@ -392,6 +412,48 @@ class AuthController {
       res.status(500).json({
         success: false,
         message: "Internal server error",
+      });
+    }
+  }
+
+  // Get user's activity logs
+  static async getActivityLogs(req, res) {
+    try {
+      const userId = req.user.userId;
+      const { page = 1, limit = 10 } = req.query;
+
+      const pageNum = Math.max(1, parseInt(page));
+      const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
+      const skip = (pageNum - 1) * limitNum;
+
+      const ActivityLog = require("../models/activityLog.model");
+
+      const [logs, total] = await Promise.all([
+        ActivityLog.find({ userId })
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limitNum)
+          .lean(),
+        ActivityLog.countDocuments({ userId }),
+      ]);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          logs,
+          pagination: {
+            currentPage: pageNum,
+            totalPages: Math.ceil(total / limitNum),
+            totalCount: total,
+            limit: limitNum,
+          },
+        },
+      });
+    } catch (error) {
+      logger.error("Get admin activity logs error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to retrieve activity logs",
       });
     }
   }
