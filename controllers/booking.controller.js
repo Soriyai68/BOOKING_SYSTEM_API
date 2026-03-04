@@ -1090,12 +1090,19 @@ class BookingController {
           .json({ success: false, message: "Booking not found" });
       }
 
-      const userRole = req.user?.role;
-      const userId = req.user?.id || req.user?._id;
+      const userRole = req.user?.role || (req.customer ? Role.CUSTOMER : null);
+      const userId =
+        req.user?.userId ||
+        req.user?.id ||
+        req.user?._id ||
+        req.customer?.customerId ||
+        req.customer?.id;
 
       // Ownership check for normal users/customers
       if (
         (userRole === Role.USER || userRole === Role.CUSTOMER) &&
+        booking.customerId &&
+        userId &&
         booking.customerId.toString() !== userId.toString()
       ) {
         return res.status(403).json({
@@ -1136,7 +1143,7 @@ class BookingController {
       // Log activity
       await logActivity({
         customerId: booking.customerId,
-        userId: req.user?.userId,
+        userId: req.user?.userId || req.user?.id || req.user?._id,
         action: "BOOK_CANCEL",
         status: "SUCCESS",
         targetId: booking._id,
@@ -1419,7 +1426,13 @@ class BookingController {
   static async cancelUserBooking(req, res) {
     try {
       const { id } = req.params;
-      const customerId = req.user.id; // from auth middleware
+      // Staff uses userId, Customer uses customerId
+      const customerId =
+        req.customer?.customerId ||
+        req.customer?.id ||
+        req.user?.userId ||
+        req.user?.id ||
+        req.user?._id;
 
       BookingController.validateObjectId(id);
 
@@ -1432,7 +1445,11 @@ class BookingController {
       }
 
       // Ensure the booking belongs to the user trying to cancel it
-      if (booking.customerId.toString() !== customerId) {
+      if (
+        booking.customerId &&
+        customerId &&
+        booking.customerId.toString() !== customerId.toString()
+      ) {
         return res.status(403).json({
           success: false,
           message: "Forbidden: You cannot cancel this booking",
