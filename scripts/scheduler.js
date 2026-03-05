@@ -332,6 +332,7 @@ const startAccountCleanupScheduler = () => {
         for (const customer of inactiveCustomers) {
           await logActivity({
             customerId: customer._id,
+            logType: "CUSTOMER",
             action: "ACCOUNT_DEACTIVATED",
             status: "SUCCESS",
             metadata: {
@@ -406,6 +407,7 @@ const startReputationCheckScheduler = () => {
             ).cancelCount;
             await logActivity({
               customerId: customer._id,
+              logType: "CUSTOMER",
               action: "ACCOUNT_DEACTIVATED",
               status: "SUCCESS",
               metadata: {

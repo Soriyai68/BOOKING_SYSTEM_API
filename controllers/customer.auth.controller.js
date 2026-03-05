@@ -285,6 +285,7 @@ class CustomerAuthController {
     // Log activity
     await logActivity({
       customerId: customer._id,
+      logType: "CUSTOMER",
       action: "LOGIN",
       status: "SUCCESS",
       req,
@@ -368,6 +369,7 @@ class CustomerAuthController {
       // Log activity
       await logActivity({
         customerId: customerId,
+        logType: "CUSTOMER",
         action: "LOGOUT",
         status: "SUCCESS",
         req,
@@ -376,6 +378,7 @@ class CustomerAuthController {
       // Log activity
       await logActivity({
         customerId: customerId,
+        logType: "CUSTOMER",
         action: "LOGOUT",
         status: "SUCCESS",
         req,
@@ -687,7 +690,7 @@ class CustomerAuthController {
       const customerId = req.customer.customerId;
       const { page = 1, limit = 20, action } = req.query;
 
-      const query = { customerId };
+      const query = { customerId, logType: "CUSTOMER" };
       if (action) {
         query.action = action;
       }

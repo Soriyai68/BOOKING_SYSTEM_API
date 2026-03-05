@@ -60,7 +60,7 @@ router.patch(
 router.get(
   "/",
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.USER, Role.CASHIER),
+  middlewares.requirePermission("bookings.view"),
   middlewares.validator(bookingSchema.getAllBookingsQuerySchema, "query"),
   BookingController.getAll,
 );
@@ -114,7 +114,7 @@ router.patch(
   BookingController.changeSeat,
 );
 
-// PATCH /api/bookings/:id/cancel - Cancel a booking (soft delete)
+// PATCH /api/bookings/:id/cancel - Cancel a booking (soft delete) - primarily for customers/QR
 router.patch(
   "/:id/cancel",
   middlewares.authenticate,
@@ -126,7 +126,17 @@ router.patch(
     Role.CUSTOMER,
   ),
   middlewares.validator(bookingSchema.bookingIdParamSchema, "params"),
-  BookingController.cancel,
+  BookingController.delete,
+);
+
+// DELETE /api/bookings/:id/soft-delete - Admin/SuperAdmin Soft Delete
+router.delete(
+  "/:id/soft-delete",
+  middlewares.authenticate,
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.requirePermission("bookings.delete"),
+  middlewares.validator(bookingSchema.bookingIdParamSchema, "params"),
+  BookingController.delete,
 );
 
 module.exports = router;

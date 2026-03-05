@@ -15,6 +15,7 @@ const logger = require("./logger");
 const logActivity = async ({
   customerId,
   userId,
+  logType,
   action,
   status = "SUCCESS",
   targetId,
@@ -25,6 +26,7 @@ const logActivity = async ({
     const logData = {
       customerId,
       userId,
+      logType: logType || (userId ? "ADMIN" : "CUSTOMER"),
       action,
       status,
       targetId,

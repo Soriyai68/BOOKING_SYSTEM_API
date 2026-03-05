@@ -89,6 +89,7 @@ class AuthController {
         const { logActivity } = require("../utils/activityLogger");
         await logActivity({
           userId: userId,
+          logType: "ADMIN",
           action: "USER_LOGOUT",
           req,
         });
@@ -117,13 +118,18 @@ class AuthController {
   static async getProfile(req, res) {
     try {
       const user = await User.findById(req.user.userId).select("-__v");
-
       if (!user) {
         return res.status(404).json({
           success: false,
           message: "User not found",
         });
       }
+
+      // Get user permissions
+      const {
+        getRolePermissions,
+      } = require("../middlewares/permission.middleware");
+      const permissions = await getRolePermissions(user.role);
 
       res.status(200).json({
         success: true,
@@ -136,6 +142,7 @@ class AuthController {
             phone: user.phone,
             photoUrl: user.photoUrl,
             role: user.role,
+            permissions: permissions.map((p) => p.name),
             isVerified: user.isVerified,
             lastLogin: user.lastLogin,
             createdAt: user.createdAt,
@@ -284,6 +291,7 @@ class AuthController {
       const { logActivity } = require("../utils/activityLogger");
       await logActivity({
         userId: user._id,
+        logType: "ADMIN",
         action: "USER_LOGIN",
         req,
         metadata: {
@@ -393,6 +401,12 @@ class AuthController {
         role: user.role,
       });
 
+      // Get user permissions
+      const {
+        getRolePermissions,
+      } = require("../middlewares/permission.middleware");
+      const permissions = await getRolePermissions(user.role);
+
       res.status(200).json({
         success: true,
         message: "Token refreshed successfully",
@@ -404,6 +418,7 @@ class AuthController {
             email: user.email,
             name: user.name,
             role: user.role,
+            permissions: permissions.map((p) => p.name),
           },
         },
       });
@@ -421,20 +436,28 @@ class AuthController {
     try {
       const userId = req.user.userId;
       const { page = 1, limit = 10 } = req.query;
-
       const pageNum = Math.max(1, parseInt(page));
       const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
       const skip = (pageNum - 1) * limitNum;
 
+      const user = await User.findById(userId);
+      const isSuperAdmin = user?.role === "superadmin";
+
+      const query = { logType: "ADMIN" };
+      if (!isSuperAdmin) {
+        query.userId = userId;
+      }
+
       const ActivityLog = require("../models/activityLog.model");
 
       const [logs, total] = await Promise.all([
-        ActivityLog.find({ userId })
+        ActivityLog.find(query)
+          .populate("userId", "name role")
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limitNum)
           .lean(),
-        ActivityLog.countDocuments({ userId }),
+        ActivityLog.countDocuments(query),
       ]);
 
       res.status(200).json({

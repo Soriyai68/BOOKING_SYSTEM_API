@@ -191,7 +191,6 @@ bookingSchema.methods.cancelBooking = async function (
 ) {
   this.booking_status = "Cancelled";
   this.noted = reason;
-  this.deletedAt = new Date();
 
   // Instead of creating a new history record, update the existing one to 'canceled'.
   const SeatBookingHistory = mongoose.model("SeatBookingHistory");

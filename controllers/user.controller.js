@@ -268,6 +268,7 @@ class UserController {
       const { logActivity } = require("../utils/activityLogger");
       await logActivity({
         userId: req.user?.userId,
+        logType: "ADMIN",
         action: "USER_CREATE",
         targetId: user._id,
         req,
@@ -411,6 +412,7 @@ class UserController {
         const { logActivity } = require("../utils/activityLogger");
         await logActivity({
           userId: req.user?.userId,
+          logType: "ADMIN",
           action: "USER_UPDATE",
           targetId: user._id,
           req,
@@ -446,6 +448,7 @@ class UserController {
       const { logActivity } = require("../utils/activityLogger");
       await logActivity({
         userId: req.user?.userId,
+        logType: "ADMIN",
         action: "USER_UPDATE",
         targetId: user._id,
         req,
@@ -541,6 +544,7 @@ class UserController {
       const { logActivity } = require("../utils/activityLogger");
       await logActivity({
         userId: req.user?.userId,
+        logType: "ADMIN",
         action: "USER_DELETE",
         targetId: deletedUser._id,
         req,
@@ -616,6 +620,7 @@ class UserController {
       const { logActivity } = require("../utils/activityLogger");
       await logActivity({
         userId: req.user?.userId,
+        logType: "ADMIN",
         action: "USER_RESTORE",
         targetId: restoredUser._id,
         req,

@@ -500,6 +500,7 @@ class BookingController {
           await logActivity({
             customerId: customer._id,
             userId: req.user?.userId,
+            logType: req.user?.userId ? "ADMIN" : "CUSTOMER",
             action: "BOOK_CREATE_PENDING",
             status: "FAILED",
             targetId: showtimeId,
@@ -529,6 +530,7 @@ class BookingController {
             await logActivity({
               customerId: customer._id,
               userId: req.user?.userId,
+              logType: req.user?.userId ? "ADMIN" : "CUSTOMER",
               action: "BOOK_CREATE_PENDING",
               status: "FAILED",
               targetId: showtimeId,
@@ -740,6 +742,7 @@ class BookingController {
         await logActivity({
           customerId: booking.customerId._id,
           userId: req.user?.userId,
+          logType: req.user?.userId ? "ADMIN" : "CUSTOMER",
           action: "BOOK_CREATE_PENDING",
           status: "SUCCESS",
           targetId: booking._id,
@@ -833,7 +836,6 @@ class BookingController {
         }
 
         if (statusChangedToCancelled) {
-          booking.deletedAt = new Date();
           booking.noted = "Cancelled by admin (Edit)";
         }
 
@@ -955,16 +957,23 @@ class BookingController {
       }
 
       // Log activity
+      const actionType = statusChangedToCancelled
+        ? "BOOK_CANCEL"
+        : "BOOK_UPDATE";
+
       await logActivity({
         customerId: booking.customerId,
-        userId: req.user?.userId,
-        action: "BOOK_UPDATE",
+        userId: req.user?.userId || req.user?.id || req.user?._id,
+        action: actionType,
         status: "SUCCESS",
         targetId: booking._id,
         req,
         metadata: {
           referenceCode: booking.reference_code,
           updatedFields: Object.keys(updateData),
+          reason: statusChangedToCancelled
+            ? "Cancelled by admin (Edit)"
+            : undefined,
         },
       });
 
@@ -1076,8 +1085,8 @@ class BookingController {
     }
   }
 
-  // 5. CANCEL BOOKING (SOFT DELETE)
-  static async cancel(req, res) {
+  // 5. DELETE BOOKING (SOFT DELETE)
+  static async delete(req, res) {
     try {
       const { id } = req.params;
       BookingController.validateObjectId(id);
@@ -1111,13 +1120,26 @@ class BookingController {
         });
       }
 
-      await booking.cancelBooking(
-        userRole === Role.USER || userRole === Role.CUSTOMER
+      const isDeletion = req.method === "DELETE";
+      const actionType = isDeletion ? "BOOK_DELETE" : "BOOK_CANCEL";
+      const successMessage = isDeletion
+        ? "Booking deleted successfully"
+        : "Booking cancelled successfully";
+      const logReason = isDeletion
+        ? "Deleted by admin"
+        : userRole === Role.USER || userRole === Role.CUSTOMER
           ? "Cancelled by user"
-          : "Cancelled by admin",
-      );
+          : "Cancelled by admin";
 
-      // Notify customer of cancellation
+      await booking.cancelBooking(logReason);
+
+      // If it's a hard "delete" request, set deletedAt manually
+      if (isDeletion) {
+        booking.deletedAt = new Date();
+        await booking.save();
+      }
+
+      // Notify customer of cancellation/deletion
       if (booking.customerId) {
         // Populate showtime + movie for the notification message
         const populatedBooking = await Booking.findById(booking._id).populate({
@@ -1129,9 +1151,9 @@ class BookingController {
           populatedBooking?.showtimeId?.movie_id?.title || "Movie";
 
         NotificationController.notifyCustomer(booking.customerId, {
-          type: "booking_cancelled",
-          title: "Booking Cancelled",
-          message: `Your booking ${booking.reference_code} for "${movieTitle}" has been cancelled.`,
+          type: isDeletion ? "booking_deleted" : "booking_cancelled",
+          title: isDeletion ? "Booking Deleted" : "Booking Cancelled",
+          message: `Your booking ${booking.reference_code} for "${movieTitle}" has been ${isDeletion ? "deleted" : "cancelled"}.`,
           metadata: {
             ref: booking.reference_code,
             movie: movieTitle,
@@ -1144,28 +1166,29 @@ class BookingController {
       await logActivity({
         customerId: booking.customerId,
         userId: req.user?.userId || req.user?.id || req.user?._id,
-        action: "BOOK_CANCEL",
+        action: actionType,
         status: "SUCCESS",
         targetId: booking._id,
         req,
         metadata: {
           referenceCode: booking.reference_code,
-          reason:
-            userRole === Role.USER || userRole === Role.CUSTOMER
-              ? "Cancelled by user"
-              : "Cancelled by admin",
+          reason: logReason,
         },
       });
 
       res.status(200).json({
         success: true,
-        message: "Booking cancelled successfully",
+        message: successMessage,
       });
     } catch (error) {
-      logger.error("Cancel booking error:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Failed to cancel booking" });
+      logger.error(
+        `${req.method === "DELETE" ? "Delete" : "Cancel"} booking error:`,
+        error,
+      );
+      res.status(500).json({
+        success: false,
+        message: `Failed to ${req.method === "DELETE" ? "delete" : "cancel"} booking`,
+      });
     }
   }
 
@@ -1196,7 +1219,7 @@ class BookingController {
       // Log activity
       await logActivity({
         customerId: booking.customerId,
-        userId: req.user?.userId,
+        userId: req.user?.userId || req.user?.id || req.user?._id,
         action: "BOOK_RESTORE",
         status: "SUCCESS",
         targetId: booking._id,
@@ -1254,13 +1277,14 @@ class BookingController {
       // Log activity
       await logActivity({
         customerId: booking.customerId,
-        userId: req.user?.userId,
-        action: "BOOK_DELETE",
+        userId: req.user?.userId || req.user?.id || req.user?._id,
+        action: "BOOK_FORCE_DELETE",
         status: "SUCCESS",
         targetId: booking._id,
         req,
         metadata: {
           referenceCode: booking.reference_code,
+          reason: "Permanently deleted by admin",
         },
       });
     } catch (error) {

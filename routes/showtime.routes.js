@@ -8,11 +8,11 @@ const router = express.Router();
 
 // === Special Routes (before /:id) ===
 
-// GET /api/showtimes/analytics - Get showtime analytics (Admin/SuperAdmin only)
+// GET /api/showtimes/analytics - Get showtime analytics (Admin/SuperAdmin/Cashier via permission)
 router.get(
   "/analytics",
   middlewares.authenticate,
-  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
+  middlewares.requirePermission("analytics.view"),
 
   ShowtimeController.getAnalytics,
 );
@@ -73,14 +73,14 @@ router.delete(
 router.get(
   "/",
   middlewares.authenticate,
-  // Allow all authenticated users to view showtimes
   middlewares.authorize(
     Role.ADMIN,
     Role.SUPERADMIN,
-    Role.USER,
     Role.CASHIER,
     Role.CUSTOMER,
   ),
+  // Allow all authenticated users to view showtimes via permission
+  // middlewares.requirePermission("showtimes.view"),
   middlewares.validator(showtimeSchema.getAllShowtimesQuerySchema, "query"),
   ShowtimeController.getAll,
 );
