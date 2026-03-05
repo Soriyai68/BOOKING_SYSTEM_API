@@ -90,7 +90,7 @@ class AuthController {
         await logActivity({
           userId: userId,
           logType: "ADMIN",
-          action: "USER_LOGOUT",
+          action: "LOGOUT",
           req,
         });
       } catch (redisError) {
@@ -292,7 +292,7 @@ class AuthController {
       await logActivity({
         userId: user._id,
         logType: "ADMIN",
-        action: "USER_LOGIN",
+        action: "LOGIN",
         req,
         metadata: {
           role: user.role,
@@ -435,7 +435,14 @@ class AuthController {
   static async getActivityLogs(req, res) {
     try {
       const userId = req.user.userId;
-      const { page = 1, limit = 10 } = req.query;
+      const {
+        page = 1,
+        limit = 10,
+        action,
+        role,
+        startDate,
+        endDate,
+      } = req.query;
       const pageNum = Math.max(1, parseInt(page));
       const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
       const skip = (pageNum - 1) * limitNum;
@@ -446,6 +453,40 @@ class AuthController {
       const query = { logType: "ADMIN" };
       if (!isSuperAdmin) {
         query.userId = userId;
+      }
+
+      if (action) {
+        query.action = action;
+      }
+
+      if (startDate || endDate) {
+        query.createdAt = {};
+        if (startDate) {
+          query.createdAt.$gte = new Date(startDate);
+        }
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          query.createdAt.$lte = end;
+        }
+      }
+
+      if (role) {
+        const usersWithRole = await User.find({ role }).select("_id");
+        const roleUserIds = usersWithRole.map((u) => u._id);
+
+        if (query.userId) {
+          // If userId is already restricted (e.g. non-superadmin), we should only keep the intersection.
+          // In reality, a non-superadmin is only seeing their own logs. Filtering by role may just return nothing
+          // if their role doesn't match, or their logs if it does.
+          query.userId = {
+            $in: [query.userId].filter((id) =>
+              roleUserIds.some((rid) => rid.equals(id)),
+            ),
+          };
+        } else {
+          query.userId = { $in: roleUserIds };
+        }
       }
 
       const ActivityLog = require("../models/activityLog.model");
