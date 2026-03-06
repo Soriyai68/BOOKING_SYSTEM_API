@@ -462,7 +462,6 @@ class PaymentController {
                   paymentMethod: booking.payment_method,
                   totalPrice: booking.total_price,
                   referenceCode: booking.reference_code,
-                  method: "Bakong",
                   paymentId: payment._id,
                 },
               });
