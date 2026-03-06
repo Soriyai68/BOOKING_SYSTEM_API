@@ -301,8 +301,8 @@ class PaymentController {
           targetId: booking._id,
           req,
           metadata: {
-            method: "Bakong",
-            amount: booking.total_price,
+            paymentMethod: booking.payment_method,
+            totalPrice: booking.total_price,
             referenceCode: booking.reference_code,
             paymentId: payment._id,
           },
@@ -335,7 +335,7 @@ class PaymentController {
 
         // --- ACTIVITY LOG: CASH COMPLETED ---
         await logActivity({
-          userId: req.user?._id, // The Admin/Staff processing the cash
+          userId: req.user?.userId, // The Admin/Staff processing the cash
           customerId: booking.customerId,
           logType: "ADMIN",
           action: "BOOK_CONFIRMED",
@@ -343,8 +343,8 @@ class PaymentController {
           targetId: booking._id,
           req,
           metadata: {
-            method: "Cash",
-            amount: booking.total_price,
+            paymentMethod: booking.payment_method,
+            totalPrice: booking.total_price,
             referenceCode: booking.reference_code,
             paymentId: payment._id,
           },
@@ -453,11 +453,14 @@ class PaymentController {
 
               await logActivity({
                 customerId: booking.customerId?._id || booking.customerId,
+                userId: req.user?.userId,
                 action: "BOOK_CONFIRMED",
                 status: "SUCCESS",
                 targetId: booking._id,
                 req,
                 metadata: {
+                  paymentMethod: booking.payment_method,
+                  totalPrice: booking.total_price,
                   referenceCode: booking.reference_code,
                   method: "Bakong",
                   paymentId: payment._id,
@@ -598,13 +601,15 @@ class PaymentController {
 
           await logActivity({
             customerId: booking.customerId?._id || booking.customerId,
-            action: "BOOK_CONFIRMED",
+            userId: req.user?.userId,
+            action: "BOOK_CREATE_CONFIRMED",
             status: "SUCCESS",
             targetId: booking._id,
             req,
             metadata: {
+              totalPrice: booking.total_price,
               referenceCode: booking.reference_code,
-              method: payment.payment_method,
+              paymentMethod: booking.payment_method,
               paymentId: payment._id,
             },
           });
