@@ -4,6 +4,7 @@ const { Role } = require("../data");
 const logger = require("../utils/logger");
 const { BakongKHQR, khqrData, IndividualInfo } = require("bakong-khqr");
 const NotificationController = require("./notification.controller");
+const { logActivity } = require("../utils/activityLogger");
 
 class PaymentController {
   // Helper method to validate ObjectId
@@ -233,7 +234,6 @@ class PaymentController {
         .json({ success: false, message: "Failed to retrieve payments" });
     }
   }
-
   // 4. CREATE PAYMENT
   static async create(req, res) {
     try {
@@ -259,27 +259,23 @@ class PaymentController {
 
         const individualInfo = new IndividualInfo(
           process.env.BAKONG_ACCOUNT_USERNAME,
-          "Movie Booking System", // Using a placeholder name
-          "Battambang", // Using a placeholder city
+          "Movie Booking System",
+          "Battambang",
           optionalData,
         );
-        // generate qr
+
         const khqr = new BakongKHQR();
         const qrData = khqr.generateIndividual(individualInfo);
+
         if (!qrData.data || qrData.status?.code !== 0) {
           return res.status(400).json({
             success: false,
             message: qrData.status?.message || "Failed to generate KHQR",
-            error: qrData.status || null,
           });
         }
 
-        const deepLink = `bakong://khqr?qr=${encodeURIComponent(
-          qrData.data.qr,
-        )}`;
-        const deepLinkWeb = `https://www.bakong.com.kh/khqr?qr=${encodeURIComponent(
-          qrData.data.qr,
-        )}`;
+        const deepLink = `bakong://khqr?qr=${encodeURIComponent(qrData.data.qr)}`;
+        const deepLinkWeb = `https://www.bakong.com.kh/khqr?qr=${encodeURIComponent(qrData.data.qr)}`;
 
         const payment = new Payment({
           bookingId,
@@ -290,11 +286,27 @@ class PaymentController {
           qr: qrData.data.qr,
           md5: qrData.data.md5,
           expiration: expirationTimestamp,
-          qr_method: currency === "KHR" ? "KHQR" : "USD", // Dynamically set qr_method
+          qr_method: currency === "KHR" ? "KHQR" : "USD",
           description: `Payment for booking ${booking.reference_code}`,
         });
 
         await payment.save();
+
+        // --- ACTIVITY LOG: BAKONG INITIATED ---
+        await logActivity({
+          customerId: booking.customerId,
+          logType: "CUSTOMER",
+          action: "BOOK_CREATE_PENDING",
+          status: "SUCCESS",
+          targetId: booking._id,
+          req,
+          metadata: {
+            method: "Bakong",
+            amount: booking.total_price,
+            referenceCode: booking.reference_code,
+            paymentId: payment._id,
+          },
+        });
 
         const populatedPayment = await Payment.findById(payment._id).populate(
           "bookingId",
@@ -320,6 +332,23 @@ class PaymentController {
 
         await payment.save();
         await booking.markAsCompleted(payment._id);
+
+        // --- ACTIVITY LOG: CASH COMPLETED ---
+        await logActivity({
+          userId: req.user?._id, // The Admin/Staff processing the cash
+          customerId: booking.customerId,
+          logType: "ADMIN",
+          action: "BOOK_CONFIRMED",
+          status: "SUCCESS",
+          targetId: booking._id,
+          req,
+          metadata: {
+            method: "Cash",
+            amount: booking.total_price,
+            referenceCode: booking.reference_code,
+            paymentId: payment._id,
+          },
+        });
 
         const populatedPayment = await Payment.findById(payment._id).populate(
           "bookingId",
@@ -421,6 +450,19 @@ class PaymentController {
 
             if (booking && booking.booking_status !== "Confirmed") {
               await booking.markAsCompleted(payment._id);
+
+              await logActivity({
+                customerId: booking.customerId?._id || booking.customerId,
+                action: "BOOK_CONFIRMED",
+                status: "SUCCESS",
+                targetId: booking._id,
+                req,
+                metadata: {
+                  referenceCode: booking.reference_code,
+                  method: "Bakong",
+                  paymentId: payment._id,
+                },
+              });
 
               // Manually populate seats for notification
               const Seat = mongoose.model("Seat");
@@ -553,6 +595,19 @@ class PaymentController {
 
         if (booking) {
           await booking.markAsCompleted(payment._id);
+
+          await logActivity({
+            customerId: booking.customerId?._id || booking.customerId,
+            action: "BOOK_CONFIRMED",
+            status: "SUCCESS",
+            targetId: booking._id,
+            req,
+            metadata: {
+              referenceCode: booking.reference_code,
+              method: payment.payment_method,
+              paymentId: payment._id,
+            },
+          });
 
           // Manually populate seats for notification
           const Seat = mongoose.model("Seat");

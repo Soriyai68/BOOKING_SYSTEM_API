@@ -786,6 +786,7 @@ class BookingController {
 
       const originalShowtimeId = booking.showtimeId;
       const originalSeatIds = booking.seats.map((s) => s.toString());
+      const originalStatus = booking.booking_status;
 
       // --- Handle Showtime Change ---
       if (
@@ -957,9 +958,18 @@ class BookingController {
       }
 
       // Log activity
-      const actionType = statusChangedToCancelled
-        ? "BOOK_CANCEL"
-        : "BOOK_UPDATE";
+      let actionType = "BOOK_UPDATE";
+      if (statusChangedToCancelled) {
+        actionType =
+          originalStatus === "Pending"
+            ? "BOOK_CANCEL_PENDING"
+            : "BOOK_CANCEL_CONFIRMED";
+      } else if (
+        updateData.booking_status === "Confirmed" &&
+        originalStatus === "Pending"
+      ) {
+        actionType = "BOOK_CONFIRMED";
+      }
 
       await logActivity({
         customerId: booking.customerId,
@@ -1488,11 +1498,15 @@ class BookingController {
 
       // Optional: Add logic here to prevent cancellation if the showtime is too close
 
+      const originalStatus = booking.booking_status;
       await booking.cancelBooking("Cancelled by user");
 
       await logActivity({
         customerId: customerId,
-        action: "BOOK_CANCEL",
+        action:
+          originalStatus === "Pending"
+            ? "BOOK_CANCEL_PENDING"
+            : "BOOK_CANCEL_CONFIRMED",
         status: "SUCCESS",
         targetId: booking._id,
         req,
