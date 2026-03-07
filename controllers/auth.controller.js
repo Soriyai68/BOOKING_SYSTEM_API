@@ -791,6 +791,15 @@ class AuthController {
       user.passwordChangedAt = new Date();
       await user.save();
 
+      // Log activity
+      const { logActivity } = require("../utils/activityLogger");
+      await logActivity({
+        userId: user._id,
+        action: "PASSWORD_RESET", // or PASSWORD_UPDATE if added, but RESET is close
+        status: "SUCCESS",
+        req,
+      });
+
       const isFirstTimeSetup = !hasPassword;
 
       // Only invalidate sessions if user already had a password

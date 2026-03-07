@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
-const { Hall, Showtime } = require("../models");
+const { Hall, Showtime, Theater } = require("../models");
 const { Role } = require("../data");
 const logger = require("../utils/logger");
+const { logActivity } = require("../utils/activityLogger");
 
 /**
  * HallController - Comprehensive CRUD operations for hall management
@@ -278,6 +279,18 @@ class HallController {
 
       logger.info(`Created new hall: ${hall._id} (${hall.hall_name})`);
 
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "HALL_CREATE",
+        targetId: hall._id,
+        req,
+        metadata: {
+          name: hall.hall_name,
+          theater_id: hall.theater_id,
+        },
+      });
+
       res.status(201).json({
         success: true,
         message: "Hall created successfully",
@@ -409,6 +422,18 @@ class HallController {
 
       logger.info(`Updated hall: ${id} (${hall.hall_name})`);
 
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "HALL_UPDATE",
+        targetId: hall._id,
+        req,
+        metadata: {
+          name: hall.hall_name,
+          updatedFields: Object.keys(updateData),
+        },
+      });
+
       res.status(200).json({
         success: true,
         message: "Hall updated successfully",
@@ -507,6 +532,17 @@ class HallController {
 
       logger.info(`Soft deleted hall: ${id} (${deletedHall.hall_name})`);
 
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "HALL_DELETE",
+        targetId: deletedHall._id,
+        req,
+        metadata: {
+          name: deletedHall.hall_name,
+        },
+      });
+
       res.status(200).json({
         success: true,
         message: "Hall deactivated successfully",
@@ -583,6 +619,17 @@ class HallController {
       }
 
       logger.info(`Restored hall: ${id} (${restoredHall.hall_name})`);
+
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "HALL_RESTORE",
+        targetId: restoredHall._id,
+        req,
+        metadata: {
+          name: restoredHall.hall_name,
+        },
+      });
 
       res.status(200).json({
         success: true,
@@ -730,6 +777,17 @@ class HallController {
           action: "FORCE_DELETE_HALL",
         },
       );
+
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "HALL_FORCE_DELETE",
+        targetId: hallInfo.id,
+        req,
+        metadata: {
+          name: hallInfo.hall_name,
+        },
+      });
 
       res.status(200).json({
         success: true,
@@ -1254,15 +1312,35 @@ class HallController {
         );
 
         if (newSeats.length === 0) {
-          return res
-            .status(409)
-            .json({
-              success: false,
-              message: "All specified seats already exist in this hall.",
-            });
+          return res.status(409).json({
+            success: false,
+            message: "All specified seats already exist in this hall.",
+          });
         }
 
         const createdSeats = await Seat.insertMany(newSeats);
+
+        // Log Activity
+        if (createdSeats.length > 0) {
+          const populatedHall = await Hall.findById(id)
+            .populate("theater_id", "name")
+            .lean();
+          await logActivity({
+            userId: req.user?.userId,
+            action: "SEAT_CREATE",
+            req,
+            metadata: {
+              bulk: true,
+              action_type: "generate_layout",
+              count: createdSeats.length,
+              hall_id: id,
+              hallName: populatedHall?.hall_name,
+              theaterName: populatedHall?.theater_id?.name,
+              seatIds: createdSeats.map((s) => s._id),
+            },
+          });
+        }
+
         await Hall.updateTotalSeatsForHall(id);
 
         return res.status(201).json({
@@ -1277,6 +1355,27 @@ class HallController {
 
       // Bulk insert all seats if replacing
       const createdSeats = await Seat.insertMany(seatsToCreate);
+
+      // Log Activity
+      if (createdSeats.length > 0) {
+        const populatedHall = await Hall.findById(id)
+          .populate("theater_id", "name")
+          .lean();
+        await logActivity({
+          userId: req.user?.userId,
+          action: "SEAT_CREATE",
+          req,
+          metadata: {
+            bulk: true,
+            action_type: "generate_layout_replace",
+            count: createdSeats.length,
+            hall_id: id,
+            hallName: populatedHall?.hall_name,
+            theaterName: populatedHall?.theater_id?.name,
+            seatIds: createdSeats.map((s) => s._id),
+          },
+        });
+      }
 
       // Update hall's total capacity
       await Hall.updateTotalSeatsForHall(id);

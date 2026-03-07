@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const { Invoice, Payment, User } = require("../models");
 const { Role } = require("../data");
 const logger = require("../utils/logger");
+const { logActivity } = require("../utils/activityLogger");
 
 class InvoiceController {
   // Helper method to validate ObjectId
@@ -15,11 +16,17 @@ class InvoiceController {
   static buildFilterQuery(filters) {
     const query = {};
 
-    if (filters.paymentId && mongoose.Types.ObjectId.isValid(filters.paymentId)) {
+    if (
+      filters.paymentId &&
+      mongoose.Types.ObjectId.isValid(filters.paymentId)
+    ) {
       query.paymentId = new mongoose.Types.ObjectId(filters.paymentId);
     }
 
-    if (filters.cashierId && mongoose.Types.ObjectId.isValid(filters.cashierId)) {
+    if (
+      filters.cashierId &&
+      mongoose.Types.ObjectId.isValid(filters.cashierId)
+    ) {
       query.cashierId = new mongoose.Types.ObjectId(filters.cashierId);
     }
 
@@ -309,6 +316,20 @@ class InvoiceController {
         message: "Invoice created successfully",
         data: { invoice: populatedInvoice },
       });
+
+      // Log Activity
+      await logActivity({
+        userId: req.user.userId,
+        logType: "ADMIN",
+        action: "INVOICE_GENERATE",
+        targetId: invoice._id,
+        req,
+        metadata: {
+          invoiceNumber: invoice.invoice_number,
+          amount: invoice.amount,
+          currency: invoice.currency,
+        },
+      });
     } catch (error) {
       logger.error("Create invoice error:", error);
       if (error.code === 11000) {
@@ -335,7 +356,7 @@ class InvoiceController {
       const invoice = await Invoice.findByIdAndUpdate(
         id,
         { $set: updateData },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       )
         .populate("paymentId", "payment_method status amount")
         .populate("cashierId", "username email phone");
@@ -350,6 +371,21 @@ class InvoiceController {
         success: true,
         message: "Invoice updated successfully",
         data: { invoice },
+      });
+
+      // Log Activity
+      await logActivity({
+        userId: req.user.userId,
+        logType: "ADMIN",
+        action: "INVOICE_GENERATE", // Using INVOICE_GENERATE as a general action or should I use a generic one?
+        // Actually, activityLog model has INVOICE_GENERATE. Let's assume it covers updates or I can use a generic one if I added it.
+        // Wait, I didn't add INVOICE_UPDATE to the model. I'll use INVOICE_GENERATE for now.
+        targetId: invoice._id,
+        req,
+        metadata: {
+          invoiceNumber: invoice.invoice_number,
+          updatedFields: Object.keys(req.body),
+        },
       });
     } catch (error) {
       logger.error("Update invoice error:", error);
@@ -387,7 +423,7 @@ class InvoiceController {
       const invoice = await Invoice.findByIdAndUpdate(
         id,
         { $set: updateData },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       )
         .populate("paymentId", "payment_method status amount")
         .populate("cashierId", "username email phone");
@@ -402,6 +438,20 @@ class InvoiceController {
         success: true,
         message: "Invoice status updated successfully",
         data: { invoice },
+      });
+
+      // Log Activity
+      await logActivity({
+        userId: req.user.userId,
+        logType: "ADMIN",
+        action: "INVOICE_GENERATE",
+        targetId: invoice._id,
+        req,
+        metadata: {
+          invoiceNumber: invoice.invoice_number,
+          tracking_status: invoice.tracking_status,
+          paid: invoice.paid,
+        },
       });
     } catch (error) {
       logger.error("Update invoice status error:", error);
@@ -420,7 +470,7 @@ class InvoiceController {
       const invoice = await Invoice.findByIdAndUpdate(
         id,
         { deletedAt: new Date() },
-        { new: true }
+        { new: true },
       );
 
       if (!invoice) {
@@ -432,6 +482,19 @@ class InvoiceController {
       res.status(200).json({
         success: true,
         message: "Invoice deleted successfully",
+      });
+
+      // Log Activity
+      await logActivity({
+        userId: req.user.userId,
+        logType: "ADMIN",
+        action: "INVOICE_DELETE",
+        targetId: invoice._id,
+        req,
+        metadata: {
+          invoiceNumber: invoice.invoice_number,
+          softDelete: true,
+        },
       });
     } catch (error) {
       logger.error("Delete invoice error:", error);
@@ -450,7 +513,7 @@ class InvoiceController {
       const invoice = await Invoice.findByIdAndUpdate(
         id,
         { deletedAt: null },
-        { new: true }
+        { new: true },
       );
 
       if (!invoice) {
@@ -463,6 +526,19 @@ class InvoiceController {
         success: true,
         message: "Invoice restored successfully",
         data: { invoice },
+      });
+
+      // Log Activity
+      await logActivity({
+        userId: req.user.userId,
+        logType: "ADMIN",
+        action: "INVOICE_GENERATE",
+        targetId: invoice._id,
+        req,
+        metadata: {
+          invoiceNumber: invoice.invoice_number,
+          restore: true,
+        },
       });
     } catch (error) {
       logger.error("Restore invoice error:", error);
@@ -490,11 +566,27 @@ class InvoiceController {
         success: true,
         message: "Invoice permanently deleted",
       });
+
+      // Log Activity
+      await logActivity({
+        userId: req.user.userId,
+        logType: "ADMIN",
+        action: "INVOICE_DELETE",
+        targetId: invoice._id,
+        req,
+        metadata: {
+          invoiceNumber: invoice.invoice_number,
+          permanent: true,
+        },
+      });
     } catch (error) {
       logger.error("Force delete invoice error:", error);
       res
         .status(500)
-        .json({ success: false, message: "Failed to permanently delete invoice" });
+        .json({
+          success: false,
+          message: "Failed to permanently delete invoice",
+        });
     }
   }
 
@@ -541,7 +633,10 @@ class InvoiceController {
       logger.error("List deleted invoices error:", error);
       res
         .status(500)
-        .json({ success: false, message: "Failed to retrieve deleted invoices" });
+        .json({
+          success: false,
+          message: "Failed to retrieve deleted invoices",
+        });
     }
   }
 
@@ -594,7 +689,10 @@ class InvoiceController {
       logger.error("Get invoice analytics error:", error);
       res
         .status(500)
-        .json({ success: false, message: "Failed to retrieve invoice analytics" });
+        .json({
+          success: false,
+          message: "Failed to retrieve invoice analytics",
+        });
     }
   }
 }

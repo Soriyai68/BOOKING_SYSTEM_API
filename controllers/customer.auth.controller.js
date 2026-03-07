@@ -90,11 +90,15 @@ class CustomerAuthController {
         );
 
         // Welcome Notification (Internal)
-        NotificationController.notifyCustomer(customer._id, {
-          type: "welcome",
-          title: "Welcome to Movie Booking!",
-          message: `Hello ${customer.name}, welcome to our platform! Enjoy your movie experience.`,
-        });
+        NotificationController.notifyCustomer(
+          customer._id,
+          {
+            type: "welcome",
+            title: "Welcome to Movie Booking!",
+            message: `Hello ${customer.name}, welcome to our platform! Enjoy your movie experience.`,
+          },
+          req,
+        );
       }
 
       // Handle session and tokens
@@ -190,11 +194,15 @@ class CustomerAuthController {
         );
 
         // Welcome Notification (Internal)
-        NotificationController.notifyCustomer(customer._id, {
-          type: "welcome",
-          title: "Welcome to Movie Booking!",
-          message: `Hello ${customer.name}, welcome to our platform! Enjoy your movie experience.`,
-        });
+        NotificationController.notifyCustomer(
+          customer._id,
+          {
+            type: "welcome",
+            title: "Welcome to Movie Booking!",
+            message: `Hello ${customer.name}, welcome to our platform! Enjoy your movie experience.`,
+          },
+          req,
+        );
       }
 
       // Handle session and tokens

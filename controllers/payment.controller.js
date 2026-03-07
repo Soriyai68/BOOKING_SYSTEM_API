@@ -487,13 +487,17 @@ class PaymentController {
               );
 
               // Notify customer
-              NotificationController.notifyCustomer(booking.customerId, {
-                type: notifType,
-                title: "Payment Confirmed",
-                message: dynamicMessage,
-                metadata,
-                relatedId: booking._id,
-              });
+              NotificationController.notifyCustomer(
+                booking.customerId,
+                {
+                  type: notifType,
+                  title: "Payment Confirmed",
+                  message: dynamicMessage,
+                  metadata,
+                  relatedId: booking._id,
+                },
+                req,
+              );
             }
           }
         }
@@ -634,13 +638,17 @@ class PaymentController {
           );
 
           // Notify customer
-          NotificationController.notifyCustomer(booking.customerId, {
-            type: notifType,
-            title: "Payment Confirmed",
-            message: dynamicMessage,
-            metadata,
-            relatedId: booking._id,
-          });
+          NotificationController.notifyCustomer(
+            booking.customerId,
+            {
+              type: notifType,
+              title: "Payment Confirmed",
+              message: dynamicMessage,
+              metadata,
+              relatedId: booking._id,
+            },
+            req,
+          );
         }
       }
 
@@ -679,6 +687,18 @@ class PaymentController {
         success: true,
         message: "Payment deleted successfully",
       });
+
+      // Log activity
+      await logActivity({
+        userId: req.user?.userId || req.user?._id,
+        action: "PAYMENT_DELETE",
+        status: "SUCCESS",
+        targetId: payment._id,
+        req,
+        metadata: {
+          softDelete: true,
+        },
+      });
     } catch (error) {
       logger.error("Delete payment error:", error);
       res
@@ -710,6 +730,18 @@ class PaymentController {
         message: "Payment restored successfully",
         data: { payment },
       });
+
+      // Log activity
+      await logActivity({
+        userId: req.user?.userId || req.user?._id,
+        action: "PAYMENT_UPDATE",
+        status: "SUCCESS",
+        targetId: payment._id,
+        req,
+        metadata: {
+          restore: true,
+        },
+      });
     } catch (error) {
       logger.error("Restore payment error:", error);
       res
@@ -735,6 +767,18 @@ class PaymentController {
       res.status(200).json({
         success: true,
         message: "Payment permanently deleted",
+      });
+
+      // Log activity
+      await logActivity({
+        userId: req.user?.userId || req.user?._id,
+        action: "PAYMENT_DELETE",
+        status: "SUCCESS",
+        targetId: payment._id,
+        req,
+        metadata: {
+          permanent: true,
+        },
       });
     } catch (error) {
       logger.error("Force delete payment error:", error);

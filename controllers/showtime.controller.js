@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const { Theater, Hall, Movie, Showtime, SeatBooking } = require("../models");
 const { Role } = require("../data");
 const logger = require("../utils/logger");
+const { logActivity } = require("../utils/activityLogger");
 
 class ShowtimeController {
   // Validate ObjectId
@@ -372,6 +373,20 @@ class ShowtimeController {
 
       logger.info(`Created new showtime: ${showtime._id}`);
 
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "SHOWTIME_CREATE",
+        targetId: showtime._id,
+        req,
+        metadata: {
+          movie_id: showtime.movie_id,
+          hall_id: showtime.hall_id,
+          show_date: showtime.show_date,
+          start_time: showtime.start_time,
+        },
+      });
+
       // Send success response
       res.status(201).json({
         success: true,
@@ -440,6 +455,22 @@ class ShowtimeController {
       const updatedShowtime = await showtime.save();
 
       logger.info(`Updated showtime: ${id}`);
+
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "SHOWTIME_UPDATE",
+        targetId: updatedShowtime._id,
+        req,
+        metadata: {
+          movie_id: updatedShowtime.movie_id,
+          hall_id: updatedShowtime.hall_id,
+          show_date: updatedShowtime.show_date,
+          start_time: updatedShowtime.start_time,
+          updatedFields: Object.keys(updateData),
+        },
+      });
+
       res.status(200).json({
         success: true,
         message: "Showtime updated successfully",
@@ -530,6 +561,20 @@ class ShowtimeController {
       await showtime.softDelete(req.user?.userId);
 
       logger.info(`Soft deleted showtime: ${id}`);
+
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "SHOWTIME_DELETE",
+        targetId: showtime._id,
+        req,
+        metadata: {
+          movie_id: showtime.movie_id,
+          hall_id: showtime.hall_id,
+          show_date: showtime.show_date,
+        },
+      });
+
       res.status(200).json({
         success: true,
         message: "Showtime deactivated successfully",
@@ -581,6 +626,20 @@ class ShowtimeController {
       await showtime.restore(req.user?.userId);
 
       logger.info(`Restored showtime: ${id}`);
+
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "SHOWTIME_RESTORE",
+        targetId: showtime._id,
+        req,
+        metadata: {
+          movie_id: showtime.movie_id,
+          hall_id: showtime.hall_id,
+          show_date: showtime.show_date,
+        },
+      });
+
       res.status(200).json({
         success: true,
         message: "Showtime restored successfully",
@@ -657,6 +716,19 @@ class ShowtimeController {
           deletedAt: new Date().toISOString(),
         },
       );
+
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "SHOWTIME_FORCE_DELETE",
+        targetId: showtime._id,
+        req,
+        metadata: {
+          movie_id: showtime.movie_id,
+          hall_id: showtime.hall_id,
+          show_date: showtime.show_date,
+        },
+      });
 
       res.status(200).json({
         success: true,
@@ -764,6 +836,18 @@ class ShowtimeController {
       );
 
       logger.info(`Updated showtime status: ${id} to ${status}`);
+
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "SHOWTIME_STATUS_UPDATE",
+        targetId: updatedShowtime._id,
+        req,
+        metadata: {
+          movie_id: updatedShowtime.movie_id,
+          status: status,
+        },
+      });
 
       res.status(200).json({
         success: true,
@@ -899,6 +983,33 @@ class ShowtimeController {
       }));
       const createdShowtimes = await Showtime.insertMany(showtimesToCreate);
 
+      // Log Activity
+      const movieIds = [
+        ...new Set(createdShowtimes.map((s) => s.movie_id.toString())),
+      ];
+      const hallIds = [
+        ...new Set(createdShowtimes.map((s) => s.hall_id.toString())),
+      ];
+
+      const [movies, halls] = await Promise.all([
+        Movie.find({ _id: { $in: movieIds } }, "title").lean(),
+        Hall.find({ _id: { $in: hallIds } }, "hall_name").lean(),
+      ]);
+
+      await logActivity({
+        userId: req.user?.userId,
+        action: "SHOWTIME_CREATE",
+        req,
+        metadata: {
+          bulk: true,
+          count: createdShowtimes.length,
+          showtimeIds: createdShowtimes.map((s) => s._id),
+          movieTitles: movies.map((m) => m.title),
+          hallNames: halls.map((h) => h.hall_name),
+          dates: [...new Set(createdShowtimes.map((s) => s.show_date))],
+        },
+      });
+
       res.status(201).json({
         success: true,
         message: "All showtimes created successfully.",
@@ -978,6 +1089,42 @@ class ShowtimeController {
       }
 
       logger.info(`Bulk deactivated ${deletedShowtimes.length} showtimes.`);
+
+      // Log Activity
+      if (deletedShowtimes.length > 0) {
+        // Fetch showtime details for enriched logging (including soft-deleted ones)
+        const showtimeDetails = await Showtime.find({
+          _id: { $in: deletedShowtimes },
+        })
+          .populate("movie_id", "title")
+          .populate("hall_id", "hall_name")
+          .lean();
+
+        await logActivity({
+          userId: req.user?.userId,
+          action: "SHOWTIME_DELETE",
+          req,
+          metadata: {
+            bulk: true,
+            count: deletedShowtimes.length,
+            showtimeIds: deletedShowtimes,
+            movieTitles: [
+              ...new Set(
+                showtimeDetails.map((s) => s.movie_id?.title).filter(Boolean),
+              ),
+            ],
+            hallNames: [
+              ...new Set(
+                showtimeDetails
+                  .map((s) => s.hall_id?.hall_name)
+                  .filter(Boolean),
+              ),
+            ],
+            dates: [...new Set(showtimeDetails.map((s) => s.show_date))],
+          },
+        });
+      }
+
       res.status(200).json({
         success: true,
         message: "All specified showtimes deactivated successfully.",
@@ -1093,6 +1240,40 @@ class ShowtimeController {
       logger.info(
         `Bulk permanently deleted ${deletedShowtimes.length} showtimes.`,
       );
+
+      // Log Activity
+      if (deletedShowtimes.length > 0) {
+        const movieIds = [
+          ...new Set(
+            showtimes.map((s) => s.movie_id?.toString()).filter(Boolean),
+          ),
+        ];
+        const hallIds = [
+          ...new Set(
+            showtimes.map((s) => s.hall_id?.toString()).filter(Boolean),
+          ),
+        ];
+
+        const [movies, halls] = await Promise.all([
+          Movie.find({ _id: { $in: movieIds } }, "title").lean(),
+          Hall.find({ _id: { $in: hallIds } }, "hall_name").lean(),
+        ]);
+
+        await logActivity({
+          userId: req.user?.userId,
+          action: "SHOWTIME_FORCE_DELETE",
+          req,
+          metadata: {
+            bulk: true,
+            count: deletedShowtimes.length,
+            showtimeIds: deletedShowtimes,
+            movieTitles: movies.map((m) => m.title),
+            hallNames: halls.map((h) => h.hall_name),
+            dates: [...new Set(showtimes.map((s) => s.show_date))],
+          },
+        });
+      }
+
       res.status(200).json({
         success: true,
         message: "All specified showtimes permanently deleted.",

@@ -727,6 +727,20 @@ class UserController {
         },
       );
 
+      // Log activity
+      const { logActivity } = require("../utils/activityLogger");
+      await logActivity({
+        userId: req.user?.userId,
+        logType: "ADMIN",
+        action: "USER_FORCE_DELETE",
+        targetId: id,
+        req,
+        metadata: {
+          username: userInfo.username,
+          role: userInfo.role,
+        },
+      });
+
       res.status(200).json({
         success: true,
         message: "User permanently deleted",

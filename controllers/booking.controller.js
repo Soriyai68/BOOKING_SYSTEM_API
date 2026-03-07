@@ -700,12 +700,6 @@ class BookingController {
         seat_identifier: `${s.row}-${s.seat_number}`,
       }));
 
-      // Notify admins of new booking
-      const movieTitle = booking.showtimeId?.movie_id?.title || "Movie";
-      const seatsLabel = (booking.populatedSeats || [])
-        .map((s) => s.seat_identifier)
-        .join(", ");
-
       NotificationController.notifyAdmins({
         type: "admin_booking_created",
         title: "New Booking Created",
@@ -719,6 +713,7 @@ class BookingController {
           seats: seatsLabel,
         },
         relatedId: booking._id,
+        req,
       });
 
       // Notify customer of new booking
@@ -729,13 +724,17 @@ class BookingController {
           metadata,
           type: notifType,
         } = NotificationController.generateBookingMessage(booking, movieTitle);
-        NotificationController.notifyCustomer(booking.customerId._id, {
-          type: notifType,
-          title: "Booking Confirmed",
-          message: dynamicMessage,
-          metadata,
-          relatedId: booking._id,
-        });
+        NotificationController.notifyCustomer(
+          booking.customerId._id,
+          {
+            type: notifType,
+            title: "Booking Confirmed",
+            message: dynamicMessage,
+            metadata,
+            relatedId: booking._id,
+          },
+          req,
+        );
       }
 
       if (booking.customerId) {
@@ -948,13 +947,17 @@ class BookingController {
           booking_created: "Booking Confirmed",
         };
 
-        NotificationController.notifyCustomer(booking.customerId._id, {
-          type: notifType,
-          title: titleMap[notifType] || "Booking Updated",
-          message: dynamicMessage,
-          metadata,
-          relatedId: booking._id,
-        });
+        NotificationController.notifyCustomer(
+          booking.customerId._id,
+          {
+            type: notifType,
+            title: titleMap[notifType] || "Booking Updated",
+            message: dynamicMessage,
+            metadata,
+            relatedId: booking._id,
+          },
+          req,
+        );
       }
 
       // Log activity
@@ -1160,16 +1163,20 @@ class BookingController {
         const movieTitle =
           populatedBooking?.showtimeId?.movie_id?.title || "Movie";
 
-        NotificationController.notifyCustomer(booking.customerId, {
-          type: isDeletion ? "booking_deleted" : "booking_cancelled",
-          title: isDeletion ? "Booking Deleted" : "Booking Cancelled",
-          message: `Your booking ${booking.reference_code} for "${movieTitle}" has been ${isDeletion ? "deleted" : "cancelled"}.`,
-          metadata: {
-            ref: booking.reference_code,
-            movie: movieTitle,
+        NotificationController.notifyCustomer(
+          booking.customerId,
+          {
+            type: isDeletion ? "booking_deleted" : "booking_cancelled",
+            title: isDeletion ? "Booking Deleted" : "Booking Cancelled",
+            message: `Your booking ${booking.reference_code} for "${movieTitle}" has been ${isDeletion ? "deleted" : "cancelled"}.`,
+            metadata: {
+              ref: booking.reference_code,
+              movie: movieTitle,
+            },
+            relatedId: booking._id,
           },
-          relatedId: booking._id,
-        });
+          req,
+        );
       }
 
       // Log activity

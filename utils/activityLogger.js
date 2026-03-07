@@ -67,8 +67,12 @@ const logActivity = async ({
       }
     }
 
-    await ActivityLog.create(logData);
+    const createdLog = await ActivityLog.create(logData);
+    console.log(
+      `[ActivityLog] Created: ${action} for ${logData.logType} (${userId || customerId || "System"})`,
+    );
   } catch (error) {
+    console.error(`[ActivityLog] FAILED to record ${action}:`, error);
     logger.error("Failed to record activity log:", error);
   }
 };

@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Promotion = require("../models/promotion.model");
 const logger = require("../utils/logger");
 const NotificationController = require("./notification.controller");
+const { logActivity } = require("../utils/activityLogger");
 
 /**
  * PromotionController - CRUD operations for promotion management
@@ -216,23 +217,39 @@ class PromotionController {
         `Created new promotion: ${promotion._id} (${promotion.code})`,
       );
 
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "PROMOTION_CREATE",
+        targetId: promotion._id,
+        req,
+        metadata: {
+          code: promotion.code,
+          title: promotion.title,
+          status: promotion.status,
+        },
+      });
+
       // Notify customers if promotion is created as Active
       if (promotion.status === "Active") {
-        NotificationController.notifyAllCustomers({
-          type: "promotion_new",
-          title: "New Promotion!",
-          message:
-            promotion.description ||
-            (promotion.title
-              ? `${promotion.title} (Code: ${promotion.code})`
-              : `New promotion available: ${promotion.code}`),
-          metadata: {
-            promoTitle: promotion.title || "",
-            code: promotion.code,
-            description: promotion.description || "",
+        NotificationController.notifyAllCustomers(
+          {
+            type: "promotion_new",
+            title: "New Promotion!",
+            message:
+              promotion.description ||
+              (promotion.title
+                ? `${promotion.title} (Code: ${promotion.code})`
+                : `New promotion available: ${promotion.code}`),
+            metadata: {
+              promoTitle: promotion.title || "",
+              code: promotion.code,
+              description: promotion.description || "",
+            },
+            relatedId: promotion._id,
           },
-          relatedId: promotion._id,
-        });
+          req,
+        );
       }
 
       res.status(201).json({
@@ -321,23 +338,40 @@ class PromotionController {
 
       logger.info(`Updated promotion: ${id} (${promotion.code})`);
 
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "PROMOTION_UPDATE",
+        targetId: promotion._id,
+        req,
+        metadata: {
+          code: promotion.code,
+          title: promotion.title,
+          status: promotion.status,
+          updatedFields: Object.keys(updateData),
+        },
+      });
+
       // Notify customers if status changed to Active
       if (updateData.status === "Active") {
-        NotificationController.notifyAllCustomers({
-          type: "promotion_new",
-          title: "New Promotion Active!",
-          message:
-            promotion.description ||
-            (promotion.title
-              ? `${promotion.title} (Code: ${promotion.code})`
-              : `Promotion active: ${promotion.code}`),
-          metadata: {
-            promoTitle: promotion.title || "",
-            code: promotion.code,
-            description: promotion.description || "",
+        NotificationController.notifyAllCustomers(
+          {
+            type: "promotion_new",
+            title: "New Promotion Active!",
+            message:
+              promotion.description ||
+              (promotion.title
+                ? `${promotion.title} (Code: ${promotion.code})`
+                : `Promotion active: ${promotion.code}`),
+            metadata: {
+              promoTitle: promotion.title || "",
+              code: promotion.code,
+              description: promotion.description || "",
+            },
+            relatedId: promotion._id,
           },
-          relatedId: promotion._id,
-        });
+          req,
+        );
       }
 
       res.status(200).json({
@@ -391,6 +425,18 @@ class PromotionController {
 
       logger.info(`Deleted promotion: ${id} (${promotion.code})`);
 
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "PROMOTION_DELETE",
+        targetId: promotion._id,
+        req,
+        metadata: {
+          code: promotion.code,
+          title: promotion.title,
+        },
+      });
+
       res.status(200).json({
         success: true,
         message: "Promotion deleted successfully",
@@ -428,6 +474,18 @@ class PromotionController {
       logger.warn("Bulk deleted promotions", {
         requestedCount: ids.length,
         deletedCount: result.deletedCount,
+      });
+
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "PROMOTION_DELETE", // Using DELETE action for bulk as well, or could define BULK_DELETE
+        req,
+        metadata: {
+          requestedCount: ids.length,
+          deletedCount: result.deletedCount,
+          ids,
+        },
       });
 
       return res.status(200).json({

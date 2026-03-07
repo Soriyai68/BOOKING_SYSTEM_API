@@ -1,12 +1,13 @@
-const mongoose = require('mongoose');
-const Theater = require('../models/theater.model');
-const Hall = require('../models/hall.model');
-const Showtime = require('../models/showtime.model'); // Import Showtime model
-const { Role } = require('../data');
+const mongoose = require("mongoose");
+const Theater = require("../models/theater.model");
+const Hall = require("../models/hall.model");
+const Showtime = require("../models/showtime.model"); // Import Showtime model
+const { Role } = require("../data");
+const { logActivity } = require("../utils/activityLogger");
 
 /**
  * TheaterController - Comprehensive CRUD operations for theater management
- * Handles: getById, getAll, create, update, delete (soft), restore, forceDelete, listDeleted, 
+ * Handles: getById, getAll, create, update, delete (soft), restore, forceDelete, listDeleted,
  * updateStatus, addHall, removeHall, updateLocation, updateOperatingHours, analytics
  */
 class TheaterController {
@@ -261,6 +262,18 @@ class TheaterController {
 
       console.log(`Created new theater: ${theater._id} (${theater.name})`);
 
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "THEATER_CREATE",
+        targetId: theater._id,
+        req,
+        metadata: {
+          name: theater.name,
+          city: theater.city,
+        },
+      });
+
       res.status(201).json({
         success: true,
         message: "Theater created successfully",
@@ -358,6 +371,18 @@ class TheaterController {
       }
 
       console.log(`Updated theater: ${id} (${theater.name})`);
+
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "THEATER_UPDATE",
+        targetId: theater._id,
+        req,
+        metadata: {
+          name: theater.name,
+          updatedFields: Object.keys(updateData),
+        },
+      });
 
       res.status(200).json({
         success: true,
@@ -459,6 +484,17 @@ class TheaterController {
 
       console.log(`Soft deleted theater: ${id} (${deletedTheater.name})`);
 
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "THEATER_DELETE",
+        targetId: deletedTheater._id,
+        req,
+        metadata: {
+          name: deletedTheater.name,
+        },
+      });
+
       res.status(200).json({
         success: true,
         message: "Theater deactivated successfully",
@@ -516,6 +552,17 @@ class TheaterController {
       const restoredTheater = await theater.restore(req.user?.userId);
 
       console.log(`Restored theater: ${id} (${restoredTheater.name})`);
+
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "THEATER_RESTORE",
+        targetId: restoredTheater._id,
+        req,
+        metadata: {
+          name: restoredTheater.name,
+        },
+      });
 
       res.status(200).json({
         success: true,
@@ -602,8 +649,12 @@ class TheaterController {
       });
 
       if (associatedShowtimes.length > 0) {
-        const activeShowtimes = associatedShowtimes.filter((showtime) => !showtime.deletedAt);
-        const deletedShowtimes = associatedShowtimes.filter((showtime) => showtime.deletedAt);
+        const activeShowtimes = associatedShowtimes.filter(
+          (showtime) => !showtime.deletedAt,
+        );
+        const deletedShowtimes = associatedShowtimes.filter(
+          (showtime) => showtime.deletedAt,
+        );
 
         return res.status(409).json({
           success: false,
@@ -642,8 +693,19 @@ class TheaterController {
           deletedBy: req.user.userId,
           deletedAt: new Date().toISOString(),
           action: "FORCE_DELETE_THEATER",
-        }
+        },
       );
+
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "THEATER_FORCE_DELETE",
+        targetId: theaterInfo.id,
+        req,
+        metadata: {
+          name: theaterInfo.name,
+        },
+      });
 
       res.status(200).json({
         success: true,
@@ -776,11 +838,11 @@ class TheaterController {
       // Update status using model method
       const updatedTheater = await theater.updateStatus(
         status,
-        req.user?.userId
+        req.user?.userId,
       );
 
       console.log(
-        `Updated theater status: ${id} (${theater.name}) -> ${status}`
+        `Updated theater status: ${id} (${theater.name}) -> ${status}`,
       );
 
       res.status(200).json({
@@ -842,7 +904,7 @@ class TheaterController {
       const updatedTheater = await theater.updateLocation(longitude, latitude);
 
       console.log(
-        `Updated theater location: ${id} -> [${longitude}, ${latitude}]`
+        `Updated theater location: ${id} -> [${longitude}, ${latitude}]`,
       );
 
       res.status(200).json({
@@ -985,7 +1047,7 @@ class TheaterController {
         lon,
         lat,
         distance,
-        query
+        query,
       ).lean();
 
       console.log(`Retrieved ${theaters.length} nearby theaters`);

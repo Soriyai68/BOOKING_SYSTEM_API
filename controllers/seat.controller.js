@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
-const { Seat, Hall, SeatBooking } = require("../models");
+const { Seat, Hall, SeatBooking, Theater } = require("../models");
 const { Role } = require("../data");
 const logger = require("../utils/logger");
+const { logActivity } = require("../utils/activityLogger");
 
 /**
  * SeatController - Comprehensive CRUD operations for seat management
@@ -256,6 +257,19 @@ class SeatController {
 
       const newSeat = await Seat.create(processedSeatData);
 
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "SEAT_CREATE",
+        targetId: newSeat._id,
+        req,
+        metadata: {
+          hall_id: newSeat.hall_id,
+          row: newSeat.row,
+          seat_number: newSeat.seat_number,
+        },
+      });
+
       return res.status(201).json({
         success: true,
         message: "Seat created successfully",
@@ -358,6 +372,20 @@ class SeatController {
         })
         .lean();
 
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "SEAT_UPDATE",
+        targetId: seat._id,
+        req,
+        metadata: {
+          hall_id: seat.hall_id,
+          row: seat.row,
+          seat_number: seat.seat_number,
+          updatedFields: Object.keys(updateData),
+        },
+      });
+
       res.status(200).json({
         success: true,
         message: "Seat updated successfully",
@@ -439,6 +467,19 @@ class SeatController {
         `Soft deleted seat: ${id} (${deletedSeat.row}${deletedSeat.seat_number})`,
       );
 
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "SEAT_DELETE",
+        targetId: deletedSeat._id,
+        req,
+        metadata: {
+          hall_id: deletedSeat.hall_id,
+          row: deletedSeat.row,
+          seat_number: deletedSeat.seat_number,
+        },
+      });
+
       res.status(200).json({
         success: true,
         message: "Seat deactivated successfully",
@@ -511,6 +552,19 @@ class SeatController {
       logger.info(
         `Restored seat: ${id} (${restoredSeat.row}${restoredSeat.seat_number})`,
       );
+
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "SEAT_RESTORE",
+        targetId: restoredSeat._id,
+        req,
+        metadata: {
+          hall_id: restoredSeat.hall_id,
+          row: restoredSeat.row,
+          seat_number: restoredSeat.seat_number,
+        },
+      });
 
       res.status(200).json({
         success: true,
@@ -604,6 +658,19 @@ class SeatController {
           action: "FORCE_DELETE_SEAT",
         },
       );
+
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "SEAT_FORCE_DELETE",
+        targetId: seatInfo.id,
+        req,
+        metadata: {
+          hall_id: seatInfo.hall_id,
+          row: seatInfo.row,
+          seat_number: seatInfo.seat_number,
+        },
+      });
 
       res.status(200).json({
         success: true,
@@ -750,6 +817,20 @@ class SeatController {
       logger.info(
         `Updated seat status: ${id} (${seat.row}-${seat.seat_number}) to ${status}`,
       );
+
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "SEAT_BOOKING_UPDATE",
+        targetId: updatedSeat._id,
+        req,
+        metadata: {
+          hall_id: updatedSeat.hall_id,
+          row: updatedSeat.row,
+          seat_number: updatedSeat.seat_number,
+          status: status,
+        },
+      });
 
       res.status(200).json({
         success: true,
@@ -965,6 +1046,27 @@ class SeatController {
 
       const createdSeats = await Seat.insertMany(newSeats, { lean: true });
 
+      // Log Activity
+      if (createdSeats.length > 0) {
+        const hall = await Hall.findById(hall_id)
+          .populate("theater_id", "name")
+          .lean();
+        await logActivity({
+          userId: req.user?.userId,
+          action: "SEAT_CREATE",
+          req,
+          metadata: {
+            bulk: true,
+            count: createdSeats.length,
+            hall_id,
+            hallName: hall?.hall_name,
+            theaterName: hall?.theater_id?.name,
+            row: row.toUpperCase(),
+            seatIds: createdSeats.map((s) => s._id),
+          },
+        });
+      }
+
       // Update hall's total_seats count
       if (createdSeats.length > 0) {
         try {
@@ -1072,6 +1174,28 @@ class SeatController {
           });
         }
       }
+      // Log Activity
+      const successfullyUpdated = results.filter((r) => r.success);
+      if (successfullyUpdated.length > 0) {
+        const sampleSeat = successfullyUpdated[0].data;
+        const hall = await Hall.findById(sampleSeat.hall_id)
+          .populate("theater_id", "name")
+          .lean();
+
+        await logActivity({
+          userId: req.user?.userId,
+          action: "SEAT_UPDATE",
+          req,
+          metadata: {
+            bulk: true,
+            count: successfullyUpdated.length,
+            seatIds: successfullyUpdated.map((r) => r.id),
+            hallName: hall?.hall_name,
+            theaterName: hall?.theater_id?.name,
+          },
+        });
+      }
+
       return res.status(200).json({
         success: true,
         message: "Bulk seat update completed.",
@@ -1200,6 +1324,27 @@ class SeatController {
 
       // Create new seats in target hall
       const createdSeats = await Seat.insertMany(seatsToCreate, { lean: true });
+
+      // Log Activity
+      if (createdSeats.length > 0) {
+        const hall = await Hall.findById(target_hall_id)
+          .populate("theater_id", "name")
+          .lean();
+        await logActivity({
+          userId: req.user?.userId,
+          action: "SEAT_CREATE", // Or SEAT_DUPLICATE if defined
+          req,
+          metadata: {
+            bulk: true,
+            action_type: "duplicate",
+            count: createdSeats.length,
+            target_hall_id,
+            hallName: hall?.hall_name,
+            theaterName: hall?.theater_id?.name,
+            seatIds: createdSeats.map((s) => s._id),
+          },
+        });
+      }
 
       // Update target hall's total_seats count
       try {
@@ -1349,9 +1494,20 @@ class SeatController {
             deletedSeatIds,
             deletedBy: req.user.userId,
             deletedAt: new Date().toISOString(),
-            action: "BULK_FORCE_DELETE_SEATS",
           },
         );
+
+        // Log Activity
+        await logActivity({
+          userId: req.user?.userId,
+          action: "SEAT_FORCE_DELETE",
+          req,
+          metadata: {
+            bulk: true,
+            count: deletedSeatIds.length,
+            seatIds: deletedSeatIds,
+          },
+        });
       }
 
       // 8. Send response

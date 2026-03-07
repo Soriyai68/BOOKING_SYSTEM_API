@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const { BookingDetail, Booking, Seat } = require("../models");
 const { Role } = require("../data");
 const logger = require("../utils/logger");
+const logActivity = require("../utils/activityLogger");
 
 class BookingDetailController {
   // Helper method to validate ObjectId
@@ -15,7 +16,10 @@ class BookingDetailController {
   static buildFilterQuery(filters) {
     const query = {};
 
-    if (filters.bookingId && mongoose.Types.ObjectId.isValid(filters.bookingId)) {
+    if (
+      filters.bookingId &&
+      mongoose.Types.ObjectId.isValid(filters.bookingId)
+    ) {
       query.bookingId = new mongoose.Types.ObjectId(filters.bookingId);
     }
 
@@ -51,7 +55,9 @@ class BookingDetailController {
       const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
       const skip = (pageNum - 1) * limitNum;
 
-      const matchQuery = { ...BookingDetailController.buildFilterQuery(filters) };
+      const matchQuery = {
+        ...BookingDetailController.buildFilterQuery(filters),
+      };
 
       if (!includeDeleted || includeDeleted === "false") {
         matchQuery.deletedAt = null;
@@ -145,9 +151,10 @@ class BookingDetailController {
       });
     } catch (error) {
       logger.error("Get all booking details error:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Failed to retrieve booking details" });
+      res.status(500).json({
+        success: false,
+        message: "Failed to retrieve booking details",
+      });
     }
   }
 
@@ -213,9 +220,10 @@ class BookingDetailController {
       });
     } catch (error) {
       logger.error("Get booking details by booking ID error:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Failed to retrieve booking details" });
+      res.status(500).json({
+        success: false,
+        message: "Failed to retrieve booking details",
+      });
     }
   }
 
@@ -346,6 +354,30 @@ class BookingDetailController {
         message: "Booking details created successfully",
         data: { bookingDetails: populatedDetails },
       });
+
+      // Log Activity
+      if (createdDetails.length > 0) {
+        const booking = await Booking.findById(bookingId)
+          .populate("customer_id", "first_name last_name")
+          .lean();
+        await logActivity({
+          userId: req.user?.userId,
+          action: "BOOK_UPDATE_SEATS", // Reusing this or adding BOOK_DETAIL_CREATE if needed
+          req,
+          targetId: bookingId,
+          metadata: {
+            bulk: true,
+            action_type: "create_details",
+            count: createdDetails.length,
+            bookingId,
+            bookingRef: booking?.reference_code,
+            customerName: booking?.customer_id
+              ? `${booking.customer_id.first_name} ${booking.customer_id.last_name}`
+              : "Walk-in",
+            seatIds: createdDetails.map((d) => d.seatId),
+          },
+        });
+      }
     } catch (error) {
       logger.error("Create bulk booking details error:", error);
       res
@@ -367,7 +399,7 @@ class BookingDetailController {
       const bookingDetail = await BookingDetail.findByIdAndUpdate(
         id,
         { $set: updateData },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       )
         .populate("bookingId", "reference_code booking_status")
         .populate("seatId", "row_label seat_number seat_type");
@@ -403,7 +435,7 @@ class BookingDetailController {
       const bookingDetail = await BookingDetail.findByIdAndUpdate(
         id,
         { deletedAt: new Date() },
-        { new: true }
+        { new: true },
       );
 
       if (!bookingDetail) {
@@ -437,13 +469,36 @@ class BookingDetailController {
 
       const result = await BookingDetail.updateMany(
         { _id: { $in: ids } },
-        { $set: { deletedAt: new Date() } }
+        { $set: { deletedAt: new Date() } },
       );
 
       res.status(200).json({
         success: true,
         message: `${result.modifiedCount} booking detail(s) deleted successfully`,
       });
+
+      // Log Activity
+      if (result.modifiedCount > 0) {
+        const sampleDetail = await BookingDetail.findById(ids[0]).lean();
+        const booking = await Booking.findById(sampleDetail?.bookingId)
+          .populate("customer_id", "first_name last_name")
+          .lean();
+        await logActivity({
+          userId: req.user?.userId,
+          action: "BOOK_UPDATE_SEATS",
+          req,
+          metadata: {
+            bulk: true,
+            action_type: "delete_details",
+            count: result.modifiedCount,
+            detailIds: ids,
+            bookingRef: booking?.reference_code,
+            customerName: booking?.customer_id
+              ? `${booking.customer_id.first_name} ${booking.customer_id.last_name}`
+              : "Walk-in",
+          },
+        });
+      }
     } catch (error) {
       logger.error("Delete bulk booking details error:", error);
       res
@@ -461,7 +516,7 @@ class BookingDetailController {
       const bookingDetail = await BookingDetail.findByIdAndUpdate(
         id,
         { deletedAt: null },
-        { new: true }
+        { new: true },
       );
 
       if (!bookingDetail) {
@@ -503,9 +558,10 @@ class BookingDetailController {
       });
     } catch (error) {
       logger.error("Force delete booking detail error:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Failed to permanently delete booking detail" });
+      res.status(500).json({
+        success: false,
+        message: "Failed to permanently delete booking detail",
+      });
     }
   }
 
@@ -550,9 +606,10 @@ class BookingDetailController {
       });
     } catch (error) {
       logger.error("List deleted booking details error:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Failed to retrieve deleted booking details" });
+      res.status(500).json({
+        success: false,
+        message: "Failed to retrieve deleted booking details",
+      });
     }
   }
 }

@@ -1,5 +1,6 @@
 const { Notification } = require("../models");
 const logger = require("../utils/logger");
+const { logActivity } = require("../utils/activityLogger");
 
 class NotificationController {
   /**
@@ -86,6 +87,19 @@ class NotificationController {
       }
 
       res.status(200).json({ success: true, data: notification });
+
+      // Log Activity
+      await logActivity({
+        userId,
+        logType: userModel.toUpperCase(),
+        action: "NOTIFICATION_UPDATE",
+        targetId: notification._id,
+        req,
+        metadata: {
+          isRead: true,
+          type: notification.type,
+        },
+      });
     } catch (error) {
       logger.error("Mark notification as read error:", error);
       res.status(500).json({
@@ -119,6 +133,18 @@ class NotificationController {
       res
         .status(200)
         .json({ success: true, message: "All notifications marked as read" });
+
+      // Log Activity
+      await logActivity({
+        userId,
+        logType: userModel.toUpperCase(),
+        action: "NOTIFICATION_UPDATE",
+        req,
+        metadata: {
+          isRead: true,
+          all: true,
+        },
+      });
     } catch (error) {
       logger.error("Mark all as read error:", error);
       res
@@ -167,6 +193,19 @@ class NotificationController {
       res
         .status(200)
         .json({ success: true, message: "Notification deleted successfully" });
+
+      // Log Activity
+      await logActivity({
+        userId,
+        logType: userModel.toUpperCase(),
+        action: "NOTIFICATION_DELETE",
+        targetId: notification._id,
+        req,
+        metadata: {
+          type: notification.type,
+          title: notification.title,
+        },
+      });
     } catch (error) {
       logger.error("Delete notification error:", error);
       res
@@ -199,6 +238,17 @@ class NotificationController {
       res
         .status(200)
         .json({ success: true, message: "All notifications deleted" });
+
+      // Log Activity
+      await logActivity({
+        userId,
+        logType: userModel.toUpperCase(),
+        action: "NOTIFICATION_DELETE",
+        req,
+        metadata: {
+          all: true,
+        },
+      });
     } catch (error) {
       logger.error("Delete all notifications error:", error);
       res.status(500).json({
@@ -300,6 +350,7 @@ class NotificationController {
     metadata = {},
     relatedId = null,
     relatedModel = "Booking",
+    req = null,
   }) {
     try {
       const { User } = require("../models");
@@ -324,6 +375,20 @@ class NotificationController {
 
       if (notifications.length > 0) {
         await Notification.insertMany(notifications);
+
+        // Log Activity
+        await logActivity({
+          userId: req?.user?.userId,
+          logType: "ADMIN",
+          action: "NOTIFICATION_SEND",
+          req,
+          metadata: {
+            type,
+            title,
+            recipientCount: notifications.length,
+            recipientType: "Admins",
+          },
+        });
       }
     } catch (error) {
       logger.error("Notify admins error:", error);
@@ -343,8 +408,9 @@ class NotificationController {
       relatedId = null,
       relatedModel = "Booking",
     },
+    req = null,
   ) {
-    return this.createInternal({
+    const result = await this.createInternal({
       userId: customerId,
       userModel: "Customer",
       type,
@@ -354,6 +420,22 @@ class NotificationController {
       relatedId,
       relatedModel: relatedId ? relatedModel : null,
     });
+
+    // Log Activity
+    await logActivity({
+      userId: req?.user?.userId || req?.customer?.customerId,
+      logType: req?.user?.userId ? "ADMIN" : "CUSTOMER",
+      action: "NOTIFICATION_SEND",
+      targetId: customerId,
+      req,
+      metadata: {
+        type,
+        title,
+        recipientType: "Customer",
+      },
+    });
+
+    return result;
   }
 
   /**
@@ -366,6 +448,7 @@ class NotificationController {
     metadata = {},
     relatedId = null,
     relatedModel = "Promotions",
+    req = null,
   }) {
     try {
       const { Customer } = require("../models");
@@ -389,6 +472,21 @@ class NotificationController {
       if (notifications.length > 0) {
         // Use insertMany for efficiency
         await Notification.insertMany(notifications);
+
+        // Log Activity
+        await logActivity({
+          userId: req?.user?.userId,
+          logType: "ADMIN",
+          action: "NOTIFICATION_SEND",
+          req,
+          metadata: {
+            type,
+            title,
+            recipientCount: notifications.length,
+            recipientType: "All Customers",
+          },
+        });
+
         logger.info(
           `Bulk notifications sent to ${notifications.length} customers`,
         );

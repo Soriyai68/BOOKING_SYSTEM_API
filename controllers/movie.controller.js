@@ -1,19 +1,20 @@
-const mongoose = require('mongoose');
-const Movie = require('../models/movie.model');
-const Showtime = require('../models/showtime.model'); // Import Showtime model
-const { Role } = require('../data');
-const logger = require('../utils/logger');
+const mongoose = require("mongoose");
+const Movie = require("../models/movie.model");
+const Showtime = require("../models/showtime.model"); // Import Showtime model
+const { Role } = require("../data");
+const logger = require("../utils/logger");
+const { logActivity } = require("../utils/activityLogger");
 
 /**
  * MovieController - Comprehensive CRUD operations for movie management
- * Handles: getById, getAll, create, update, delete (soft), restore, forceDelete, 
+ * Handles: getById, getAll, create, update, delete (soft), restore, forceDelete,
  * listDeleted, updateStatus, getNowShowing, getComingSoon, getByGenre
  */
 class MovieController {
   // Helper method to validate ObjectId
   static validateObjectId(id) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error('Invalid movie ID format');
+      throw new Error("Invalid movie ID format");
     }
   }
 
@@ -23,10 +24,10 @@ class MovieController {
 
     return {
       $or: [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { director: { $regex: search, $options: 'i' } }
-      ]
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { director: { $regex: search, $options: "i" } },
+      ],
     };
   }
 
@@ -61,7 +62,10 @@ class MovieController {
     }
 
     // Handle duration range filters
-    if (filters.minDuration !== undefined || filters.maxDuration !== undefined) {
+    if (
+      filters.minDuration !== undefined ||
+      filters.maxDuration !== undefined
+    ) {
       query.duration_minutes = {};
       if (filters.minDuration !== undefined) {
         query.duration_minutes.$gte = parseInt(filters.minDuration);
@@ -91,8 +95,8 @@ class MovieController {
       const {
         page = 1,
         limit = 10,
-        sortBy = 'release_date',
-        sortOrder = 'desc',
+        sortBy = "release_date",
+        sortOrder = "desc",
         search,
         includeDeleted = false,
         ...filters
@@ -115,21 +119,18 @@ class MovieController {
       query = { ...query, ...MovieController.buildFilterQuery(filters) };
 
       // Handle soft deleted records
-      if (!includeDeleted || includeDeleted === 'false') {
+      if (!includeDeleted || includeDeleted === "false") {
         query.deletedAt = null;
       }
 
       // Build sort object
       const sortObj = {};
-      sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
+      sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
 
       // Execute queries
       const [movies, totalCount] = await Promise.all([
-        Movie.find(query)
-          .sort(sortObj)
-          .skip(skip)
-          .limit(limitNum),
-        Movie.countDocuments(query)
+        Movie.find(query).sort(sortObj).skip(skip).limit(limitNum),
+        Movie.countDocuments(query),
       ]);
 
       // Calculate pagination info
@@ -151,15 +152,15 @@ class MovieController {
             hasNextPage,
             hasPrevPage,
             nextPage: hasNextPage ? pageNum + 1 : null,
-            prevPage: hasPrevPage ? pageNum - 1 : null
-          }
-        }
+            prevPage: hasPrevPage ? pageNum - 1 : null,
+          },
+        },
       });
     } catch (error) {
-      logger.error('Get all movies error:', error);
+      logger.error("Get all movies error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve movies'
+        message: "Failed to retrieve movies",
       });
     }
   }
@@ -172,7 +173,7 @@ class MovieController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Movie ID is required'
+          message: "Movie ID is required",
         });
       }
 
@@ -183,7 +184,7 @@ class MovieController {
       if (!movie) {
         return res.status(404).json({
           success: false,
-          message: 'Movie not found'
+          message: "Movie not found",
         });
       }
 
@@ -191,20 +192,20 @@ class MovieController {
 
       res.status(200).json({
         success: true,
-        data: { movie }
+        data: { movie },
       });
     } catch (error) {
-      if (error.message === 'Invalid movie ID format') {
+      if (error.message === "Invalid movie ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Get movie by ID error:', error);
+      logger.error("Get movie by ID error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve movie'
+        message: "Failed to retrieve movie",
       });
     }
   }
@@ -215,10 +216,15 @@ class MovieController {
       const movieData = req.body;
 
       // Validate required fields
-      if (!movieData.title || !movieData.duration_minutes || !movieData.release_date || !movieData.end_date) {
+      if (
+        !movieData.title ||
+        !movieData.duration_minutes ||
+        !movieData.release_date ||
+        !movieData.end_date
+      ) {
         return res.status(400).json({
           success: false,
-          message: 'Title, duration, release date and end date are required'
+          message: "Title, duration, release date and end date are required",
         });
       }
 
@@ -226,31 +232,31 @@ class MovieController {
       const endDate = new Date(movieData.end_date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-  
+
       if (releaseDate < today || endDate < today) {
         return res.status(400).json({
           success: false,
-          message: 'Release date and end date cannot be in the past.'
+          message: "Release date and end date cannot be in the past.",
         });
       }
-  
+
       if (endDate <= releaseDate) {
         return res.status(400).json({
           success: false,
-          message: 'End date must be after the release date.'
+          message: "End date must be after the release date.",
         });
       }
 
       // Check if movie already exists
-      const existingMovie = await Movie.findOne({ 
+      const existingMovie = await Movie.findOne({
         title: movieData.title.trim(),
-        release_date: new Date(movieData.release_date)
+        release_date: new Date(movieData.release_date),
       });
 
       if (existingMovie) {
         return res.status(409).json({
           success: false,
-          message: 'Movie with this title and release date already exists'
+          message: "Movie with this title and release date already exists",
         });
       }
 
@@ -264,31 +270,43 @@ class MovieController {
 
       logger.info(`Created new movie: ${movie._id} (${movie.title})`);
 
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "MOVIE_CREATE",
+        targetId: movie._id,
+        req,
+        metadata: {
+          title: movie.title,
+          genre: movie.genre,
+        },
+      });
+
       res.status(201).json({
         success: true,
-        message: 'Movie created successfully',
-        data: { movie }
+        message: "Movie created successfully",
+        data: { movie },
       });
     } catch (error) {
-      if (error.name === 'ValidationError') {
+      if (error.name === "ValidationError") {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
-          errors: Object.values(error.errors).map(err => err.message)
+          message: "Validation error",
+          errors: Object.values(error.errors).map((err) => err.message),
         });
       }
 
       if (error.code === 11000) {
         return res.status(409).json({
           success: false,
-          message: 'Movie with this title already exists'
+          message: "Movie with this title already exists",
         });
       }
 
-      logger.error('Create movie error:', error);
+      logger.error("Create movie error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to create movie'
+        message: "Failed to create movie",
       });
     }
   }
@@ -302,7 +320,7 @@ class MovieController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Movie ID is required'
+          message: "Movie ID is required",
         });
       }
 
@@ -310,31 +328,46 @@ class MovieController {
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-  
+
       if (updateData.release_date) {
         const newReleaseDate = new Date(updateData.release_date);
         if (newReleaseDate < today) {
-          return res.status(400).json({ success: false, message: 'Release date cannot be set to a past date.' });
+          return res.status(400).json({
+            success: false,
+            message: "Release date cannot be set to a past date.",
+          });
         }
       }
-  
+
       if (updateData.end_date) {
         const newEndDate = new Date(updateData.end_date);
         if (newEndDate < today) {
-          return res.status(400).json({ success: false, message: 'End date cannot be set to a past date.' });
+          return res.status(400).json({
+            success: false,
+            message: "End date cannot be set to a past date.",
+          });
         }
       }
-  
+
       if (updateData.release_date || updateData.end_date) {
         const movieToUpdate = await Movie.findById(id);
         if (!movieToUpdate) {
-          return res.status(404).json({ success: false, message: 'Movie not found' });
+          return res
+            .status(404)
+            .json({ success: false, message: "Movie not found" });
         }
-        const releaseDate = updateData.release_date ? new Date(updateData.release_date) : movieToUpdate.release_date;
-        const endDate = updateData.end_date ? new Date(updateData.end_date) : movieToUpdate.end_date;
-  
+        const releaseDate = updateData.release_date
+          ? new Date(updateData.release_date)
+          : movieToUpdate.release_date;
+        const endDate = updateData.end_date
+          ? new Date(updateData.end_date)
+          : movieToUpdate.end_date;
+
         if (endDate <= releaseDate) {
-          return res.status(400).json({ success: false, message: 'End date must be after the release date.' });
+          return res.status(400).json({
+            success: false,
+            message: "End date must be after the release date.",
+          });
         }
       }
 
@@ -350,50 +383,58 @@ class MovieController {
         updateData.updatedBy = req.user.userId;
       }
 
-      const movie = await Movie.findByIdAndUpdate(
-        id,
-        updateData,
-        {
-          new: true,
-          runValidators: true,
-          context: 'query'
-        }
-      );
+      const movie = await Movie.findByIdAndUpdate(id, updateData, {
+        new: true,
+        runValidators: true,
+        context: "query",
+      });
 
       if (!movie) {
         return res.status(404).json({
           success: false,
-          message: 'Movie not found'
+          message: "Movie not found",
         });
       }
 
       logger.info(`Updated movie: ${id} (${movie.title})`);
 
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "MOVIE_UPDATE",
+        targetId: movie._id,
+        req,
+        metadata: {
+          title: movie.title,
+          updatedFields: Object.keys(updateData),
+        },
+      });
+
       res.status(200).json({
         success: true,
-        message: 'Movie updated successfully',
-        data: { movie }
+        message: "Movie updated successfully",
+        data: { movie },
       });
     } catch (error) {
-      if (error.message === 'Invalid movie ID format') {
+      if (error.message === "Invalid movie ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      if (error.name === 'ValidationError') {
+      if (error.name === "ValidationError") {
         return res.status(400).json({
           success: false,
-          message: 'Validation error',
-          errors: Object.values(error.errors).map(err => err.message)
+          message: "Validation error",
+          errors: Object.values(error.errors).map((err) => err.message),
         });
       }
 
-      logger.error('Update movie error:', error);
+      logger.error("Update movie error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to update movie'
+        message: "Failed to update movie",
       });
     }
   }
@@ -406,7 +447,7 @@ class MovieController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Movie ID is required'
+          message: "Movie ID is required",
         });
       }
 
@@ -417,14 +458,14 @@ class MovieController {
       if (!movie) {
         return res.status(404).json({
           success: false,
-          message: 'Movie not found'
+          message: "Movie not found",
         });
       }
 
       if (movie.isDeleted()) {
         return res.status(409).json({
           success: false,
-          message: 'Movie is already deleted'
+          message: "Movie is already deleted",
         });
       }
 
@@ -448,23 +489,34 @@ class MovieController {
 
       logger.info(`Soft deleted movie: ${id} (${deletedMovie.title})`);
 
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "MOVIE_DELETE",
+        targetId: deletedMovie._id,
+        req,
+        metadata: {
+          title: deletedMovie.title,
+        },
+      });
+
       res.status(200).json({
         success: true,
-        message: 'Movie deleted successfully',
-        data: { movie: deletedMovie }
+        message: "Movie deleted successfully",
+        data: { movie: deletedMovie },
       });
     } catch (error) {
-      if (error.message === 'Invalid movie ID format') {
+      if (error.message === "Invalid movie ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Delete movie error:', error);
+      logger.error("Delete movie error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to delete movie'
+        message: "Failed to delete movie",
       });
     }
   }
@@ -477,7 +529,7 @@ class MovieController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Movie ID is required'
+          message: "Movie ID is required",
         });
       }
 
@@ -488,14 +540,14 @@ class MovieController {
       if (!movie) {
         return res.status(404).json({
           success: false,
-          message: 'Movie not found'
+          message: "Movie not found",
         });
       }
 
       if (!movie.isDeleted()) {
         return res.status(409).json({
           success: false,
-          message: 'Movie is not deleted'
+          message: "Movie is not deleted",
         });
       }
 
@@ -503,23 +555,34 @@ class MovieController {
 
       logger.info(`Restored movie: ${id} (${restoredMovie.title})`);
 
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "MOVIE_RESTORE",
+        targetId: restoredMovie._id,
+        req,
+        metadata: {
+          title: restoredMovie.title,
+        },
+      });
+
       res.status(200).json({
         success: true,
-        message: 'Movie restored successfully',
-        data: { movie: restoredMovie }
+        message: "Movie restored successfully",
+        data: { movie: restoredMovie },
       });
     } catch (error) {
-      if (error.message === 'Invalid movie ID format') {
+      if (error.message === "Invalid movie ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Restore movie error:', error);
+      logger.error("Restore movie error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to restore movie'
+        message: "Failed to restore movie",
       });
     }
   }
@@ -532,7 +595,7 @@ class MovieController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Movie ID is required'
+          message: "Movie ID is required",
         });
       }
 
@@ -540,7 +603,7 @@ class MovieController {
       if (req.user?.role !== Role.ADMIN && req.user?.role !== Role.SUPERADMIN) {
         return res.status(403).json({
           success: false,
-          message: 'Only Admin or SuperAdmin can permanently delete movies'
+          message: "Only Admin or SuperAdmin can permanently delete movies",
         });
       }
 
@@ -551,7 +614,7 @@ class MovieController {
       if (!movie) {
         return res.status(404).json({
           success: false,
-          message: 'Movie not found'
+          message: "Movie not found",
         });
       }
 
@@ -561,8 +624,12 @@ class MovieController {
       });
 
       if (associatedShowtimes.length > 0) {
-        const activeShowtimes = associatedShowtimes.filter((showtime) => !showtime.deletedAt);
-        const deletedShowtimes = associatedShowtimes.filter((showtime) => showtime.deletedAt);
+        const activeShowtimes = associatedShowtimes.filter(
+          (showtime) => !showtime.deletedAt,
+        );
+        const deletedShowtimes = associatedShowtimes.filter(
+          (showtime) => showtime.deletedAt,
+        );
 
         return res.status(409).json({
           success: false,
@@ -583,38 +650,52 @@ class MovieController {
         id: movie._id,
         title: movie.title,
         director: movie.director,
-        release_date: movie.release_date
+        release_date: movie.release_date,
       };
 
       await Movie.findByIdAndDelete(id);
 
-      logger.warn(`PERMANENT DELETION: Movie permanently deleted by ${req.user.role} ${req.user.userId}`, {
-        deletedMovie: movieInfo,
-        deletedBy: req.user.userId,
-        deletedAt: new Date().toISOString(),
-        action: 'FORCE_DELETE_MOVIE'
+      logger.warn(
+        `PERMANENT DELETION: Movie permanently deleted by ${req.user.role} ${req.user.userId}`,
+        {
+          deletedMovie: movieInfo,
+          deletedBy: req.user.userId,
+          deletedAt: new Date().toISOString(),
+          action: "FORCE_DELETE_MOVIE",
+        },
+      );
+
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "MOVIE_FORCE_DELETE",
+        targetId: movieInfo.id,
+        req,
+        metadata: {
+          title: movieInfo.title,
+        },
       });
 
       res.status(200).json({
         success: true,
-        message: 'Movie permanently deleted',
+        message: "Movie permanently deleted",
         data: {
           deletedMovie: movieInfo,
-          warning: 'This action is irreversible'
-        }
+          warning: "This action is irreversible",
+        },
       });
     } catch (error) {
-      if (error.message === 'Invalid movie ID format') {
+      if (error.message === "Invalid movie ID format") {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: error.message,
         });
       }
 
-      logger.error('Force delete movie error:', error);
+      logger.error("Force delete movie error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to permanently delete movie'
+        message: "Failed to permanently delete movie",
       });
     }
   }
@@ -625,8 +706,8 @@ class MovieController {
       const {
         page = 1,
         limit = 10,
-        sortBy = 'deletedAt',
-        sortOrder = 'desc'
+        sortBy = "deletedAt",
+        sortOrder = "desc",
       } = req.query;
 
       const pageNum = Math.max(1, parseInt(page));
@@ -634,14 +715,14 @@ class MovieController {
       const skip = (pageNum - 1) * limitNum;
 
       const sortObj = {};
-      sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
+      sortObj[sortBy] = sortOrder === "desc" ? -1 : 1;
 
       const [movies, totalCount] = await Promise.all([
         Movie.find({ deletedAt: { $ne: null } })
           .sort(sortObj)
           .skip(skip)
           .limit(limitNum),
-        Movie.countDocuments({ deletedAt: { $ne: null } })
+        Movie.countDocuments({ deletedAt: { $ne: null } }),
       ]);
 
       const totalPages = Math.ceil(totalCount / limitNum);
@@ -656,15 +737,15 @@ class MovieController {
             currentPage: pageNum,
             totalPages,
             totalCount,
-            limit: limitNum
-          }
-        }
+            limit: limitNum,
+          },
+        },
       });
     } catch (error) {
-      logger.error('List deleted movies error:', error);
+      logger.error("List deleted movies error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve deleted movies'
+        message: "Failed to retrieve deleted movies",
       });
     }
   }
@@ -678,14 +759,14 @@ class MovieController {
       if (!id) {
         return res.status(400).json({
           success: false,
-          message: 'Movie ID is required'
+          message: "Movie ID is required",
         });
       }
 
       if (!status) {
         return res.status(400).json({
           success: false,
-          message: 'Status is required'
+          message: "Status is required",
         });
       }
 
@@ -696,7 +777,7 @@ class MovieController {
       if (!movie) {
         return res.status(404).json({
           success: false,
-          message: 'Movie not found'
+          message: "Movie not found",
         });
       }
 
@@ -704,16 +785,28 @@ class MovieController {
 
       logger.info(`Updated movie status: ${id} to ${status}`);
 
+      // Log Activity
+      await logActivity({
+        userId: req.user?.userId,
+        action: "MOVIE_STATUS_UPDATE",
+        targetId: movie._id,
+        req,
+        metadata: {
+          title: movie.title,
+          status: status,
+        },
+      });
+
       res.status(200).json({
         success: true,
-        message: 'Movie status updated successfully',
-        data: { movie }
+        message: "Movie status updated successfully",
+        data: { movie },
       });
     } catch (error) {
-      logger.error('Update movie status error:', error);
+      logger.error("Update movie status error:", error);
       res.status(400).json({
         success: false,
-        message: error.message || 'Failed to update movie status'
+        message: error.message || "Failed to update movie status",
       });
     }
   }
@@ -727,9 +820,7 @@ class MovieController {
       const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
       const skip = (pageNum - 1) * limitNum;
 
-      const movies = await Movie.findNowShowing()
-        .skip(skip)
-        .limit(limitNum);
+      const movies = await Movie.findNowShowing().skip(skip).limit(limitNum);
 
       const totalCount = await Movie.findNowShowing().countDocuments();
 
@@ -743,15 +834,15 @@ class MovieController {
             currentPage: pageNum,
             totalPages: Math.ceil(totalCount / limitNum),
             totalCount,
-            limit: limitNum
-          }
-        }
+            limit: limitNum,
+          },
+        },
       });
     } catch (error) {
-      logger.error('Get now showing movies error:', error);
+      logger.error("Get now showing movies error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve now showing movies'
+        message: "Failed to retrieve now showing movies",
       });
     }
   }
@@ -765,9 +856,7 @@ class MovieController {
       const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
       const skip = (pageNum - 1) * limitNum;
 
-      const movies = await Movie.findComingSoon()
-        .skip(skip)
-        .limit(limitNum);
+      const movies = await Movie.findComingSoon().skip(skip).limit(limitNum);
 
       const totalCount = await Movie.findComingSoon().countDocuments();
 
@@ -781,15 +870,15 @@ class MovieController {
             currentPage: pageNum,
             totalPages: Math.ceil(totalCount / limitNum),
             totalCount,
-            limit: limitNum
-          }
-        }
+            limit: limitNum,
+          },
+        },
       });
     } catch (error) {
-      logger.error('Get coming soon movies error:', error);
+      logger.error("Get coming soon movies error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve coming soon movies'
+        message: "Failed to retrieve coming soon movies",
       });
     }
   }
@@ -803,7 +892,7 @@ class MovieController {
       if (!genre) {
         return res.status(400).json({
           success: false,
-          message: 'Genre is required'
+          message: "Genre is required",
         });
       }
 
@@ -811,13 +900,11 @@ class MovieController {
       const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
       const skip = (pageNum - 1) * limitNum;
 
-      const movies = await Movie.findByGenre(genre)
-        .skip(skip)
-        .limit(limitNum);
+      const movies = await Movie.findByGenre(genre).skip(skip).limit(limitNum);
 
       const totalCount = await Movie.countDocuments({
         genres: genre,
-        deletedAt: null
+        deletedAt: null,
       });
 
       logger.info(`Retrieved ${movies.length} movies for genre: ${genre}`);
@@ -830,15 +917,15 @@ class MovieController {
             currentPage: pageNum,
             totalPages: Math.ceil(totalCount / limitNum),
             totalCount,
-            limit: limitNum
-          }
-        }
+            limit: limitNum,
+          },
+        },
       });
     } catch (error) {
-      logger.error('Get movies by genre error:', error);
+      logger.error("Get movies by genre error:", error);
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve movies by genre'
+        message: "Failed to retrieve movies by genre",
       });
     }
   }
