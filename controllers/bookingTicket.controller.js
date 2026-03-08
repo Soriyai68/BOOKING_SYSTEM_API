@@ -37,6 +37,19 @@ class BookingTicketController {
         matchQuery["seat.ticket_type"] = filters.ticket_type;
       }
 
+      // Date range filtering
+      if (filters.startDate || filters.endDate) {
+        matchQuery.issuedAt = {};
+        if (filters.startDate) {
+          matchQuery.issuedAt.$gte = new Date(filters.startDate);
+        }
+        if (filters.endDate) {
+          const endDate = new Date(filters.endDate);
+          endDate.setHours(23, 59, 59, 999);
+          matchQuery.issuedAt.$lte = endDate;
+        }
+      }
+
       if (Object.keys(matchQuery).length > 0) {
         pipeline.push({ $match: matchQuery });
       }

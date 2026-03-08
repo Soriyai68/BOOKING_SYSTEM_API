@@ -700,6 +700,12 @@ class BookingController {
         seat_identifier: `${s.row}-${s.seat_number}`,
       }));
 
+      // Prepare notification data
+      const movieTitle = booking.showtimeId?.movie_id?.title || "Movie";
+      const seatsLabel = booking.populatedSeats
+        .map((s) => s.seat_identifier)
+        .join(", ");
+
       NotificationController.notifyAdmins({
         type: "admin_booking_created",
         title: "New Booking Created",
@@ -718,7 +724,6 @@ class BookingController {
 
       // Notify customer of new booking
       if (booking.customerId) {
-        const movieTitle = booking.showtimeId?.movie_id?.title || "Movie";
         const {
           message: dynamicMessage,
           metadata,

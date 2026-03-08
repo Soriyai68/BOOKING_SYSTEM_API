@@ -68,8 +68,8 @@ const getAllBookingTicketsQuerySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(10),
   sortBy: Joi.string()
-    .valid("price", "ticket_type", "createdAt", "updatedAt")
-    .default("createdAt"),
+    .valid("price", "ticket_type", "createdAt", "updatedAt", "issuedAt")
+    .default("issuedAt"),
   sortOrder: Joi.string().valid("asc", "desc").default("desc"),
   search: Joi.string().allow("").optional(),
   includeDeleted: Joi.boolean().default(false),
@@ -86,6 +86,13 @@ const getAllBookingTicketsQuerySchema = Joi.object({
       "string.pattern.base": "Invalid seat ID format",
     }),
   ticket_type: Joi.string().valid("adult", "child", "vip").optional(),
+  startDate: Joi.date().iso().optional().messages({
+    "date.format": "Start date must be in ISO format",
+  }),
+  endDate: Joi.date().iso().min(Joi.ref("startDate")).optional().messages({
+    "date.format": "End date must be in ISO format",
+    "date.min": "End date must be after start date",
+  }),
 });
 
 module.exports = {
