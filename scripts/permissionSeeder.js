@@ -399,9 +399,75 @@ const permissions = [
     module: "reports",
   },
   {
+    name: "reports.total-customers.view",
+    displayName: "View Total Customers Report",
+    description: "Can view total customers report",
+    module: "reports",
+  },
+  {
+    name: "reports.total-bookings.view",
+    displayName: "View Total Bookings Report",
+    description: "Can view total bookings report",
+    module: "reports",
+  },
+  {
+    name: "reports.total-revenue.view",
+    displayName: "View Total Revenue Report",
+    description: "Can view total revenue report",
+    module: "reports",
+  },
+  {
+    name: "reports.total-movies.view",
+    displayName: "View Total Movies Report",
+    description: "Can view total movies report",
+    module: "reports",
+  },
+  {
     name: "reports.customer-frequency.view",
     displayName: "View Customer Booking Frequency",
     description: "Can view customer booking frequency report",
+    module: "reports",
+  },
+  {
+    name: "reports.revenue-report.view",
+    displayName: "View Revenue Report",
+    description: "Can view detailed revenue report",
+    module: "reports",
+  },
+  {
+    name: "reports.booking-status-report.view",
+    displayName: "View Booking Status Report",
+    description: "Can view booking status report",
+    module: "reports",
+  },
+  {
+    name: "reports.popular-movies-report.view",
+    displayName: "View Popular Movies Report",
+    description: "Can view popular movies report",
+    module: "reports",
+  },
+  {
+    name: "reports.seat-type-revenue-report.view",
+    displayName: "View Seat Type Revenue Report",
+    description: "Can view seat type revenue report",
+    module: "reports",
+  },
+  {
+    name: "reports.detailed-revenue.view",
+    displayName: "View Detailed Revenue Report",
+    description: "Can view detailed revenue report",
+    module: "reports",
+  },
+  {
+    name: "reports.detailed-bookings.view",
+    displayName: "View Detailed Bookings Report",
+    description: "Can view detailed bookings report",
+    module: "reports",
+  },
+  {
+    name: "reports.detailed-movies.view",
+    displayName: "View Detailed Movies Report",
+    description: "Can view detailed movies report",
     module: "reports",
   },
 
@@ -618,7 +684,18 @@ const rolePermissions = {
 
     // Reports
     "reports.view",
+    "reports.total-customers.view",
+    "reports.total-bookings.view",
+    "reports.total-revenue.view",
+    "reports.total-movies.view",
     "reports.customer-frequency.view",
+    "reports.revenue-report.view",
+    "reports.booking-status-report.view",
+    "reports.popular-movies-report.view",
+    "reports.seat-type-revenue-report.view",
+    "reports.detailed-revenue.view",
+    "reports.detailed-bookings.view",
+    "reports.detailed-movies.view",
 
     // Activity Logs
     "activity-logs.view",
@@ -720,7 +797,18 @@ const rolePermissions = {
 
     // Reports
     "reports.view",
+    "reports.total-customers.view",
+    "reports.total-bookings.view",
+    "reports.total-revenue.view",
+    "reports.total-movies.view",
     "reports.customer-frequency.view",
+    "reports.revenue-report.view",
+    "reports.booking-status-report.view",
+    "reports.popular-movies-report.view",
+    "reports.seat-type-revenue-report.view",
+    "reports.detailed-revenue.view",
+    "reports.detailed-bookings.view",
+    "reports.detailed-movies.view",
 
     // Activity Logs
     "activity-logs.view",
