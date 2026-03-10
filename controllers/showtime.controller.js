@@ -921,7 +921,7 @@ class ShowtimeController {
 
         // Check movie and hall
         const [movie, hall] = await Promise.all([
-          Movie.findOne({ _id: movie_id, deletedAt: null }),
+          Movie.findOne({ _id: movie_id, deletedAt: null }, null, { skipAutoUpdate: true }),
           Hall.findOne({ _id: hall_id, deletedAt: null }),
         ]);
 
@@ -992,7 +992,7 @@ class ShowtimeController {
       ];
 
       const [movies, halls] = await Promise.all([
-        Movie.find({ _id: { $in: movieIds } }, "title").lean(),
+        Movie.find({ _id: { $in: movieIds } }, "title", { skipAutoUpdate: true }).lean(),
         Hall.find({ _id: { $in: hallIds } }, "hall_name").lean(),
       ]);
 

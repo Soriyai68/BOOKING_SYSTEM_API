@@ -249,17 +249,41 @@ movieSchema.methods.updateStatusBasedOnDate = function (updatedBy = null) {
   return Promise.resolve(this);
 };
 
-// Middleware to automatically update status on find
+// Middleware to automatically update status on find (but not during bulk operations)
 movieSchema.post("find", async function (docs) {
+  // Skip auto-update during bulk operations to avoid conflicts
+  if (this.getOptions().skipAutoUpdate) {
+    return;
+  }
+  
   if (docs && docs.length > 0) {
-    const promises = docs.map((doc) => doc.updateStatusBasedOnDate());
+    const promises = docs.map(async (doc) => {
+      if (doc && typeof doc.updateStatusBasedOnDate === 'function') {
+        try {
+          return await doc.updateStatusBasedOnDate();
+        } catch (error) {
+          console.warn('Failed to auto-update movie status:', error.message);
+          return doc;
+        }
+      }
+      return doc;
+    });
     await Promise.all(promises);
   }
 });
 
 movieSchema.post("findOne", async function (doc) {
-  if (doc) {
-    await doc.updateStatusBasedOnDate();
+  // Skip auto-update during bulk operations to avoid conflicts
+  if (this.getOptions().skipAutoUpdate) {
+    return;
+  }
+  
+  if (doc && typeof doc.updateStatusBasedOnDate === 'function') {
+    try {
+      await doc.updateStatusBasedOnDate();
+    } catch (error) {
+      console.warn('Failed to auto-update movie status:', error.message);
+    }
   }
 });
 
