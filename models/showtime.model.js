@@ -61,13 +61,22 @@ const showtimeSchema = new mongoose.Schema(
 showtimeSchema.index({ movie_id: 1, start_time: 1, status: 1 });
 showtimeSchema.index(
   { hall_id: 1, show_date: 1, start_time: 1 },
-  { unique: true },
+  { unique: true, partialFilterExpression: { deletedAt: null } },
 );
 showtimeSchema.index({ hall_id: 1, start_time: 1 });
 showtimeSchema.index({ start_time: 1 });
 showtimeSchema.index({ status: 1 });
 showtimeSchema.index({ deletedAt: 1 });
 showtimeSchema.index({ createdAt: 1 });
+
+showtimeSchema.statics.safeNormalizeDate = function (dateInput) {
+  if (!dateInput) return null;
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return null;
+  // Use local date parts to resolve the "calendar day" intended by the user/system, 
+  // then create a UTC date at midnight for that day.
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+};
 
 // Static methods
 showtimeSchema.statics.findOverlappingShowtimes = function (
@@ -77,9 +86,13 @@ showtimeSchema.statics.findOverlappingShowtimes = function (
   endTime,
   showtimeId = null,
 ) {
+  // Use safe normalization to ensure consistent day boundaries
+  const startOfDay = this.safeNormalizeDate(showDate);
+  const startOfNextDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+
   const query = {
     hall_id: hallId,
-    show_date: showDate,
+    show_date: { $gte: startOfDay, $lt: startOfNextDay }, // Range covers the full calendar day
     start_time: { $lt: endTime },
     end_time: { $gt: startTime },
     deletedAt: null,
@@ -92,8 +105,7 @@ showtimeSchema.statics.findOverlappingShowtimes = function (
 };
 
 showtimeSchema.statics.findAvailableByMovie = function (movieId, date) {
-  const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
+  const startOfDay = this.safeNormalizeDate(date);
 
   return this.find({
     movie_id: movieId,
@@ -105,11 +117,8 @@ showtimeSchema.statics.findAvailableByMovie = function (movieId, date) {
 
 // Find showtimes by hall for a specific date
 showtimeSchema.statics.findByHallAndDate = function (hallId, date) {
-  const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
+  const startOfDay = this.safeNormalizeDate(date);
+  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1); // end of that same UTC day
 
   return this.find({
     hall_id: hallId,
@@ -267,15 +276,15 @@ showtimeSchema.methods.isDeleted = function () {
 
 showtimeSchema.methods.isUpcoming = function () {
   const [hours, minutes] = this.start_time.split(":");
-  const showDateTime = new Date(this.show_date);
-  showDateTime.setHours(hours, minutes, 0, 0);
+  const d = new Date(this.show_date);
+  const showDateTime = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hours, minutes));
   return showDateTime > new Date();
 };
 
 showtimeSchema.methods.isPast = function () {
   const [hours, minutes] = this.end_time.split(":");
-  const showEndDateTime = new Date(this.show_date);
-  showEndDateTime.setHours(hours, minutes, 0, 0);
+  const d = new Date(this.show_date);
+  const showEndDateTime = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hours, minutes));
   return showEndDateTime < new Date();
 };
 
@@ -304,11 +313,9 @@ showtimeSchema.pre(/^find/, function (next) {
 
 // Pre-save: auto-calculate end time, validate overlapping, auto-update status
 showtimeSchema.pre("save", async function (next) {
-  // Normalize show_date to start of day (00:00:00.000)
+  // Normalize show_date to UTC start of day
   if (this.show_date) {
-    const d = new Date(this.show_date);
-    d.setHours(0, 0, 0, 0);
-    this.show_date = d;
+    this.show_date = this.constructor.safeNormalizeDate(this.show_date);
   }
 
   // Auto-calculate end_time from movie duration if not provided or if dependencies change
@@ -322,25 +329,26 @@ showtimeSchema.pre("save", async function (next) {
         const Movie = mongoose.model("Movie");
         const movie = await Movie.findById(this.movie_id);
         if (movie && movie.duration_minutes) {
-          const showDate = new Date(this.show_date);
+          const d = new Date(this.show_date);
           const [startHours, startMinutes] = this.start_time
             .split(":")
             .map(Number);
-          const startDateTime = new Date(
-            showDate.getFullYear(),
-            showDate.getMonth(),
-            showDate.getDate(),
+          // startDateTime is the literal point in time represented by the UTC date and local time parts
+          const startDateTime = new Date(Date.UTC(
+            d.getUTCFullYear(),
+            d.getUTCMonth(),
+            d.getUTCDate(),
             startHours,
             startMinutes,
-          );
+          ));
           const totalDuration = movie.duration_minutes;
           const endDateTime = new Date(
             startDateTime.getTime() + totalDuration * 60000,
           );
-          this.end_time = `${String(endDateTime.getHours()).padStart(
+          this.end_time = `${String(endDateTime.getUTCHours()).padStart(
             2,
             "0",
-          )}:${String(endDateTime.getMinutes()).padStart(2, "0")}`;
+          )}:${String(endDateTime.getUTCMinutes()).padStart(2, "0")}`;
         }
       } catch (error) {
         return next(
@@ -363,20 +371,15 @@ showtimeSchema.pre("save", async function (next) {
     this.isModified("start_time") ||
     this.isModified("show_date")
   ) {
-    const showDate = new Date(this.show_date);
-    const [startHours, startMinutes] = this.start_time.split(":").map(Number);
-    const startDateTime = new Date(
-      showDate.getFullYear(),
-      showDate.getMonth(),
-      showDate.getDate(),
-      startHours,
-      startMinutes,
-    );
+    // Relaxed: Allow creating showtimes in the past for administrative purposes.
+    // The post-save/find hooks will automatically mark them as 'completed' if needed.
+    /*
     if (startDateTime < new Date()) {
       return next(
         new Error("Showtime start date and time cannot be in the past."),
       );
     }
+    */
   }
 
   if (
@@ -393,9 +396,10 @@ showtimeSchema.pre("save", async function (next) {
       this._id,
     );
     if (overlapping.length > 0) {
+      const match = overlapping[0];
       return next(
         new Error(
-          "Showtime overlaps with an existing showtime in the same hall.",
+          `Showtime conflict: This hall already has a show at ${match.start_time} - ${match.end_time} on this date.`,
         ),
       );
     }
@@ -404,8 +408,8 @@ showtimeSchema.pre("save", async function (next) {
   // Auto-update status if end_time has passed
   if (this.status === "scheduled") {
     const [hours, minutes] = this.end_time.split(":");
-    const showEndDateTime = new Date(this.show_date);
-    showEndDateTime.setHours(hours, minutes, 0, 0);
+    const d = new Date(this.show_date);
+    const showEndDateTime = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hours, minutes));
     if (showEndDateTime < new Date()) {
       this.status = "completed";
     }
@@ -483,8 +487,8 @@ showtimeSchema.post(/^find/, async function (result, next) {
     for (const doc of docs) {
       if (doc && doc.status === "scheduled" && doc.end_time && doc.show_date) {
         const [hours, minutes] = doc.end_time.split(":");
-        const showEndDateTime = new Date(doc.show_date);
-        showEndDateTime.setHours(hours, minutes, 0, 0);
+        const d = new Date(doc.show_date);
+        const showEndDateTime = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hours, minutes));
 
         if (showEndDateTime < now) {
           doc.status = "completed";

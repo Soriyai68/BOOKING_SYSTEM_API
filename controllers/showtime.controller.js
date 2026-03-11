@@ -333,6 +333,19 @@ class ShowtimeController {
         });
       }
 
+      // Safety Check: Prevent accidental creation of single showtimes in the past.
+      // (Bulk/Duplication operations skip this check to allow flexibility)
+      const [y, m, day] = show_date.split("-").map(Number);
+      const [hours, minutes] = start_time.split(":").map(Number);
+      const startDateTime = new Date(y, m - 1, day, hours, minutes);
+      
+      if (startDateTime < new Date()) {
+        return res.status(400).json({
+          success: false,
+          message: "Showtime start time cannot be in the past.",
+        });
+      }
+
       // Check if referenced documents exist and are active
       const [movie, hall] = await Promise.all([
         Movie.findOne({ _id: movie_id, deletedAt: null }),
@@ -449,6 +462,26 @@ class ShowtimeController {
       Object.assign(showtime, updateData);
       if (req.user) {
         showtime.updatedBy = req.user.userId;
+      }
+
+      // Safety Check: Prevent accidental update to past date/time
+      if (updateData.show_date && updateData.start_time) {
+        const normalizedDate = Showtime.safeNormalizeDate(updateData.show_date);
+        const [hours, minutes] = updateData.start_time.split(":").map(Number);
+        const startDateTime = new Date(Date.UTC(
+          normalizedDate.getUTCFullYear(),
+          normalizedDate.getUTCMonth(),
+          normalizedDate.getUTCDate(),
+          hours,
+          minutes
+        ));
+        
+        if (startDateTime < new Date()) {
+          return res.status(409).json({
+            success: false,
+            message: "Showtime cannot be in the past. Please choose a future date and time.",
+          });
+        }
       }
 
       // .save() will trigger the pre-save hook which handles end_time calculation and overlap validation
@@ -933,12 +966,32 @@ class ShowtimeController {
 
         // Check duplicates in this batch
         const key = `${hall_id}_${show_date}_${start_time}`;
-        if (batchKeys.has(key))
+        if (batchKeys.has(key)) {
           errors.push({
             index: i,
-            error: `Row ${i + 1}: Duplicate showtime (${start_time}) already exists in this list.`,
+            error: `Row ${i + 1}: Duplicate showtime (${start_time}) already exists in your selection.`,
           });
-        else batchKeys.add(key);
+        } else {
+          batchKeys.add(key);
+        }
+
+        // Safety Check: Prevent accidental creation of past showtimes in bulk create
+        const normalizedDate = Showtime.safeNormalizeDate(show_date);
+        const [hours, minutes] = start_time.split(":").map(Number);
+        const startDateTime = new Date(Date.UTC(
+          normalizedDate.getUTCFullYear(),
+          normalizedDate.getUTCMonth(),
+          normalizedDate.getUTCDate(),
+          hours,
+          minutes
+        ));
+        
+        if (startDateTime < new Date()) {
+          errors.push({
+            index: i,
+            error: `Row ${i + 1}: Showtime at ${start_time} is in the past. Please choose a future date/time.`,
+          });
+        }
       }
 
       // 2. Check duplicates in database
@@ -956,7 +1009,7 @@ class ShowtimeController {
             const idx = showtimes.findIndex(
               (s) =>
                 s.hall_id.toString() === e.hall_id.toString() &&
-                s.show_date === e.show_date &&
+                Showtime.safeNormalizeDate(s.show_date).toISOString() === Showtime.safeNormalizeDate(e.show_date).toISOString() &&
                 s.start_time === e.start_time,
             );
             errors.push({
@@ -1342,10 +1395,11 @@ class ShowtimeController {
           .json({ message: "No valid showtimes to create." });
       }
 
-      const createdShowtimes = [];
       const errors = [];
       const createdBy = req.user?.userId;
+      const batchKeys = new Set(); // To track overlaps WITHIN this batch
 
+      // 1. Pre-validation Pass
       for (let i = 0; i < showtimesToInsert.length; i++) {
         const showtimeData = showtimesToInsert[i];
         const { movie_id, hall_id, show_date, start_time } = showtimeData;
@@ -1353,85 +1407,107 @@ class ShowtimeController {
         if (!movie_id || !hall_id || !show_date || !start_time) {
           errors.push({
             index: i,
-            data: showtimeData,
-            error: "movie_id, hall_id, show_date, and start_time are required.",
+            error: `Row ${i + 1}: Missing required fields.`,
           });
           continue;
         }
 
-        // Check if referenced documents exist and are active
+        // Check internal batch duplicates
+        const normalizedDate = Showtime.safeNormalizeDate(show_date);
+        const isoDate = normalizedDate.toISOString().split('T')[0];
+        const batchKey = `${hall_id}_${isoDate}_${start_time}`;
+        
+        if (batchKeys.has(batchKey)) {
+          errors.push({
+            index: i,
+            error: `Row ${i + 1}: Duplicate entry for the same hall/date/time found within this batch.`,
+          });
+          continue;
+        }
+        batchKeys.add(batchKey);
+
+        // Check if referenced documents exist
         const [movie, hall] = await Promise.all([
           Movie.findOne({ _id: movie_id, deletedAt: null }),
           Hall.findOne({ _id: hall_id, deletedAt: null }),
         ]);
 
         if (!movie) {
-          errors.push({
-            index: i,
-            data: showtimeData,
-            error: "Movie not found or has been deleted.",
-          });
+          errors.push({ index: i, error: `Row ${i + 1}: Movie not found.` });
           continue;
         }
         if (!hall) {
-          errors.push({
-            index: i,
-            data: showtimeData,
-            error: "Hall not found or has been deleted.",
-          });
+          errors.push({ index: i, error: `Row ${i + 1}: Hall not found.` });
+          continue;
+        }
+        if (movie.status === "ended") {
+          errors.push({ index: i, error: `Row ${i + 1}: Movie "${movie.title}" has ended.` });
           continue;
         }
 
-        if (movie.status === "ended") {
-          errors.push({
-            index: i,
-            data: showtimeData,
-            error: "Cannot create showtime for a movie that has ended.",
-          });
-          continue;
+        // Calculate end_time for overlap check
+        const tempShowtime = new Showtime(showtimeData);
+        if (!tempShowtime.end_time && movie.duration_minutes) {
+             const d = Showtime.safeNormalizeDate(tempShowtime.show_date);
+             const [h, m] = tempShowtime.start_time.split(":").map(Number);
+             const startDT = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h, m));
+             const endDT = new Date(startDT.getTime() + movie.duration_minutes * 60000);
+             // CRITICAL FIX: Use getUTCHours/Minutes
+             tempShowtime.end_time = `${String(endDT.getUTCHours()).padStart(2, "0")}:${String(endDT.getUTCMinutes()).padStart(2, "0")}`;
         }
-        try {
-          const showtime = new Showtime({ ...showtimeData, createdBy });
-          await showtime.save();
-          createdShowtimes.push(showtime);
-        } catch (error) {
-          let errorMessage = error.message;
-          if (error.message.includes("cannot be in the past")) {
-            errorMessage = `Row ${i + 1}: Showtime start time (${showtimeData.start_time}) cannot be in the past.`;
-          } else if (error.message.includes("overlaps")) {
-            errorMessage = `Row ${i + 1}: Showtime at ${showtimeData.start_time} overlaps with an existing showtime in this hall.`;
-          } else if (error.code === 11000) {
-            errorMessage = `Row ${i + 1}: A showtime at ${showtimeData.start_time} already exists for this hall and date.`;
-          }
+
+        const overlapping = await Showtime.findOverlappingShowtimes(
+          hall_id,
+          show_date,
+          start_time,
+          tempShowtime.end_time,
+          null
+        );
+
+        if (overlapping.length > 0) {
+          const match = overlapping[0];
           errors.push({
             index: i,
-            data: showtimeData,
-            error: errorMessage,
+            error: `Row ${i + 1}: Overlaps with an existing show (${match.start_time} - ${match.end_time}) in ${hall.hall_name}.`,
           });
         }
       }
 
+      // 2. Abort if any errors found during pre-validation
       if (errors.length > 0) {
-        logger.error("Bulk duplicate showtime encountered errors:", {
-          errors,
-        });
-        let message = "Some showtimes could not be created/duplicated.";
-        if (errors.length === showtimesToInsert.length) {
-          // All failed
-          message = "None of the showtimes could be created/duplicated.";
-        } else if (errors.length > 0) {
-          message =
-            "Some showtimes could not be created/duplicated due to validation errors or conflicts.";
-        }
         return res.status(409).json({
           success: false,
-          message,
+          message: "Duplication aborted due to conflicts or validation errors.",
+          data: { errors },
+        });
+      }
+
+      // 3. Create all showtimes
+      const createdShowtimes = [];
+      try {
+        for (const showtimeData of showtimesToInsert) {
+          const showtime = new Showtime({ ...showtimeData, createdBy });
+          await showtime.save();
+          createdShowtimes.push(showtime);
+        }
+      } catch (saveError) {
+        logger.error("Error during showtime creation loop:", saveError);
+        // If we hit an error here, it might be a conflict that pre-validation missed
+        let message = "An unexpected error occurred during creation.";
+        if (saveError.name === 'MongoError' && saveError.code === 11000) {
+          message = "Duplicate showtime detected during batch creation. Some rows may conflict.";
+        } else if (saveError.message.includes("conflict")) {
+          message = saveError.message;
+        }
+
+        return res.status(saveError.name === 'ValidationError' ? 400 : 409).json({
+          success: false,
+          message: message,
+          details: saveError.message,
           data: {
             createdCount: createdShowtimes.length,
-            failedCount: errors.length,
-            createdShowtimes,
-            errors,
-          },
+            createdShowtimes
+          }
         });
       }
 
