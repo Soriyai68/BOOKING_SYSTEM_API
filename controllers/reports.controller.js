@@ -175,6 +175,7 @@ exports.getCustomerBookingFrequency = async (req, res) => {
         $project: {
           _id: 0,
           user_id: "$_id",
+          customer_type: "$customer.customerType",
           customer_name: "$customer.name",
           customer_phone: "$customer.phone",
           customer_email: "$customer.email",
