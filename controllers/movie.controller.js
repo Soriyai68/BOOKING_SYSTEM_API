@@ -326,12 +326,26 @@ class MovieController {
 
       MovieController.validateObjectId(id);
 
+      // 1. Fetch existing movie to compare current dates
+      const movieToUpdate = await Movie.findById(id);
+      if (!movieToUpdate) {
+        return res.status(404).json({
+          success: false,
+          message: "Movie not found",
+        });
+      }
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
+      // 2. Validate Release Date (Only if provided in req.body)
       if (updateData.release_date) {
         const newReleaseDate = new Date(updateData.release_date);
-        if (newReleaseDate < today) {
+        // Only block if the date is new, in the past, and actually different from current
+        if (
+          newReleaseDate < today &&
+          newReleaseDate.getTime() !== movieToUpdate.release_date?.getTime()
+        ) {
           return res.status(400).json({
             success: false,
             message: "Release date cannot be set to a past date.",
@@ -339,9 +353,13 @@ class MovieController {
         }
       }
 
+      // 3. Validate End Date (Only if provided in req.body)
       if (updateData.end_date) {
         const newEndDate = new Date(updateData.end_date);
-        if (newEndDate < today) {
+        if (
+          newEndDate < today &&
+          newEndDate.getTime() !== movieToUpdate.end_date?.getTime()
+        ) {
           return res.status(400).json({
             success: false,
             message: "End date cannot be set to a past date.",
@@ -349,56 +367,46 @@ class MovieController {
         }
       }
 
-      if (updateData.release_date || updateData.end_date) {
-        const movieToUpdate = await Movie.findById(id);
-        if (!movieToUpdate) {
-          return res
-            .status(404)
-            .json({ success: false, message: "Movie not found" });
-        }
-        const releaseDate = updateData.release_date
-          ? new Date(updateData.release_date)
-          : movieToUpdate.release_date;
-        const endDate = updateData.end_date
-          ? new Date(updateData.end_date)
-          : movieToUpdate.end_date;
+      // 4. Validate Date Relationship (Logical Check)
+      // Use new date if provided, otherwise use the existing one from DB
+      const finalRelease = updateData.release_date
+        ? new Date(updateData.release_date)
+        : movieToUpdate.release_date;
+      const finalEnd = updateData.end_date
+        ? new Date(updateData.end_date)
+        : movieToUpdate.end_date;
 
-        if (endDate <= releaseDate) {
-          return res.status(400).json({
-            success: false,
-            message: "End date must be after the release date.",
-          });
-        }
+      if (finalEnd && finalRelease && finalEnd <= finalRelease) {
+        return res.status(400).json({
+          success: false,
+          message: "End date must be after the release date.",
+        });
       }
 
-      // Remove sensitive fields
-      delete updateData._id;
-      delete updateData.createdAt;
-      delete updateData.updatedAt;
-      delete updateData.deletedAt;
-      delete updateData.deletedBy;
+      // 5. Clean up update data
+      const sensitiveFields = [
+        "_id",
+        "createdAt",
+        "updatedAt",
+        "deletedAt",
+        "deletedBy",
+      ];
+      sensitiveFields.forEach((field) => delete updateData[field]);
 
-      // Add updater info if available
       if (req.user) {
         updateData.updatedBy = req.user.userId;
       }
 
+      // 6. Execute Update
       const movie = await Movie.findByIdAndUpdate(id, updateData, {
         new: true,
         runValidators: true,
         context: "query",
       });
 
-      if (!movie) {
-        return res.status(404).json({
-          success: false,
-          message: "Movie not found",
-        });
-      }
-
       logger.info(`Updated movie: ${id} (${movie.title})`);
 
-      // Log Activity
+      // 7. Log Activity
       await logActivity({
         userId: req.user?.userId,
         action: "MOVIE_UPDATE",
@@ -417,10 +425,7 @@ class MovieController {
       });
     } catch (error) {
       if (error.message === "Invalid movie ID format") {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
+        return res.status(400).json({ success: false, message: error.message });
       }
 
       if (error.name === "ValidationError") {
@@ -432,10 +437,9 @@ class MovieController {
       }
 
       logger.error("Update movie error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to update movie",
-      });
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to update movie" });
     }
   }
 

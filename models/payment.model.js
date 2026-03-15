@@ -19,7 +19,7 @@ const paymentSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
-    qr_method: {
+    qr_method: {    
         type: String,
         enum: ["KHQR", "USD"],
         default: "KHQR"
