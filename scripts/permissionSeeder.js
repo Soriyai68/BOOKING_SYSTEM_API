@@ -470,6 +470,12 @@ const permissions = [
     description: "Can view detailed movies report",
     module: "reports",
   },
+  {
+    name: "reports.payment-method-analysis.view",
+    displayName: "View Payment Method Analysis Report",
+    description: "Can view payment method analysis report",
+    module: "reports",
+  },
 
   // Dashboard & Analytics
   {
@@ -696,6 +702,7 @@ const rolePermissions = {
     "reports.detailed-revenue.view",
     "reports.detailed-bookings.view",
     "reports.detailed-movies.view",
+    "reports.payment-method-analysis.view",
 
     // Activity Logs
     "activity-logs.view",
@@ -809,6 +816,7 @@ const rolePermissions = {
     "reports.detailed-revenue.view",
     "reports.detailed-bookings.view",
     "reports.detailed-movies.view",
+    "reports.payment-method-analysis.view",
 
     // Activity Logs
     "activity-logs.view",

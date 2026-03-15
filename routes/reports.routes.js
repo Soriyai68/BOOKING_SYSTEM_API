@@ -24,4 +24,10 @@ router.get("/detailed-revenue", reportController.getDetailedRevenueReport);
 router.get("/detailed-bookings", reportController.getDetailedBookingReport);
 router.get("/detailed-movies", reportController.getDetailedMovieReport);
 
+// Analysis Reports
+router.get(
+  "/payment-method-analysis",
+  reportController.getPaymentMethodAnalysisReport,
+);
+
 module.exports = router;

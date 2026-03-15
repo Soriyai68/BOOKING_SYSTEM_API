@@ -657,3 +657,99 @@ exports.getDetailedMovieReport = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// get payment method analysis report
+exports.getPaymentMethodAnalysisReport = async (req, res) => {
+  try {
+    const { dateFrom, dateTo } = req.query;
+
+    const match = { deletedAt: null };
+
+    if (dateFrom || dateTo) {
+      match.createdAt = {};
+      if (dateFrom) match.createdAt.$gte = new Date(dateFrom);
+      if (dateTo) {
+        const end = new Date(dateTo);
+        end.setHours(23, 59, 59, 999);
+        match.createdAt.$lte = end;
+      }
+    }
+
+    const paymentMethodData = await reports.Payment.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: "$payment_method",
+          total_transactions: { $sum: 1 },
+          total_revenue: { $sum: "$amount" },
+          successful_transactions: {
+            $sum: { $cond: [{ $eq: ["$status", "Completed"] }, 1, 0] },
+          },
+          failed_transactions: {
+            $sum: { $cond: [{ $eq: ["$status", "Failed"] }, 1, 0] },
+          },
+          pending_transactions: {
+            $sum: { $cond: [{ $eq: ["$status", "Pending"] }, 1, 0] },
+          },
+          avg_transaction_value: { $avg: "$amount" },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          payment_method: "$_id",
+          total_transactions: 1,
+          total_revenue: { $round: ["$total_revenue", 2] },
+          successful_transactions: 1,
+          failed_transactions: 1,
+          pending_transactions: 1,
+          success_rate: {
+            $round: [
+              {
+                $multiply: [
+                  {
+                    $divide: ["$successful_transactions", "$total_transactions"],
+                  },
+                  100,
+                ],
+              },
+              2,
+            ],
+          },
+          failed_rate: {
+            $round: [
+              {
+                $multiply: [
+                  { $divide: ["$failed_transactions", "$total_transactions"] },
+                  100,
+                ],
+              },
+              2,
+            ],
+          },
+          avg_transaction_value: { $round: ["$avg_transaction_value", 2] },
+        },
+      },
+      { $sort: { total_revenue: -1 } },
+    ]);
+
+    // Calculate total revenue for contribution percentage
+    const totalRevenue = paymentMethodData.reduce(
+      (sum, item) => sum + item.total_revenue,
+      0
+    );
+
+    // Add revenue contribution percentage
+    const enrichedData = paymentMethodData.map((item) => ({
+      ...item,
+      revenue_contribution_percentage:
+        totalRevenue > 0
+          ? parseFloat(((item.total_revenue / totalRevenue) * 100).toFixed(2))
+          : 0,
+    }));
+
+    res.status(200).json({ success: true, data: enrichedData });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
