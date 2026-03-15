@@ -183,6 +183,14 @@ class SeatBookingController {
             preserveNullAndEmptyArrays: true,
           },
         },
+        {
+          $match: {
+            $or: [
+              { "bookingId.customer": { $exists: false } },
+              { "bookingId.customer.isActive": { $ne: false } },
+            ],
+          },
+        },
 
         // Add seat_identifier for searching and display
         {
@@ -822,6 +830,14 @@ class SeatBookingController {
           $unwind: {
             path: "$booking.customer",
             preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $match: {
+            $or: [
+              { "booking.customer": { $exists: false } },
+              { "booking.customer.isActive": { $ne: false } },
+            ],
           },
         },
         // Add seat_identifier for searching and display

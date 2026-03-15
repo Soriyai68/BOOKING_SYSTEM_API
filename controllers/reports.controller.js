@@ -172,6 +172,14 @@ exports.getCustomerBookingFrequency = async (req, res) => {
         },
       },
       {
+        $match: {
+          $or: [
+            { customer: { $exists: false } },
+            { "customer.isActive": { $ne: false } },
+          ],
+        },
+      },
+      {
         $project: {
           _id: 0,
           user_id: "$_id",
@@ -393,6 +401,14 @@ exports.getDetailedRevenueReport = async (req, res) => {
         },
       },
       { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
+      {
+        $match: {
+          $or: [
+            { customer: { $exists: false } },
+            { "customer.isActive": { $ne: false } },
+          ],
+        },
+      },
     ];
 
     if (payment_method) {
@@ -483,6 +499,14 @@ exports.getDetailedBookingReport = async (req, res) => {
         },
       },
       { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
+      {
+        $match: {
+          $or: [
+            { customer: { $exists: false } },
+            { "customer.isActive": { $ne: false } },
+          ],
+        },
+      },
     ];
 
     if (customerType) {

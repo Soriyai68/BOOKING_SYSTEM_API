@@ -66,6 +66,14 @@ class BookingTicketController {
         },
         { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
         {
+          $match: {
+            $or: [
+              { customer: { $exists: false } },
+              { "customer.isActive": { $ne: false } },
+            ],
+          },
+        },
+        {
           $lookup: {
             from: "bookings",
             localField: "booking_id",

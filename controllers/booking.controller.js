@@ -158,6 +158,7 @@ class BookingController {
                   phone: 1,
                   email: 1,
                   customerType: 1,
+                  isActive: 1,
                 },
               },
             ],
@@ -168,6 +169,15 @@ class BookingController {
           $unwind: {
             path: "$customer",
             preserveNullAndEmptyArrays: true,
+          },
+        },
+        // Filter out bookings from inactive customers
+        {
+          $match: {
+            $or: [
+              { customer: { $exists: false } }, // Allow bookings without customer (e.g. deleted or walk-in without record)
+              { "customer.isActive": { $ne: false } },
+            ],
           },
         },
 
