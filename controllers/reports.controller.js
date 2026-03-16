@@ -692,6 +692,8 @@ exports.getPaymentMethodAnalysisReport = async (req, res) => {
             $sum: { $cond: [{ $eq: ["$status", "Pending"] }, 1, 0] },
           },
           avg_transaction_value: { $avg: "$amount" },
+          first_transaction_date: { $min: "$createdAt" },
+          last_transaction_date: { $max: "$createdAt" },
         },
       },
       {
@@ -728,6 +730,8 @@ exports.getPaymentMethodAnalysisReport = async (req, res) => {
             ],
           },
           avg_transaction_value: { $round: ["$avg_transaction_value", 2] },
+          first_transaction_date: 1,
+          last_transaction_date: 1,
         },
       },
       { $sort: { total_revenue: -1 } },
@@ -749,6 +753,143 @@ exports.getPaymentMethodAnalysisReport = async (req, res) => {
     }));
 
     res.status(200).json({ success: true, data: enrichedData });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// get showtime utilization report
+exports.getShowtimeUtilizationReport = async (req, res) => {
+  try {
+    const { dateFrom, dateTo, page = 1, limit = 10 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const limitNum = parseInt(limit);
+
+    const match = { deletedAt: null };
+
+    if (dateFrom || dateTo) {
+      match.booking_date = {};
+      if (dateFrom) match.booking_date.$gte = new Date(dateFrom);
+      if (dateTo) {
+        const end = new Date(dateTo);
+        end.setHours(23, 59, 59, 999);
+        match.booking_date.$lte = end;
+      }
+    }
+
+    const pipeline = [
+      { $match: match },
+      {
+        $lookup: {
+          from: "showtimes",
+          localField: "showtimeId",
+          foreignField: "_id",
+          as: "showtime",
+        },
+      },
+      { $unwind: "$showtime" },
+      {
+        $lookup: {
+          from: "halls",
+          localField: "showtime.hall_id",
+          foreignField: "_id",
+          as: "hall",
+        },
+      },
+      { $unwind: { path: "$hall", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "movies",
+          localField: "showtime.movie_id",
+          foreignField: "_id",
+          as: "movie",
+        },
+      },
+      { $unwind: { path: "$movie", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "theaters",
+          localField: "hall.theater_id",
+          foreignField: "_id",
+          as: "theater",
+        },
+      },
+      { $unwind: { path: "$theater", preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: "$showtimeId",
+          showtime_date: { $first: "$showtime.show_date" },
+          start_time: { $first: "$showtime.start_time" },
+          end_time: { $first: "$showtime.end_time" },
+          movie_title: { $first: "$movie.title" },
+          hall_name: { $first: "$hall.hall_name" },
+          theater_name: { $first: "$theater.name" },
+          total_seats_available: { $first: "$hall.total_seats" },
+          seats_booked: { $sum: "$seat_count" },
+          total_revenue: { $sum: "$total_price" },
+          booking_count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          showtime_date: 1,
+          start_time: 1,
+          end_time: 1,
+          movie_title: 1,
+          hall_name: 1,
+          theater_name: 1,
+          total_seats_available: 1,
+          seats_booked: 1,
+          seats_available: {
+            $subtract: ["$total_seats_available", "$seats_booked"],
+          },
+          occupancy_rate: {
+            $round: [
+              {
+                $multiply: [
+                  {
+                    $divide: ["$seats_booked", "$total_seats_available"],
+                  },
+                  100,
+                ],
+              },
+              2,
+            ],
+          },
+          total_revenue: { $round: ["$total_revenue", 2] },
+          booking_count: 1,
+          revenue_per_seat: {
+            $round: [
+              {
+                $divide: ["$total_revenue", "$seats_booked"],
+              },
+              2,
+            ],
+          },
+        },
+      },
+      { $sort: { showtime_date: -1, start_time: -1 } },
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $skip: skip }, { $limit: limitNum }],
+        },
+      },
+    ];
+
+    const result = await reports.Booking.aggregate(pipeline);
+    const total = result[0].metadata[0]?.total || 0;
+    const data = result[0].data;
+
+    res.status(200).json({
+      success: true,
+      data,
+      total,
+      page: parseInt(page),
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum),
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

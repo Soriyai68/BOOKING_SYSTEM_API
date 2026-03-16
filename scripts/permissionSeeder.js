@@ -476,6 +476,12 @@ const permissions = [
     description: "Can view payment method analysis report",
     module: "reports",
   },
+  {
+    name: "reports.showtime-utilization.view",
+    displayName: "View Showtime Utilization Report",
+    description: "Can view showtime utilization report",
+    module: "reports",
+  },
 
   // Dashboard & Analytics
   {
@@ -703,6 +709,7 @@ const rolePermissions = {
     "reports.detailed-bookings.view",
     "reports.detailed-movies.view",
     "reports.payment-method-analysis.view",
+    "reports.showtime-utilization.view",
 
     // Activity Logs
     "activity-logs.view",
@@ -817,6 +824,7 @@ const rolePermissions = {
     "reports.detailed-bookings.view",
     "reports.detailed-movies.view",
     "reports.payment-method-analysis.view",
+    "reports.showtime-utilization.view",
 
     // Activity Logs
     "activity-logs.view",

@@ -29,5 +29,9 @@ router.get(
   "/payment-method-analysis",
   reportController.getPaymentMethodAnalysisReport,
 );
+router.get(
+  "/showtime-utilization",
+  reportController.getShowtimeUtilizationReport,
+);
 
 module.exports = router;
