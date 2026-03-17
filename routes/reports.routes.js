@@ -33,5 +33,13 @@ router.get(
   "/showtime-utilization",
   reportController.getShowtimeUtilizationReport,
 );
+router.get(
+  "/customer-demographic",
+  reportController.getCustomerDemographicReport,
+);
+router.get(
+  "/staff-performance",
+  reportController.getStaffPerformanceReport,
+);
 
 module.exports = router;

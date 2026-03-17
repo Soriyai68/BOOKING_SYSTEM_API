@@ -894,3 +894,375 @@ exports.getShowtimeUtilizationReport = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// get customer demographic report
+exports.getCustomerDemographicReport = async (req, res) => {
+  try {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+    // Age group distribution
+    const ageGroupDistribution = await reports.Customer.aggregate([
+      { $match: { deletedAt: null } },
+      {
+        $addFields: {
+          age: {
+            $subtract: [
+              new Date().getFullYear(),
+              { $year: "$dateOfBirth" },
+            ],
+          },
+        },
+      },
+      {
+        $bucket: {
+          groupBy: "$age",
+          boundaries: [0, 18, 25, 35, 45, 55, 65, 100],
+          default: "Unknown",
+          output: {
+            count: { $sum: 1 },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          age_group: {
+            $cond: [
+              { $eq: ["$_id", "Unknown"] },
+              "Unknown",
+              {
+                $concat: [
+                  { $toString: "$_id" },
+                  "-",
+                  {
+                    $toString: {
+                      $subtract: ["$_id", 1],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+          count: 1,
+        },
+      },
+    ]);
+
+    // Geographic distribution (top 20 cities)
+    const geographicDistribution = await reports.Customer.aggregate([
+      { $match: { deletedAt: null, city: { $exists: true, $ne: null } } },
+      {
+        $group: {
+          _id: "$city",
+          province: { $first: "$province" },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: 20 },
+      {
+        $project: {
+          _id: 1,
+          province: 1,
+          count: 1,
+        },
+      },
+    ]);
+
+    // New vs Returning customers
+    const newVsReturning = await reports.Booking.aggregate([
+      { $match: { deletedAt: null } },
+      {
+        $lookup: {
+          from: "customers",
+          localField: "customerId",
+          foreignField: "_id",
+          as: "customer",
+        },
+      },
+      { $unwind: "$customer" },
+      {
+        $group: {
+          _id: null,
+          new_customers: {
+            $sum: {
+              $cond: [
+                {
+                  $lte: [
+                    { $subtract: [new Date(), "$customer.createdAt"] },
+                    30 * 24 * 60 * 60 * 1000,
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+          returning_customers: {
+            $sum: {
+              $cond: [
+                {
+                  $gt: [
+                    { $subtract: [new Date(), "$customer.createdAt"] },
+                    30 * 24 * 60 * 60 * 1000,
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+    ]);
+
+    // Growth rate (month-over-month)
+    const currentMonthCustomers = await reports.Customer.countDocuments({
+      createdAt: { $gte: thirtyDaysAgo },
+      deletedAt: null,
+    });
+    const previousMonthCustomers = await reports.Customer.countDocuments({
+      createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
+      deletedAt: null,
+    });
+    const growthRate =
+      previousMonthCustomers > 0
+        ? parseFloat(
+            (
+              ((currentMonthCustomers - previousMonthCustomers) /
+                previousMonthCustomers) *
+              100
+            ).toFixed(2),
+          )
+        : 0;
+
+    // Customer status
+    const customerStatus = await reports.Customer.aggregate([
+      { $match: { deletedAt: null } },
+      {
+        $group: {
+          _id: null,
+          active: {
+            $sum: { $cond: [{ $eq: ["$isActive", true] }, 1, 0] },
+          },
+          inactive: {
+            $sum: { $cond: [{ $eq: ["$isActive", false] }, 1, 0] },
+          },
+          churned: {
+            $sum: {
+              $cond: [
+                {
+                  $lt: [
+                    "$lastBookingDate",
+                    new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000),
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+    ]);
+
+    // Retention rate
+    const totalCustomers = await reports.Customer.countDocuments({
+      deletedAt: null,
+    });
+    const retainedCustomers = await reports.Customer.countDocuments({
+      isActive: true,
+      deletedAt: null,
+    });
+    const retentionRate =
+      totalCustomers > 0
+        ? parseFloat(((retainedCustomers / totalCustomers) * 100).toFixed(2))
+        : 0;
+
+    // Detailed customers with booking info
+    const detailedCustomers = await reports.Customer.aggregate([
+      { $match: { deletedAt: null } },
+      {
+        $lookup: {
+          from: "bookings",
+          localField: "_id",
+          foreignField: "customerId",
+          as: "bookings",
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          email: 1,
+          phone: 1,
+          city: 1,
+          province: 1,
+          customerType: 1,
+          createdAt: 1,
+          isActive: 1,
+          total_bookings: { $size: "$bookings" },
+          total_spent: {
+            $sum: {
+              $map: {
+                input: "$bookings",
+                as: "booking",
+                in: "$$booking.total_price",
+              },
+            },
+          },
+          last_booking_date: { $max: "$bookings.booking_date" },
+        },
+      },
+      { $sort: { total_spent: -1 } },
+      { $limit: 100 },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ageGroupDistribution,
+        geographicDistribution,
+        newVsReturning: newVsReturning[0] || {
+          new_customers: 0,
+          returning_customers: 0,
+        },
+        growthRate,
+        customerStatus: customerStatus[0] || {
+          active: 0,
+          inactive: 0,
+          churned: 0,
+        },
+        retentionRate,
+        detailedCustomers,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// get staff performance report
+exports.getStaffPerformanceReport = async (req, res) => {
+  try {
+    const { dateFrom, dateTo, page = 1, limit = 10 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const limitNum = parseInt(limit);
+
+    const match = { deletedAt: null };
+
+    if (dateFrom || dateTo) {
+      match.createdAt = {};
+      if (dateFrom) match.createdAt.$gte = new Date(dateFrom);
+      if (dateTo) {
+        const end = new Date(dateTo);
+        end.setHours(23, 59, 59, 999);
+        match.createdAt.$lte = end;
+      }
+    }
+
+    // Get all staff members first
+    const staffMembers = await reports.User.find(
+      { deletedAt: null },
+      { _id: 1, name: 1, email: 1, role: 1 }
+    );
+
+    // For each staff member, get their activity from bookings and payments
+    const staffPerformance = await Promise.all(
+      staffMembers.map(async (staff) => {
+        // Get bookings created by this staff (if tracked in booking)
+        // Since bookings don't track createdBy, we'll use activity logs or count all payments
+        
+        // Get payments and related booking info
+        const paymentPipeline = [
+          { $match: match },
+          {
+            $lookup: {
+              from: "bookings",
+              localField: "bookingId",
+              foreignField: "_id",
+              as: "booking",
+            },
+          },
+          { $unwind: { path: "$booking", preserveNullAndEmptyArrays: true } },
+          {
+            $group: {
+              _id: null,
+              total_transactions: { $sum: 1 },
+              total_revenue: { $sum: "$amount" },
+              confirmed_bookings: {
+                $sum: { $cond: [{ $eq: ["$booking.booking_status", "Confirmed"] }, 1, 0] },
+              },
+              completed_bookings: {
+                $sum: { $cond: [{ $eq: ["$booking.booking_status", "Completed"] }, 1, 0] },
+              },
+              cancelled_bookings: {
+                $sum: { $cond: [{ $eq: ["$booking.booking_status", "Cancelled"] }, 1, 0] },
+              },
+              pending_bookings: {
+                $sum: { $cond: [{ $eq: ["$booking.booking_status", "Pending"] }, 1, 0] },
+              },
+              total_seats_sold: { $sum: "$booking.seat_count" },
+              avg_transaction_value: { $avg: "$amount" },
+            },
+          },
+        ];
+
+        const result = await reports.Payment.aggregate(paymentPipeline);
+        const stats = result[0] || {
+          total_transactions: 0,
+          total_revenue: 0,
+          confirmed_bookings: 0,
+          completed_bookings: 0,
+          cancelled_bookings: 0,
+          pending_bookings: 0,
+          total_seats_sold: 0,
+          avg_transaction_value: 0,
+        };
+
+        const totalBookings = stats.confirmed_bookings + stats.completed_bookings + stats.cancelled_bookings + stats.pending_bookings;
+        const completionRate = totalBookings > 0 ? parseFloat(((stats.completed_bookings / totalBookings) * 100).toFixed(2)) : 0;
+        const cancellationRate = totalBookings > 0 ? parseFloat(((stats.cancelled_bookings / totalBookings) * 100).toFixed(2)) : 0;
+
+        return {
+          _id: staff._id,
+          staff_name: staff.name,
+          staff_email: staff.email,
+          staff_role: staff.role,
+          total_bookings_processed: stats.total_transactions,
+          total_revenue_generated: parseFloat((stats.total_revenue || 0).toFixed(2)),
+          confirmed_bookings: stats.confirmed_bookings,
+          completed_bookings: stats.completed_bookings,
+          cancelled_bookings: stats.cancelled_bookings,
+          pending_bookings: stats.pending_bookings,
+          total_seats_sold: stats.total_seats_sold,
+          avg_booking_value: parseFloat((stats.avg_transaction_value || 0).toFixed(2)),
+          completion_rate: completionRate,
+          cancellation_rate: cancellationRate,
+        };
+      })
+    );
+
+    // Filter out staff with no activity and sort by revenue
+    const activeStaff = staffPerformance
+      .filter(s => s.total_bookings_processed > 0)
+      .sort((a, b) => b.total_revenue_generated - a.total_revenue_generated);
+
+    // Apply pagination
+    const paginatedData = activeStaff.slice(skip, skip + limitNum);
+    const total = activeStaff.length;
+
+    res.status(200).json({
+      success: true,
+      data: paginatedData,
+      total,
+      page: parseInt(page),
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

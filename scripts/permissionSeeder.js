@@ -482,6 +482,18 @@ const permissions = [
     description: "Can view showtime utilization report",
     module: "reports",
   },
+  {
+    name: "reports.customer-demographic.view",
+    displayName: "View Customer Demographic Report",
+    description: "Can view customer demographic report",
+    module: "reports",
+  },
+  {
+    name: "reports.staff-performance.view",
+    displayName: "View Staff Performance Report",
+    description: "Can view staff performance report",
+    module: "reports",
+  },
 
   // Dashboard & Analytics
   {
@@ -710,6 +722,8 @@ const rolePermissions = {
     "reports.detailed-movies.view",
     "reports.payment-method-analysis.view",
     "reports.showtime-utilization.view",
+    "reports.customer-demographic.view",
+    "reports.staff-performance.view",
 
     // Activity Logs
     "activity-logs.view",
@@ -825,6 +839,8 @@ const rolePermissions = {
     "reports.detailed-movies.view",
     "reports.payment-method-analysis.view",
     "reports.showtime-utilization.view",
+    "reports.customer-demographic.view",
+    "reports.staff-performance.view",
 
     // Activity Logs
     "activity-logs.view",
