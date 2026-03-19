@@ -497,8 +497,13 @@ class BookingController {
         });
       }
 
-      // --- NEW: Booking Rule - One booking per showtime per customer ---
-      if (customer && customer._id && customer.customerType !== "walkin") {
+      // --- NEW: Booking Rule - One PayAtCinema booking per showtime per customer ---
+      if (
+        customer &&
+        customer._id &&
+        customer.customerType !== "walkin" &&
+        payment_method === "PayAtCinema"
+      ) {
         const existingBooking = await Booking.findOne({
           customerId: customer._id,
           showtimeId: showtimeId,
