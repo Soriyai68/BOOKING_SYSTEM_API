@@ -250,20 +250,23 @@ class PaymentController {
       if (payment_method === "Bakong") {
         // generate KHQR (expires in 5 mins)
         const expirationTimestamp = Date.now() + 5 * 60 * 1000;
-        const optionalData = {
-          currency:
-            currency === "KHR" ? khqrData.currency.khr : khqrData.currency.usd,
-          amount: booking.total_price,
-          expirationTimestamp,
-        };
-
         const individualInfo = new IndividualInfo(
           process.env.BAKONG_ACCOUNT_USERNAME,
-          "Movie Booking System",
-          "Battambang",
-          optionalData,
+          "RSB Cinema",
+          "Phnom Penh",
+          {
+            currency:
+              currency === "KHR"
+                ? khqrData.currency.khr
+                : khqrData.currency.usd,
+            amount: booking.total_price,
+            billNumber: booking.reference_code,
+            mobileNumber: "85510773123",
+            storeLabel: "RSB Cinema",
+            terminalLabel: "Web-01",
+            expirationTimestamp,
+          },
         );
-
         const khqr = new BakongKHQR();
         const qrData = khqr.generateIndividual(individualInfo);
 
