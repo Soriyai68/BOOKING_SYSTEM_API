@@ -14,7 +14,7 @@ const activityLogSchema = new mongoose.Schema(
     },
     logType: {
       type: String,
-      enum: ["ADMIN", "CUSTOMER"],
+      enum: ["ADMIN", "CUSTOMER", "USER"],
       required: true,
       index: true,
     },

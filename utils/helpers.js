@@ -78,6 +78,24 @@ const createPhoneRegex = (searchString) => {
   return new RegExp(`(${patterns.join("|")})`);
 };
 
+/**
+ * Normalizes a phone number to international format (+855...).
+ * @param {string|number} phone The raw phone number.
+ * @returns {string} The normalized international phone number.
+ */
+const normalizePhone = (phone) => {
+  if (!phone) return phone;
+  let cleaned = phone.toString().replace(/\D/g, "");
+  if (cleaned.startsWith("855")) {
+    return "+855" + cleaned.slice(3);
+  } else if (cleaned.startsWith("0")) {
+    return "+855" + cleaned.slice(1);
+  } else if (cleaned.length > 6 && !cleaned.startsWith("+")) {
+    return "+855" + cleaned;
+  }
+  return phone.startsWith("+") ? phone : "+" + phone;
+};
+
 module.exports = {
   hashPassword,
   comparePassword,
@@ -86,4 +104,5 @@ module.exports = {
   sanitizeUser,
   getPaginationMeta,
   createPhoneRegex,
+  normalizePhone,
 };

@@ -3,6 +3,7 @@ const { Theater, Hall, Movie, Showtime, SeatBooking } = require("../models");
 const { Role } = require("../data");
 const logger = require("../utils/logger");
 const { logActivity } = require("../utils/activityLogger");
+const { emitEvent } = require("../utils/socket");
 
 class ShowtimeController {
   // Validate ObjectId
@@ -400,6 +401,9 @@ class ShowtimeController {
         },
       });
 
+      // Notify via Socket.io
+      emitEvent("showtime:created", { showtime: showtime.toObject() });
+
       // Send success response
       res.status(201).json({
         success: true,
@@ -503,6 +507,9 @@ class ShowtimeController {
           updatedFields: Object.keys(updateData),
         },
       });
+
+      // Notify via Socket.io
+      emitEvent("showtime:updated", { showtime: updatedShowtime.toObject() });
 
       res.status(200).json({
         success: true,
@@ -608,6 +615,9 @@ class ShowtimeController {
         },
       });
 
+      // Notify via Socket.io
+      emitEvent("showtime:deleted", { id });
+
       res.status(200).json({
         success: true,
         message: "Showtime deactivated successfully",
@@ -672,6 +682,9 @@ class ShowtimeController {
           show_date: showtime.show_date,
         },
       });
+
+      // Notify via Socket.io
+      emitEvent("showtime:restored", { showtime });
 
       res.status(200).json({
         success: true,

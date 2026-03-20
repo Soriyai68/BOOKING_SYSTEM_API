@@ -1,6 +1,7 @@
 const { Notification } = require("../models");
 const logger = require("../utils/logger");
 const { logActivity } = require("../utils/activityLogger");
+const { emitEvent } = require("../utils/socket");
 
 class NotificationController {
   /**
@@ -334,6 +335,13 @@ class NotificationController {
         relatedModel: relatedId ? relatedModel || "Booking" : null,
       });
       await notification.save();
+      
+      // Notify via Socket.io
+      emitEvent("notification:new", { 
+        userId: notification.userId, 
+        notification 
+      });
+
       return notification;
     } catch (error) {
       logger.error("Internal create notification error:", error);
@@ -374,7 +382,19 @@ class NotificationController {
       }));
 
       if (notifications.length > 0) {
-        await Notification.insertMany(notifications);
+        const savedNotifications = await Notification.insertMany(notifications);
+
+        // Notify via Socket.io (Admins)
+        // We emit it as notification:new so the store catches it and adds to list
+        savedNotifications.forEach(notif => {
+          emitEvent("notification:new", { 
+            userId: notif.userId, 
+            notification: notif 
+          });
+        });
+
+        // Backward compatibility if needed
+        emitEvent("notification:admin", { count: savedNotifications.length });
 
         // Log Activity
         await logActivity({
@@ -472,6 +492,9 @@ class NotificationController {
       if (notifications.length > 0) {
         // Use insertMany for efficiency
         await Notification.insertMany(notifications);
+
+        // Notify via Socket.io (All Customers)
+        emitEvent("notification:all", { count: notifications.length });
 
         // Log Activity
         await logActivity({

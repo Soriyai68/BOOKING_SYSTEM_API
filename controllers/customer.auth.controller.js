@@ -9,10 +9,11 @@ const Telegram = require("../utils/telegram");
 const { UAParser } = require("ua-parser-js");
 const crypto = require("crypto");
 const { logActivity } = require("../utils/activityLogger");
+const { normalizePhone } = require("../utils/helpers");
+const NotificationController = require("./notification.controller");
 
 const PREFIX = "customer_";
-
-const NotificationController = require("./notification.controller");
+const { emitEvent } = require("../utils/socket");
 
 class CustomerAuthController {
   // Authenticate/Register customer via Telegram (Standard Widget)
@@ -26,7 +27,12 @@ class CustomerAuthController {
         photo_url,
         auth_date,
         hash,
+        phone,
       } = req.body;
+
+      logger.info(
+        `[Auth] Telegram Widget Login attempt: id=${id}, phone_received=${phone}`,
+      );
 
       if (!id || !auth_date || !hash) {
         return res.status(400).json({
@@ -54,18 +60,34 @@ class CustomerAuthController {
         username ||
         `user_${id}`;
 
+      const normalizedPhone = normalizePhone(phone);
+
       if (customer) {
         customer.lastLogin = new Date();
         customer.name = customerName;
         customer.username = username || customer.username;
         customer.photoUrl = photo_url || customer.photoUrl;
+
+        // Sync phone if provided and not already set
+        if (phone && !customer.phone) {
+          customer.phone = normalizedPhone;
+          logger.info(`[Auth] Updated existing customer ${customer._id} with phone ${normalizedPhone}`);
+        }
+
         await customer.save();
+
+        // Emit refresh if phone was updated
+        if (phone) {
+          emitEvent("customer:created", customer.toObject());
+        }
+
         logger.info(`Customer logged in via Telegram: ${id}`);
       } else {
         const customerData = {
           telegramId: id,
           name: customerName,
           username: username,
+          phone: normalizePhone(phone),
           photoUrl: photo_url,
           provider: Providers.TELEGRAM,
           customerType: "member",
@@ -84,10 +106,25 @@ class CustomerAuthController {
           `🎉 <b>Welcome to Movie Booking, ${customer.name}!</b>\n\nYour account has been successfully registered via Telegram.`,
         );
 
-        // Notify admins
         await Telegram.sendNotificationToAdmins(
           `🆕 <b>New Customer (via Telegram)</b>\nName: ${customer.name}\nProvider: telegram\nProvider ID: ${id}\nUser: @${username || "N/A"}`,
         );
+
+        // Notify Admins Dashboard
+        await NotificationController.notifyAdmins({
+          type: "customer_registered",
+          title: "New Customer Registered",
+          message: `${customer.name} (@${customer.username || "no_username"}) has registered via Telegram.`,
+          metadata: {
+            customerId: customer._id,
+            name: customer.name,
+            source: "Telegram Widget",
+          },
+          req,
+        });
+
+        // Emit socket event for real-time dashboard update
+        emitEvent("customer:created", customer.toObject());
 
         // Welcome Notification (Internal)
         NotificationController.notifyCustomer(
@@ -121,7 +158,7 @@ class CustomerAuthController {
   // Authenticate/Register customer via Telegram Mini App
   static async telegramWebAppLogin(req, res) {
     try {
-      const { initData, phone_number } = req.body;
+      const { initData, phone } = req.body;
 
       if (!initData) {
         return res.status(400).json({
@@ -142,6 +179,8 @@ class CustomerAuthController {
 
       const id = userData.id.toString();
       const { first_name, last_name, username, photo_url } = userData;
+      const normalizedPhone = normalizePhone(phone);
+      logger.info(`[Auth] Telegram WebApp Login: id=${id}, phone_received=${phone}, normalized=${normalizedPhone}`);
 
       let customer = await Customer.findOne({ telegramId: id });
       let isNewCustomer = false;
@@ -157,19 +196,23 @@ class CustomerAuthController {
         customer.username = username || customer.username;
         customer.photoUrl = photo_url || customer.photoUrl;
 
-        // Update phone number if provided by Mini App
-        if (phone_number) {
-          customer.phone = phone_number;
+        if (phone && !customer.phone) {
+          customer.phone = normalizedPhone;
+          logger.info(`Updated existing customer ${customer._id} with phone ${normalizedPhone}`);
         }
 
         await customer.save();
+        
+        // Emit refresh if phone was updated or just for safety
+        emitEvent("customer:created", customer.toObject());
+        
         logger.info(`Customer logged in via Telegram Mini App: ${id}`);
       } else {
         const customerData = {
           telegramId: id,
           name: customerName,
           username: username,
-          phone: phone_number,
+          phone: normalizePhone(phone),
           photoUrl: photo_url,
           provider: Providers.TELEGRAM,
           customerType: "member",
@@ -188,10 +231,25 @@ class CustomerAuthController {
           `🎉 <b>Welcome to Movie Booking, ${customer.name}!</b>\n\nYour account has been successfully registered via Telegram Mini App.`,
         );
 
-        // Notify admins
         await Telegram.sendNotificationToAdmins(
-          `🆕 <b>New Customer (via Mini App)</b>\nName: ${customer.name}\nProvider: telegram-webapp\nProvider ID: ${id}\nUser: @${username || "N/A"}\nPhone: ${phone_number || "N/A"}`,
+          `🆕 <b>New Customer (via Mini App)</b>\nName: ${customer.name}\nProvider: telegram-webapp\nProvider ID: ${id}\nUser: @${username || "N/A"}\nPhone: ${normalizedPhone || "N/A"}`,
         );
+
+        // Notify Admins Dashboard
+        await NotificationController.notifyAdmins({
+          type: "customer_registered",
+          title: "New Customer Registered",
+          message: `${customer.name} (@${customer.username || "no_username"}) has registered via Telegram Mini App.`,
+          metadata: {
+            customerId: customer._id,
+            name: customer.name,
+            source: "Telegram Mini App",
+          },
+          req,
+        });
+
+        // Emit socket event for real-time dashboard update
+        emitEvent("customer:created", customer.toObject());
 
         // Welcome Notification (Internal)
         NotificationController.notifyCustomer(
@@ -319,7 +377,6 @@ class CustomerAuthController {
           telegramId: customer.telegramId,
           photoUrl: customer.photoUrl,
           isVerified: customer.isVerified,
-          email: customer.email,
           createdAt: customer.createdAt,
           customerType: customer.customerType,
         },
@@ -425,7 +482,6 @@ class CustomerAuthController {
             telegramId: customer.telegramId,
             photoUrl: customer.photoUrl,
             isVerified: customer.isVerified,
-            email: customer.email,
             createdAt: customer.createdAt,
             customerType: customer.customerType,
           },
@@ -583,7 +639,7 @@ class CustomerAuthController {
   // Update customer profile
   static async updateProfile(req, res) {
     try {
-      const { email, phone } = req.body;
+      const { phone } = req.body;
       const customerId = req.customer.customerId;
 
       const customer = await Customer.findById(customerId);
@@ -596,26 +652,14 @@ class CustomerAuthController {
       }
 
       // Update allowed fields
-      if (email !== undefined) customer.email = email;
       if (phone !== undefined) {
-        // Normalize phone number: remove non-digit characters except for leading '+'
-        let normalizedPhone = phone.trim().replace(/[^\d+]/g, "");
-
-        // If it starts with '0', assume local and convert to +855 (Cambodia)
-        if (normalizedPhone.startsWith("0")) {
-          normalizedPhone = "+855" + normalizedPhone.substring(1);
-        } else if (
-          normalizedPhone.length > 0 &&
-          !normalizedPhone.startsWith("+")
-        ) {
-          // If no '+' and not starting with 0, prepend '+' if it doesn't have it
-          normalizedPhone = "+" + normalizedPhone;
-        }
-
-        customer.phone = normalizedPhone;
+        customer.phone = normalizePhone(phone);
       }
 
       await customer.save();
+
+      // Notify admins via socket to refresh their view
+      emitEvent("customer:created", customer.toObject());
 
       logger.info(`Customer profile updated: ${customerId}`);
 
@@ -626,8 +670,6 @@ class CustomerAuthController {
           customer: {
             id: customer._id,
             phone: customer.phone,
-            email: customer.email,
-            name: customer.name,
             username: customer.username,
             telegramId: customer.telegramId,
             photoUrl: customer.photoUrl,
@@ -638,9 +680,10 @@ class CustomerAuthController {
       });
     } catch (error) {
       logger.error("Update customer profile error:", error);
+      console.error("[Auth] Update profile FAILED:", error);
       res.status(500).json({
         success: false,
-        message: "Internal server error",
+        message: error.message || "Internal server error",
       });
     }
   }

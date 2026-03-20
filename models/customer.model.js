@@ -7,14 +7,9 @@ const customerSchema = new mongoose.Schema(
     phone: {
       type: String,
       trim: true,
-      match: [/^\+?\d{1,15}$/, "Invalid phone number"],
+      match: [/^\+855\d{8,9}$/, "Please provide a valid Cambodian phone number (+855...)"],
     },
-    // For customer type guest, email is optional
-    email: {
-      type: String,
-      trim: true,
-      match: [/.+@.+\..+/, "Invalid email address"],
-    },
+    // Email field removed as per user request
     // Optional username for password login
     username: {
       type: String,
@@ -113,9 +108,7 @@ customerSchema.pre("save", async function (next) {
     this.username = undefined;
   }
   // If email is an empty string or null, set it to undefined to work with sparse index
-  if (this.email === "" || this.email === null) {
-    this.email = undefined;
-  }
+  // (Handling removed as field is deleted)
   // If phone is an empty string or null, set it to undefined to work with sparse index
   if (this.phone === "" || this.phone === null) {
     this.phone = undefined;
@@ -189,7 +182,6 @@ customerSchema.statics.findDeleted = function (query = {}) {
 // Indexes
 customerSchema.index({ phone: 1 }, { unique: true, sparse: true });
 customerSchema.index({ username: 1 }, { unique: true, sparse: true });
-customerSchema.index({ email: 1 }, { unique: true, sparse: true });
 customerSchema.index({ telegramId: 1 }, { unique: true, sparse: true });
 customerSchema.index({ isActive: 1, deletedAt: 1 });
 customerSchema.index({ otpExpiresAt: 1 });

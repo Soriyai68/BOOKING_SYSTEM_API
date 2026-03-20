@@ -3,9 +3,11 @@ const Customer = require("../models/customer.model");
 const { Role } = require("../utils/constants");
 const logger = require("../utils/logger");
 const { Providers } = require("../data");
-const { createPhoneRegex } = require("../utils/helpers");
 const Telegram = require("../utils/telegram");
 const AuthService = require("../service/auth.service");
+const { emitEvent, emitToRoom } = require("../utils/socket");
+const { normalizePhone } = require("../utils/helpers");
+const NotificationController = require("./notification.controller");
 
 const PREFIX = "customer_";
 
@@ -48,7 +50,6 @@ class CustomerController {
     if (!search) return {};
     const phoneRegex = createPhoneRegex(search);
     const searchConditions = [
-      { email: { $regex: search, $options: "i" } },
       { name: { $regex: search, $options: "i" } },
       { username: { $regex: search, $options: "i" } },
       { telegramId: { $regex: search, $options: "i" } },
@@ -148,7 +149,7 @@ class CustomerController {
   // 3. CREATE CUSTOMER
   static async create(req, res) {
     try {
-      const { phone, name, email, username, customerType, provider } = req.body;
+      const { phone, name, username, customerType, provider } = req.body;
 
       // Note: Identification fields (phone, email, name) are now optional as per user feedback.
       // Validation is primarily handled by the Joi schema.
@@ -157,7 +158,6 @@ class CustomerController {
       const orConditions = [];
       if (phone) orConditions.push({ phone });
       if (username) orConditions.push({ username });
-      if (email) orConditions.push({ email });
 
       if (orConditions.length > 0) {
         const existing = await Customer.findOne({ $or: orConditions });
@@ -165,7 +165,6 @@ class CustomerController {
           let field = "details";
           if (existing.phone === phone) field = "phone number";
           if (existing.username === username) field = "username";
-          if (existing.email === email) field = "email";
 
           return res.status(409).json({
             success: false,
@@ -182,24 +181,37 @@ class CustomerController {
       };
 
       if (customerType === "guest") {
-        customerData.email = email;
-        customerData.provider = Providers.EMAIL;
+        customerData.provider = Providers.PHONE; // Defaulting to phone for guests now
       } else {
         customerData = {
           ...customerData,
-          phone,
+          phone: normalizePhone(phone),
           name,
-          email,
           username,
         };
       }
       const customer = new Customer(customerData);
       await customer.save();
 
-      // Notify admins
-      await Telegram.sendNotificationToAdmins(
-        `👤 <b>New Customer Created by Admin</b>\nName: ${customer.name}\nPhone: ${customer.phone || "N/A"}\nProvider: ${customer.provider || "manual"}\nEmail: ${customer.email || "N/A"}\nType: ${customer.customerType}`,
-      );
+        await Telegram.sendNotificationToAdmins(
+          `👤 <b>New Customer Created by Admin</b>\nName: ${customer.name}\nPhone: ${customer.phone || "N/A"}\nProvider: ${customer.provider || "manual"}\nType: ${customer.customerType}`,
+        );
+
+        // Notify Admins Dashboard
+        await NotificationController.notifyAdmins({
+          type: "customer_registered",
+          title: "New Customer Created",
+          message: `${customer.name} has been manually created by an admin.`,
+          metadata: {
+            customerId: customer._id,
+            name: customer.name,
+            source: "Manual (Admin)",
+          },
+          req,
+        });
+
+      // Notify via Socket.io
+      emitEvent("customer:created", customer.toObject());
 
       res.status(201).json({
         success: true,
@@ -222,12 +234,14 @@ class CustomerController {
 
       const { password, ...updateData } = req.body;
 
-      if (updateData.phone || updateData.username || updateData.email) {
+      if (updateData.phone || updateData.username) {
+        if (updateData.phone) {
+          updateData.phone = normalizePhone(updateData.phone);
+        }
         const orConditions = [];
         if (updateData.phone) orConditions.push({ phone: updateData.phone });
         if (updateData.username)
           orConditions.push({ username: updateData.username });
-        if (updateData.email) orConditions.push({ email: updateData.email });
 
         const existing = await Customer.findOne({
           $or: orConditions,
@@ -238,7 +252,6 @@ class CustomerController {
           let field = "details";
           if (existing.phone === updateData.phone) field = "phone number";
           if (existing.username === updateData.username) field = "username";
-          if (existing.email === updateData.email) field = "email";
           return res.status(409).json({
             success: false,
             message: `This ${field} is already in use`,
@@ -259,8 +272,11 @@ class CustomerController {
       // If account is being deactivated, clear all sessions immediately
       if (updateData.isActive === false) {
         await AuthService.deleteAllSessions(id, PREFIX);
+        emitToRoom(`customer:${id}`, "customer:disabled", {
+          message: "Your account has been disabled. You have been logged out.",
+        });
         logger.info(
-          `Customer account deactivated: ${id}. Cleared all sessions.`,
+          `Customer account deactivated: ${id}. Cleared sessions and emitted logout event.`,
         );
       }
 

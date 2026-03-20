@@ -3,10 +3,10 @@ const Joi = require("joi");
 // Send OTP Schema
 const sendOTPSchema = Joi.object({
   phone: Joi.string()
-    .pattern(/^\+?[1-9]\d{1,14}$/)
+    .pattern(/^(\+855|0)\d{8,9}$/)
     .required()
     .messages({
-      "string.pattern.base": "Please enter a valid phone number",
+      "string.pattern.base": "Please provide a valid Cambodian phone number",
       "any.required": "Phone number is required",
     }),
 });
@@ -14,10 +14,10 @@ const sendOTPSchema = Joi.object({
 // Verify OTP Schema (for registration/login)
 const verifyOTPSchema = Joi.object({
   phone: Joi.string()
-    .pattern(/^\+?[1-9]\d{1,14}$/)
+    .pattern(/^(\+855|0)\d{8,9}$/)
     .required()
     .messages({
-      "string.pattern.base": "Please enter a valid phone number",
+      "string.pattern.base": "Please provide a valid Cambodian phone number",
       "any.required": "Phone number is required",
     }),
   otp: Joi.string()
@@ -38,10 +38,10 @@ const verifyOTPSchema = Joi.object({
 // Customer Login Schema (phone + password)
 const loginSchema = Joi.object({
   phone: Joi.string()
-    .pattern(/^\+?[1-9]\d{1,14}$/)
+    .pattern(/^(\+855|0)\d{8,9}$/)
     .required()
     .messages({
-      "string.pattern.base": "Please enter a valid phone number",
+      "string.pattern.base": "Please provide a valid Cambodian phone number",
       "any.required": "Phone number is required",
     }),
   password: Joi.string().min(6).required().messages({
@@ -77,6 +77,7 @@ const telegramLoginSchema = Joi.object({
     "any.required": "Hash is required",
     "string.empty": "Hash cannot be empty",
   }),
+  phone: Joi.string().optional().allow("", null),
 });
 
 // Telegram Mini App Login Schema
@@ -85,7 +86,7 @@ const telegramWebAppLoginSchema = Joi.object({
     "any.required": "initData is required",
     "string.empty": "initData cannot be empty",
   }),
-  phone_number: Joi.string().optional().allow("").messages({
+  phone: Joi.string().optional().allow("", null).messages({
     "string.empty": "Phone number cannot be empty",
   }),
 });
@@ -136,10 +137,10 @@ const changePasswordSchema = Joi.object({
 // Send reset OTP schema
 const sendResetOTPSchema = Joi.object({
   phone: Joi.string()
-    .pattern(/^\+?[1-9]\d{1,14}$/)
+    .pattern(/^(\+855|0)\d{8,9}$/)
     .required()
     .messages({
-      "string.pattern.base": "Please enter a valid phone number",
+      "string.pattern.base": "Please provide a valid Cambodian phone number",
       "any.required": "Phone number is required",
     }),
 });
@@ -147,10 +148,10 @@ const sendResetOTPSchema = Joi.object({
 // Reset password schema
 const resetPasswordSchema = Joi.object({
   phone: Joi.string()
-    .pattern(/^\+?[1-9]\d{1,14}$/)
+    .pattern(/^(\+855|0)\d{8,9}$/)
     .required()
     .messages({
-      "string.pattern.base": "Please enter a valid phone number",
+      "string.pattern.base": "Please provide a valid Cambodian phone number",
       "any.required": "Phone number is required",
     }),
   otp: Joi.string()

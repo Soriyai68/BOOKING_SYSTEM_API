@@ -9,9 +9,10 @@ const {
 } = require("../models");
 const { Role, Providers } = require("../data");
 const logger = require("../utils/logger");
-const { logActivity } = require("../utils/activityLogger");
 const { createPhoneRegex } = require("../utils/helpers");
 const NotificationController = require("./notification.controller");
+const { logActivity } = require("../utils/activityLogger");
+const { emitEvent } = require("../utils/socket");
 
 class BookingController {
   // Helper method to validate ObjectId
@@ -774,6 +775,13 @@ class BookingController {
         });
       }
 
+      // Notify via Socket.io
+      emitEvent("booking:created", { booking: booking.toObject() });
+      emitEvent("seat:booked", { 
+        showtimeId: booking.showtimeId._id, 
+        seats: booking.seats 
+      });
+
       res.status(201).json({
         success: true,
         message: expirationMessage,
@@ -1010,6 +1018,15 @@ class BookingController {
         },
       });
 
+      // Notify via Socket.io
+      emitEvent("booking:updated", { booking: populatedBooking });
+      if (statusChangedToCancelled) {
+        emitEvent("seat:released", { 
+          showtimeId: booking.showtimeId._id, 
+          seats: originalSeatIds 
+        });
+      }
+
       res.status(200).json({
         success: true,
         message: "Booking updated successfully",
@@ -1211,6 +1228,13 @@ class BookingController {
           referenceCode: booking.reference_code,
           reason: logReason,
         },
+      });
+
+      // Notify via Socket.io
+      emitEvent("booking:cancelled", { id: booking._id });
+      emitEvent("seat:released", { 
+        showtimeId: booking.showtimeId, 
+        seats: booking.seats 
       });
 
       res.status(200).json({

@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
-const { Payment, Booking } = require("../models");
+const { Payment, Booking, Showtime, SeatBooking, Movie, Customer } = require("../models");
 const { Role } = require("../data");
-const logger = require("../utils/logger");
+const { logger, Telegram } = require("../utils");
+const { emitEvent } = require("../utils/socket");
 const { BakongKHQR, khqrData, IndividualInfo } = require("bakong-khqr");
 const NotificationController = require("./notification.controller");
 const { logActivity } = require("../utils/activityLogger");
@@ -502,8 +503,16 @@ class PaymentController {
                 req,
               );
             }
-          }
+            }
         }
+
+        // Notify via Socket.io
+        emitEvent("payment:status", {
+          bookingId: payment.bookingId,
+          status: "Completed",
+          paymentId: payment._id,
+          md5: payment.md5,
+        });
 
         return res.status(200).json({
           success: true,
@@ -654,6 +663,14 @@ class PaymentController {
           );
         }
       }
+
+      // Notify via Socket.io
+      emitEvent("payment:status", {
+        bookingId: payment.bookingId,
+        status: status,
+        paymentId: payment._id,
+        md5: payment.md5,
+      });
 
       res.status(200).json({
         success: true,
