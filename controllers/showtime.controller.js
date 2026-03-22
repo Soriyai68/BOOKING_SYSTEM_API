@@ -1076,6 +1076,12 @@ class ShowtimeController {
         },
       });
 
+      // Notify via Socket.io
+      emitEvent("showtime:created", {
+        count: createdShowtimes.length,
+        showtimes: createdShowtimes.map((s) => s.toObject()),
+      });
+
       res.status(201).json({
         success: true,
         message: "All showtimes created successfully.",
@@ -1190,6 +1196,12 @@ class ShowtimeController {
           },
         });
       }
+
+      // Notify via Socket.io
+      emitEvent("showtime:deleted", {
+        count: deletedShowtimes.length,
+        ids: deletedShowtimes,
+      });
 
       res.status(200).json({
         success: true,
@@ -1339,6 +1351,12 @@ class ShowtimeController {
           },
         });
       }
+
+      // Notify via Socket.io
+      emitEvent("showtime:deleted", {
+        count: deletedShowtimes.length,
+        ids: deletedShowtimes,
+      });
 
       res.status(200).json({
         success: true,
@@ -1527,6 +1545,12 @@ class ShowtimeController {
       logger.info(
         `Bulk duplicated/created ${createdShowtimes.length} showtimes.`,
       );
+      // Notify via Socket.io
+      emitEvent("showtime:created", {
+        count: createdShowtimes.length,
+        showtimes: createdShowtimes.map((s) => s.toObject()),
+      });
+
       res.status(201).json({
         success: true,
         message: "All showtimes created/duplicated successfully.",
