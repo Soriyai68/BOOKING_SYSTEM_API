@@ -1266,3 +1266,201 @@ exports.getStaffPerformanceReport = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// get inventory & seat management report
+exports.getInventorySeatManagementReport = async (req, res) => {
+  try {
+    const { hallId, theaterId, dateFrom, dateTo, page = 1, limit = 10 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const limitNum = parseInt(limit);
+
+    // Build date match filter
+    const dateMatch = {};
+    if (dateFrom || dateTo) {
+      dateMatch.createdAt = {};
+      if (dateFrom) dateMatch.createdAt.$gte = new Date(dateFrom);
+      if (dateTo) {
+        const end = new Date(dateTo);
+        end.setHours(23, 59, 59, 999);
+        dateMatch.createdAt.$lte = end;
+      }
+    }
+
+    // Get seat inventory by hall
+    const seatInventoryPipeline = [
+      { $match: { deletedAt: null, ...dateMatch } },
+    ];
+
+    if (hallId) {
+      seatInventoryPipeline.push({ $match: { hall_id: mongoose.Types.ObjectId(hallId) } });
+    }
+
+    seatInventoryPipeline.push(
+      {
+        $lookup: {
+          from: "halls",
+          localField: "hall_id",
+          foreignField: "_id",
+          as: "hall",
+        },
+      },
+      { $unwind: { path: "$hall", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "theaters",
+          localField: "hall.theater_id",
+          foreignField: "_id",
+          as: "theater",
+        },
+      },
+      { $unwind: { path: "$theater", preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: "$hall_id",
+          hall_name: { $first: "$hall.hall_name" },
+          theater_name: { $first: "$theater.name" },
+          theater_id: { $first: "$hall.theater_id" },
+          total_seats: { $first: "$hall.total_seats" },
+          seat_types: { $push: "$seat_type" },
+          seat_prices: { $push: "$price" },
+          seat_count_by_type: {
+            $push: {
+              type: "$seat_type",
+              count: 1,
+              price: "$price",
+            },
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: "seatbookings",
+          localField: "_id",
+          foreignField: "seatId",
+          as: "bookings",
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          hall_name: 1,
+          theater_name: 1,
+          theater_id: 1,
+          total_seats: 1,
+          booked_seats: { $size: "$bookings" },
+          available_seats: {
+            $subtract: ["$total_seats", { $size: "$bookings" }],
+          },
+          occupancy_rate: {
+            $round: [
+              {
+                $multiply: [
+                  {
+                    $divide: [{ $size: "$bookings" }, "$total_seats"],
+                  },
+                  100,
+                ],
+              },
+              2,
+            ],
+          },
+          seat_types: 1,
+          seat_prices: 1,
+        },
+      },
+      { $sort: { occupancy_rate: -1 } },
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $skip: skip }, { $limit: limitNum }],
+        },
+      },
+    );
+
+    const seatInventoryResult = await reports.Seat.aggregate(seatInventoryPipeline);
+    const seatInventoryTotal = seatInventoryResult[0].metadata[0]?.total || 0;
+    const seatInventoryData = seatInventoryResult[0].data;
+
+    // Get seat type distribution
+    const seatTypeDistribution = await reports.Seat.aggregate([
+      { $match: { deletedAt: null, ...dateMatch } },
+      {
+        $group: {
+          _id: "$seat_type",
+          count: { $sum: 1 },
+          avg_price: { $avg: "$price" },
+          total_value: { $sum: "$price" },
+        },
+      },
+      { $sort: { count: -1 } },
+    ]);
+
+    // Get overall inventory summary
+    const inventorySummary = await reports.Seat.aggregate([
+      { $match: { deletedAt: null, ...dateMatch } },
+      {
+        $group: {
+          _id: null,
+          total_seats: { $sum: 1 },
+          total_inventory_value: { $sum: "$price" },
+        },
+      },
+    ]);
+
+    // Get booked vs available seats
+    const bookedSeats = await reports.SeatBooking.countDocuments({
+      status: "booked",
+      deletedAt: null,
+      createdAt: dateMatch.createdAt ? dateMatch.createdAt : undefined,
+    });
+
+    const totalSeats = inventorySummary[0]?.total_seats || 0;
+    const availableSeats = totalSeats - bookedSeats;
+    const occupancyRate = totalSeats > 0 ? parseFloat(((bookedSeats / totalSeats) * 100).toFixed(2)) : 0;
+
+    // Get seat status breakdown (from Seat model - maintenance status)
+    const seatStatusBreakdown = await reports.Seat.aggregate([
+      { $match: { deletedAt: null, ...dateMatch } },
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Get seat booking status breakdown (from SeatBooking model)
+    const seatBookingStatus = await reports.SeatBooking.aggregate([
+      { $match: { deletedAt: null, ...(dateMatch.createdAt ? { createdAt: dateMatch.createdAt } : {}) } },
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        seatInventoryByHall: seatInventoryData,
+        seatTypeDistribution,
+        inventorySummary: {
+          total_seats: totalSeats,
+          booked_seats: bookedSeats,
+          available_seats: availableSeats,
+          occupancy_rate: occupancyRate,
+          total_inventory_value: inventorySummary[0]?.total_inventory_value || 0,
+        },
+        seatStatusBreakdown,
+        seatBookingStatus,
+      },
+      total: seatInventoryTotal,
+      page: parseInt(page),
+      limit: limitNum,
+      totalPages: Math.ceil(seatInventoryTotal / limitNum),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

@@ -494,6 +494,12 @@ const permissions = [
     description: "Can view staff performance report",
     module: "reports",
   },
+  {
+    name: "reports.inventory-seat-management.view",
+    displayName: "View Inventory & Seat Management Report",
+    description: "Can view inventory and seat management report",
+    module: "reports",
+  },
 
   // Dashboard & Analytics
   {
@@ -724,6 +730,7 @@ const rolePermissions = {
     "reports.showtime-utilization.view",
     "reports.customer-demographic.view",
     "reports.staff-performance.view",
+    "reports.inventory-seat-management.view",
 
     // Activity Logs
     "activity-logs.view",
@@ -841,6 +848,7 @@ const rolePermissions = {
     "reports.showtime-utilization.view",
     "reports.customer-demographic.view",
     "reports.staff-performance.view",
+    "reports.inventory-seat-management.view",
 
     // Activity Logs
     "activity-logs.view",

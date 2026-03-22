@@ -41,5 +41,9 @@ router.get(
   "/staff-performance",
   reportController.getStaffPerformanceReport,
 );
+router.get(
+  "/inventory-seat-management",
+  reportController.getInventorySeatManagementReport,
+);
 
 module.exports = router;
