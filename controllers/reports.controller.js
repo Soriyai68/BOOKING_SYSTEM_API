@@ -363,6 +363,7 @@ exports.getDetailedRevenueReport = async (req, res) => {
       dateTo,
       payment_method,
       customerType,
+      search,
       page = 1,
       limit = 10,
     } = req.query;
@@ -417,6 +418,19 @@ exports.getDetailedRevenueReport = async (req, res) => {
 
     if (customerType) {
       pipeline.push({ $match: { "customer.customerType": customerType } });
+    }
+
+    if (search) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { "booking.reference_code": { $regex: search, $options: "i" } },
+            { "customer.name": { $regex: search, $options: "i" } },
+            { "customer.email": { $regex: search, $options: "i" } },
+            { "customer.phone": { $regex: search, $options: "i" } }
+          ]
+        }
+      });
     }
 
     pipeline.push(
