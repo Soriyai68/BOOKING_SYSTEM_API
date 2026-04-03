@@ -610,6 +610,50 @@ const permissions = [
     description: "Can view history of seat bookings and cancellations",
     module: "seat-booking-history",
   },
+
+  // Backup Management
+  {
+    name: "backups.view",
+    displayName: "View Backups",
+    description: "Can view backup list and details",
+    module: "backups",
+  },
+  {
+    name: "backups.create",
+    displayName: "Create Backups",
+    description: "Can create manual database backups",
+    module: "backups",
+  },
+  {
+    name: "backups.restore",
+    displayName: "Restore Backups",
+    description: "Can restore database from backups",
+    module: "backups",
+  },
+  {
+    name: "backups.delete",
+    displayName: "Delete Backups",
+    description: "Can delete backup files",
+    module: "backups",
+  },
+  {
+    name: "backups.schedule",
+    displayName: "Schedule Backups",
+    description: "Can configure automated backup schedules",
+    module: "backups",
+  },
+  {
+    name: "backups.stats",
+    displayName: "View Backup Statistics",
+    description: "Can view backup statistics and storage usage",
+    module: "backups",
+  },
+  {
+    name: "backups.manage",
+    displayName: "Manage Backups",
+    description: "Full backup system management access",
+    module: "backups",
+  },
 ];
 
 // Define role-permission mappings
@@ -745,6 +789,15 @@ const rolePermissions = {
 
     // Settings (view only)
     "settings.view",
+
+    // Backup Management (Admin gets all backup permissions)
+    "backups.view",
+    "backups.create",
+    "backups.restore",
+    "backups.delete",
+    "backups.schedule",
+    "backups.stats",
+    "backups.manage",
   ],
   [Role.CASHIER]: [
     // Dashboard
@@ -860,6 +913,10 @@ const rolePermissions = {
 
     // Settings (view only)
     "settings.view",
+
+    // Backup Management (Cashier gets view-only access)
+    "backups.view",
+    "backups.stats",
   ],
   [Role.SUPERADMIN]: [
     // SuperAdmin gets ALL permissions

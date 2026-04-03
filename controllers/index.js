@@ -1,3 +1,5 @@
+const backupController = require('./backup.controller');
+
 // Export all controllers
 module.exports = {
     UserController: require('./user.controller'),
@@ -18,6 +20,7 @@ module.exports = {
     UploadController: require('./upload.controller'),
     PromotionController: require('./promotion.controller'),
     SeatBookingController: require('./seatBooking.controller'),
+    backupController: require('./backup.controller'),
     PermissionController: require("./permission.controller"),
 
 };

@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "cronExpression": "0 0 * * *",
+  "description": "scheduled backup",
+  "retentionDays": 1,
+  "updatedAt": "2026-04-02T16:55:39.403Z"
+}

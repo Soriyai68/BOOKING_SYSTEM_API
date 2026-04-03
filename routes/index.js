@@ -23,6 +23,7 @@ const customerRoutes = require("./customer.routes");
 const customerBookingRoutes = require("./customer.booking.routes"); // Add this
 const reportRoutes = require("./reports.routes");
 const previewRoutes = require("./previews.routes");
+const backupRoutes = require("./backup.routes");
 
 // Mount routes
 router.use("/auth", authRoutes);
@@ -46,6 +47,7 @@ router.use("/customer/auth", customerAuthRoutes);
 router.use("/customer", customerBookingRoutes); // Change from /customer/bookings
 router.use("/reports", reportRoutes);
 router.use("/previews", previewRoutes);
+router.use("/backups", backupRoutes);
 
 // Health check endpoint
 router.get("/health", (req, res) => {
@@ -81,6 +83,7 @@ router.get("/", (req, res) => {
       promotions: "/api/promotions",
       customerAuth: "/api/customer/auth",
       customerBookings: "/api/customer/bookings",
+      backups: "/api/backups",
     },
   });
 });

@@ -11,5 +11,6 @@ exports.paymentSchema = require("./paymentSchema");
 exports.promotionSchema = require("./promotionSchema");
 exports.customerSchema = require("./customerSchema");
 exports.bookingTicketSchema = require("./bookingTicketSchema");
+exports.backupSchema = require("./backupSchema");
 
 
