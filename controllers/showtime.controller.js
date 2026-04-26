@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { Theater, Hall, Movie, Showtime, SeatBooking } = require("../models");
+const { Theater, Hall, Movie, Showtime, SeatBooking, Booking } = require("../models");
 const { Role } = require("../data");
 const logger = require("../utils/logger");
 const { logActivity } = require("../utils/activityLogger");
@@ -573,24 +573,24 @@ class ShowtimeController {
       }
 
       // Check for associated active bookings before deactivating
-      // const { Booking } = require("../models");
-      // if (Booking) {
-      //   const activeBookings = await Booking.countDocuments({
-      //     showtime_id: id,
-      //     status: { $nin: ["Cancelled", "Refunded"] }, // Check for bookings that are not cancelled or refunded
-      //   });
+      if (Booking) {
+        const activeBookings = await Booking.countDocuments({
+          showtimeId: id,
+          booking_status: { $nin: ["Cancelled"] }, // Check for bookings that are not cancelled
+          deletedAt: null,
+        });
 
-      //   if (activeBookings > 0) {
-      //     return res.status(409).json({
-      //       success: false,
-      //       message: `Cannot deactivate showtime. It has ${activeBookings} active booking(s). Please cancel or resolve them first.`,
-      //     });
-      //   }
-      // } else {
-      //   logger.warn(
-      //     `Booking model not found. Skipping check for associated bookings on showtime deletion. ID: ${id}`
-      //   );
-      // }
+        if (activeBookings > 0) {
+          return res.status(409).json({
+            success: false,
+            message: `Cannot deactivate showtime. It has ${activeBookings} active booking(s). Please cancel or resolve them first.`,
+          });
+        }
+      } else {
+        logger.warn(
+          `Booking model not found. Skipping check for associated bookings on showtime deletion. ID: ${id}`
+        );
+      }
       // Check if showtime is already soft deleted
       if (showtime.isDeleted()) {
         return res.status(409).json({
@@ -725,20 +725,19 @@ class ShowtimeController {
       }
 
       // 3. Strict check for any associated bookings
-      // const { Booking } = require("../models");
-      // if (Booking) {
-      //   const bookingCount = await Booking.countDocuments({ showtime_id: id });
-      //   if (bookingCount > 0) {
-      //     return res.status(409).json({
-      //       success: false,
-      //       message: `Cannot permanently delete showtime. It has ${bookingCount} associated booking(s). Please permanently delete them first.`,
-      //     });
-      //   }
-      // } else {
-      //   logger.warn(
-      //     `Booking model not found. Skipping check for associated bookings on showtime force deletion. ID: ${id}`
-      //   );
-      // }
+      if (Booking) {
+        const bookingCount = await Booking.countDocuments({ showtimeId: id });
+        if (bookingCount > 0) {
+          return res.status(409).json({
+            success: false,
+            message: `Cannot permanently delete showtime. It has ${bookingCount} associated booking(s). Please permanently delete them first.`,
+          });
+        }
+      } else {
+        logger.warn(
+          `Booking model not found. Skipping check for associated bookings on showtime force deletion. ID: ${id}`,
+        );
+      }
 
       // 4. Perform permanent deletion
       // Delete associated SeatBooking records
@@ -1142,6 +1141,21 @@ class ShowtimeController {
           continue;
         }
 
+        // Check for active bookings
+        const activeBookings = await Booking.countDocuments({
+          showtimeId: id,
+          booking_status: { $nin: ["Cancelled"] },
+          deletedAt: null,
+        });
+
+        if (activeBookings > 0) {
+          errors.push({
+            id,
+            error: `Cannot deactivate showtime. It has ${activeBookings} active booking(s).`,
+          });
+          continue;
+        }
+
         await showtime.softDelete(deletedBy);
         deletedShowtimes.push(id);
       }
@@ -1276,6 +1290,16 @@ class ShowtimeController {
 
         if (!showtime) {
           errors.push({ id, error: "Showtime not found." });
+          continue;
+        }
+
+        // Check for any bookings
+        const bookingCount = await Booking.countDocuments({ showtimeId: id });
+        if (bookingCount > 0) {
+          errors.push({
+            id,
+            error: `Cannot permanently delete showtime. It has ${bookingCount} associated booking(s).`,
+          });
           continue;
         }
 
