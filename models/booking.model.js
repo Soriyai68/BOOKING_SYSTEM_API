@@ -137,7 +137,7 @@ bookingSchema.methods.isExpired = function () {
   return this.expired_at < new Date();
 };
 
-bookingSchema.methods.markAsCompleted = async function (paymentId) {
+bookingSchema.methods.markAsConfirmed = async function (paymentId) {
   if (this.booking_status === "Confirmed" || this.booking_status === "Completed") {
     logger.warn(
       `Booking ${this.reference_code} (ID: ${this._id}) is already confirmed/completed. Skipping ticket generation.`,
@@ -145,7 +145,7 @@ bookingSchema.methods.markAsCompleted = async function (paymentId) {
     return this;
   }
   this.payment_status = "Completed";
-  this.booking_status = "Completed";
+  this.booking_status = "Confirmed";
   if (paymentId) {
     this.payment_id = paymentId;
   }
@@ -172,7 +172,7 @@ bookingSchema.methods.markAsCompleted = async function (paymentId) {
   }
 
   logger.info(
-    `Booking ${this.reference_code} (ID: ${this._id}) status updated to Completed. Payment ID: ${paymentId}.`,
+    `Booking ${this.reference_code} (ID: ${this._id}) status updated to Confirmed. Payment ID: ${paymentId}.`,
   );
 
   // Fetch seat documents to generate tickets
@@ -186,6 +186,11 @@ bookingSchema.methods.markAsCompleted = async function (paymentId) {
   return this.save();
 };
 
+// Keep the old method for backward compatibility but update its behavior
+bookingSchema.methods.markAsCompleted = async function (paymentId) {
+  return this.markAsConfirmed(paymentId);
+};
+
 // Method to transition existing "Confirmed" bookings to "Completed"
 bookingSchema.methods.transitionToCompleted = async function () {
   if (this.booking_status === "Confirmed" && this.payment_status === "Completed") {
@@ -196,6 +201,62 @@ bookingSchema.methods.transitionToCompleted = async function () {
     return this.save();
   }
   return this;
+};
+
+// Static method to auto-complete bookings after showtime ends
+bookingSchema.statics.autoCompleteFinishedShowtimes = async function () {
+  const Showtime = mongoose.model("Showtime");
+  const now = new Date();
+  
+  // Find all showtimes that have ended (show_date + end_time < now)
+  const finishedShowtimes = await Showtime.find({
+    $expr: {
+      $lt: [
+        {
+          $dateFromString: {
+            dateString: {
+              $concat: [
+                { $dateToString: { format: "%Y-%m-%d", date: "$show_date" } },
+                "T",
+                "$end_time",
+                ":00.000Z"
+              ]
+            }
+          }
+        },
+        now
+      ]
+    }
+  });
+
+  const finishedShowtimeIds = finishedShowtimes.map(s => s._id);
+  
+  if (finishedShowtimeIds.length === 0) {
+    return [];
+  }
+
+  // Find all confirmed bookings for these finished showtimes
+  const confirmedBookings = await this.find({
+    showtimeId: { $in: finishedShowtimeIds },
+    booking_status: "Confirmed",
+    payment_status: "Completed",
+    deletedAt: null,
+  });
+
+  // Transition them to completed
+  const completedBookings = [];
+  for (const booking of confirmedBookings) {
+    await booking.transitionToCompleted();
+    completedBookings.push(booking._id);
+  }
+
+  if (completedBookings.length > 0) {
+    logger.info(
+      `Auto-completed ${completedBookings.length} bookings for finished showtimes.`,
+    );
+  }
+
+  return completedBookings;
 };
 
 bookingSchema.methods.cancelBooking = async function (

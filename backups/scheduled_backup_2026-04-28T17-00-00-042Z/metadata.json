@@ -1,0 +1,9 @@
+{
+  "name": "scheduled_backup_2026-04-28T17-00-00-042Z",
+  "description": "scheduled backup",
+  "createdAt": "2026-04-28T17:00:00.217Z",
+  "database": "nana",
+  "size": 217466,
+  "path": "D:\\bbu\\BOOKING_SYSTEM\\BOOKING_SYSTEM_API\\backups\\scheduled_backup_2026-04-28T17-00-00-042Z",
+  "type": "scheduled"
+}
