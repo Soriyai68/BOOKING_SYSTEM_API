@@ -124,7 +124,7 @@ class BackupController {
   async restoreBackup(req, res) {
     try {
       const { backupName } = req.params;
-      const { dropDatabase = false } = req.body;
+      const { dropDatabase = false, targetDatabase } = req.body;
       
       const backupPath = path.join(this.backupDir, backupName);
       
@@ -136,12 +136,30 @@ class BackupController {
       }
 
       const mongoConfig = this.getMongoConfig();
-      const dbPath = path.join(backupPath, mongoConfig.database);
+      
+      // Find the database folder in the backup
+      const backupContents = fs.readdirSync(backupPath);
+      const dbFolders = backupContents.filter(item => {
+        const itemPath = path.join(backupPath, item);
+        return fs.statSync(itemPath).isDirectory();
+      });
+
+      if (dbFolders.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid backup structure - no database folders found'
+        });
+      }
+
+      // Use the target database name if provided, otherwise use the first database folder found
+      const sourceDbName = dbFolders[0]; // The database name in the backup
+      const targetDbName = targetDatabase || mongoConfig.database; // Where to restore it
+      const dbPath = path.join(backupPath, sourceDbName);
 
       if (!fs.existsSync(dbPath)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid backup structure'
+          message: `Invalid backup structure - database folder '${sourceDbName}' not found`
         });
       }
 
@@ -150,7 +168,7 @@ class BackupController {
         ? '"C:\\Program Files\\MongoDB\\Tools\\100\\bin\\mongorestore.exe"'
         : 'mongorestore';
       
-      let command = `${mongorestorePath} --host ${mongoConfig.host}:${mongoConfig.port} --db ${mongoConfig.database}`;
+      let command = `${mongorestorePath} --host ${mongoConfig.host}:${mongoConfig.port} --db ${targetDbName}`;
       
       if (dropDatabase) {
         command += ' --drop';
@@ -162,7 +180,7 @@ class BackupController {
       
       command += ` "${dbPath}"`;
 
-      logger.info(`Starting restore from backup: ${backupName}`);
+      logger.info(`Starting restore from backup: ${backupName} (${sourceDbName} -> ${targetDbName})`);
 
       exec(command, (error, stdout, stderr) => {
         if (error) {
@@ -193,12 +211,14 @@ class BackupController {
           logger.warn(`Restore warning: ${stderr}`);
         }
 
-        logger.info(`Restore completed successfully from: ${backupName}`);
+        logger.info(`Restore completed successfully from: ${backupName} (${sourceDbName} -> ${targetDbName})`);
 
         res.status(200).json({
           success: true,
           message: 'Database restored successfully',
-          backup: backupName
+          backup: backupName,
+          sourceDatabase: sourceDbName,
+          targetDatabase: targetDbName
         });
       });
 

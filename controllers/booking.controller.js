@@ -1054,6 +1054,13 @@ class BookingController {
           .json({ success: false, message: "Booking not found" });
       }
 
+      // Check if booking allows seat changes
+      if (booking.booking_status === "Cancelled") {
+        return res
+          .status(400)
+          .json({ success: false, message: "Cannot edit seats for cancelled bookings" });
+      }
+
       const originalSeatIds = booking.seats.map((s) => s.toString());
       const newSeatIds = seats.map((s) => s.toString());
 
@@ -1074,7 +1081,7 @@ class BookingController {
         );
       }
 
-      // 2. Lock new seats
+      // 2. Lock/Book new seats based on booking status
       if (newSeatIds.length > 0) {
         const existingBookings = await SeatBooking.find({
           showtimeId: booking.showtimeId,
@@ -1085,13 +1092,16 @@ class BookingController {
           throw new Error("One or more selected seats are already taken.");
         }
 
+        // For completed bookings, directly book the seats. For others, lock them.
+        const seatStatus = booking.booking_status === "Completed" ? "booked" : "locked";
         const seatBookingDocs = newSeatIds.map((seatId) => ({
           showtimeId: booking.showtimeId,
           seatId,
           bookingId: booking._id,
-          status: "locked",
-          locked_until:
-            booking.expired_at || new Date(Date.now() + 15 * 60 * 1000),
+          status: seatStatus,
+          ...(seatStatus === "locked" && {
+            locked_until: booking.expired_at || new Date(Date.now() + 15 * 60 * 1000)
+          })
         }));
         await SeatBooking.insertMany(seatBookingDocs);
 
@@ -1127,6 +1137,7 @@ class BookingController {
         metadata: {
           referenceCode: booking.reference_code,
           seatCount: booking.seat_count,
+          bookingStatus: booking.booking_status,
         },
       });
     } catch (error) {

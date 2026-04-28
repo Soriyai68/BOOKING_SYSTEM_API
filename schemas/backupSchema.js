@@ -21,6 +21,18 @@ const restoreBackupSchema = Joi.object({
     .default(false)
     .messages({
       'boolean.base': 'dropDatabase must be a boolean value'
+    }),
+  
+  targetDatabase: Joi.string()
+    .optional()
+    .min(1)
+    .max(64)
+    .pattern(/^[a-zA-Z0-9_-]+$/)
+    .messages({
+      'string.base': 'targetDatabase must be a string',
+      'string.min': 'targetDatabase must be at least 1 character long',
+      'string.max': 'targetDatabase cannot exceed 64 characters',
+      'string.pattern.base': 'targetDatabase can only contain letters, numbers, underscores, and hyphens'
     })
 });
 

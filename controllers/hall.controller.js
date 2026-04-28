@@ -697,7 +697,7 @@ class HallController {
 
         return res.status(409).json({
           success: false,
-          message: `Cannot permanently delete hall. It has ${associatedSeats.length} associated seat(s) (${activeSeats.length} active, ${deletedSeats.length} deleted). Please permanently delete all seats first.`,
+          // message: `Cannot permanently delete hall. It has ${associatedSeats.length} associated seat(s) (${activeSeats.length} active, ${deletedSeats.length} deleted). Please permanently delete all seats first.`,
           data: {
             totalSeats: associatedSeats.length,
             activeSeats: activeSeats.length,

@@ -637,7 +637,7 @@ class MovieController {
 
         return res.status(409).json({
           success: false,
-          message: `Cannot permanently delete movie. It has ${associatedShowtimes.length} associated showtime(s) (${activeShowtimes.length} active, ${deletedShowtimes.length} deleted). Please permanently delete all showtimes first.`,
+          // message: `Cannot permanently delete movie. It has ${associatedShowtimes.length} associated showtime(s) (${activeShowtimes.length} active, ${deletedShowtimes.length} deleted). Please permanently delete all showtimes first.`,
           data: {
             totalShowtimes: associatedShowtimes.length,
             activeShowtimes: activeShowtimes.length,

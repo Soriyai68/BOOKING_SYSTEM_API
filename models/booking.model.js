@@ -96,7 +96,7 @@ bookingSchema.statics.findByReferenceCode = function (referenceCode) {
 bookingSchema.statics.findActiveBookingsByShowtime = function (showtimeId) {
   return this.find({
     showtimeId,
-    booking_status: "Confirmed",
+    booking_status: { $in: ["Confirmed", "Completed"] },
     deletedAt: null,
   });
 };
@@ -138,14 +138,14 @@ bookingSchema.methods.isExpired = function () {
 };
 
 bookingSchema.methods.markAsCompleted = async function (paymentId) {
-  if (this.booking_status === "Confirmed") {
+  if (this.booking_status === "Confirmed" || this.booking_status === "Completed") {
     logger.warn(
-      `Booking ${this.reference_code} (ID: ${this._id}) is already confirmed. Skipping ticket generation.`,
+      `Booking ${this.reference_code} (ID: ${this._id}) is already confirmed/completed. Skipping ticket generation.`,
     );
     return this;
   }
   this.payment_status = "Completed";
-  this.booking_status = "Confirmed";
+  this.booking_status = "Completed";
   if (paymentId) {
     this.payment_id = paymentId;
   }
@@ -184,6 +184,18 @@ bookingSchema.methods.markAsCompleted = async function (paymentId) {
   await BookingTicket.generateTicketsForBooking(tempBooking);
 
   return this.save();
+};
+
+// Method to transition existing "Confirmed" bookings to "Completed"
+bookingSchema.methods.transitionToCompleted = async function () {
+  if (this.booking_status === "Confirmed" && this.payment_status === "Completed") {
+    this.booking_status = "Completed";
+    logger.info(
+      `Booking ${this.reference_code} (ID: ${this._id}) transitioned from Confirmed to Completed.`,
+    );
+    return this.save();
+  }
+  return this;
 };
 
 bookingSchema.methods.cancelBooking = async function (

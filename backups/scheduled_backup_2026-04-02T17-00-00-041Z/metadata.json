@@ -1,9 +1,0 @@
-{
-  "name": "scheduled_backup_2026-04-02T17-00-00-041Z",
-  "description": "scheduled backup",
-  "createdAt": "2026-04-02T17:00:00.126Z",
-  "database": "testing_booking",
-  "size": 110724,
-  "path": "D:\\bbu\\BOOKING_SYSTEM\\BOOKING_SYSTEM_API\\backups\\scheduled_backup_2026-04-02T17-00-00-041Z",
-  "type": "scheduled"
-}
