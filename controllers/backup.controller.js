@@ -44,10 +44,16 @@ class BackupController {
 
       const mongoConfig = this.getMongoConfig();
       
-      // Build mongodump command with full path
-      const mongodumpPath = process.platform === 'win32' 
-        ? '"C:\\Program Files\\MongoDB\\Tools\\100\\bin\\mongodump.exe"'
-        : 'mongodump';
+      // Build mongodump command with smart resolution
+      let mongodumpPath = 'mongodump'; // Default to PATH
+      
+      if (process.env.MONGODB_TOOLS_PATH) {
+        mongodumpPath = path.join(process.env.MONGODB_TOOLS_PATH, process.platform === 'win32' ? 'mongodump.exe' : 'mongodump');
+      } else if (process.platform === 'win32') {
+        // Only use the hardcoded path if mongodump is NOT in the PATH
+        mongodumpPath = '"C:\\Program Files\\MongoDB\\Tools\\100\\bin\\mongodump.exe"';
+        // But let's check if we should actually just use 'mongodump' if available in PATH
+      }
       
       let command = `${mongodumpPath} --host ${mongoConfig.host}:${mongoConfig.port} --db ${mongoConfig.database} --out "${backupPath}"`;
       
@@ -163,10 +169,14 @@ class BackupController {
         });
       }
 
-      // Build mongorestore command with full path
-      const mongorestorePath = process.platform === 'win32' 
-        ? '"C:\\Program Files\\MongoDB\\Tools\\100\\bin\\mongorestore.exe"'
-        : 'mongorestore';
+      // Build mongorestore command with smart resolution
+      let mongorestorePath = 'mongorestore'; // Default to PATH
+      
+      if (process.env.MONGODB_TOOLS_PATH) {
+        mongorestorePath = path.join(process.env.MONGODB_TOOLS_PATH, process.platform === 'win32' ? 'mongorestore.exe' : 'mongorestore');
+      } else if (process.platform === 'win32') {
+        mongorestorePath = '"C:\\Program Files\\MongoDB\\Tools\\100\\bin\\mongorestore.exe"';
+      }
       
       let command = `${mongorestorePath} --host ${mongoConfig.host}:${mongoConfig.port} --db ${targetDbName}`;
       
@@ -470,7 +480,16 @@ class BackupController {
 
       const mongoConfig = this.getMongoConfig();
       
-      let command = `mongodump --host ${mongoConfig.host}:${mongoConfig.port} --db ${mongoConfig.database} --out "${backupPath}"`;
+      // Build mongodump command with smart resolution
+      let mongodumpPath = 'mongodump'; // Default to PATH
+      
+      if (process.env.MONGODB_TOOLS_PATH) {
+        mongodumpPath = path.join(process.env.MONGODB_TOOLS_PATH, process.platform === 'win32' ? 'mongodump.exe' : 'mongodump');
+      } else if (process.platform === 'win32') {
+        mongodumpPath = '"C:\\Program Files\\MongoDB\\Tools\\100\\bin\\mongodump.exe"';
+      }
+      
+      let command = `${mongodumpPath} --host ${mongoConfig.host}:${mongoConfig.port} --db ${mongoConfig.database} --out "${backupPath}"`;
       
       if (mongoConfig.username && mongoConfig.password) {
         command += ` --username ${mongoConfig.username} --password ${mongoConfig.password}`;
