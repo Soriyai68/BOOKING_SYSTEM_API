@@ -929,6 +929,31 @@ class HallController {
         });
       }
 
+      // If changing from active to inactive, check for future showtimes
+      if (hall.status === "active" && status !== "active") {
+        const Showtime = require("../models/showtime.model");
+        const now = new Date();
+        
+        const futureShowtimes = await Showtime.countDocuments({
+          hall_id: id,
+          status: "scheduled",
+          $or: [
+            { show_date: { $gt: now } },
+            {
+              show_date: { $eq: now },
+              // This is a simplified check - in production you might want to compare full datetime
+            }
+          ]
+        });
+
+        if (futureShowtimes > 0) {
+          return res.status(409).json({
+            success: false,
+            message: `Cannot change hall status from "active" to "${status}". This hall has ${futureShowtimes} scheduled showtime(s). Please cancel or reschedule them first.`,
+          });
+        }
+      }
+
       // Update status using model method
       const updatedHall = await hall.updateStatus(status, req.user?.userId);
 

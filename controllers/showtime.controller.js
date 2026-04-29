@@ -172,6 +172,15 @@ class ShowtimeController {
         });
       }
 
+      // Filter out inactive halls for booking requests
+      if (filters.forBooking === true || filters.forBooking === "true") {
+        pipeline.push({
+          $match: {
+            "hall.status": "active",
+          },
+        });
+      }
+
       // Optional search on movie title
       if (search) {
         pipeline.push({
@@ -363,6 +372,14 @@ class ShowtimeController {
         return res.status(404).json({
           success: false,
           message: "Hall not found or has been deleted.",
+        });
+      }
+
+      // Check if hall is active
+      if (hall.status !== "active") {
+        return res.status(409).json({
+          success: false,
+          message: `Cannot create showtime for hall "${hall.hall_name}". Hall status is "${hall.status}". Only active halls can have showtimes.`,
         });
       }
 
@@ -975,6 +992,11 @@ class ShowtimeController {
           errors.push({ index: i, error: "Movie has ended." });
 
         if (!hall) errors.push({ index: i, error: "Hall not found." });
+        else if (hall.status !== "active")
+          errors.push({ 
+            index: i, 
+            error: `Hall "${hall.hall_name}" is not active (status: ${hall.status}). Only active halls can have showtimes.` 
+          });
 
         // Check duplicates in this batch
         const key = `${hall_id}_${show_date}_${start_time}`;

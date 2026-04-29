@@ -565,12 +565,20 @@ class BookingController {
         }
       }
 
-      const showtime = await Showtime.findById(showtimeId);
+      const showtime = await Showtime.findById(showtimeId).populate('hall_id', 'status hall_name');
 
       if (!showtime) {
         return res
           .status(404)
           .json({ success: false, message: "Showtime not found" });
+      }
+
+      // Check if hall is active
+      if (showtime.hall_id && showtime.hall_id.status !== "active") {
+        return res.status(409).json({
+          success: false,
+          message: `Cannot create booking. The hall "${showtime.hall_id.hall_name}" is currently ${showtime.hall_id.status}. Bookings are only allowed for active halls.`,
+        });
       }
 
       if (!showtime.isActiveForBooking()) {
