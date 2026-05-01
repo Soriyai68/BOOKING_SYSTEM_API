@@ -491,7 +491,7 @@ class PaymentController {
               );
 
               // Notify customer
-              NotificationController.notifyCustomer(
+              await NotificationController.notifyCustomer(
                 booking.customerId,
                 {
                   type: notifType,
