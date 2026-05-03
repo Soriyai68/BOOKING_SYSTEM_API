@@ -253,8 +253,8 @@ class PaymentController {
         const expirationTimestamp = Date.now() + 5 * 60 * 1000;
         const individualInfo = new IndividualInfo(
           process.env.BAKONG_ACCOUNT_USERNAME,
-          "RSB Cinema",
-          "Phnom Penh",
+          "Ninja Booking",
+          "Battambang",
           {
             currency:
               currency === "KHR"
@@ -263,7 +263,7 @@ class PaymentController {
             amount: booking.total_price,
             billNumber: booking.reference_code,
             mobileNumber: "85510773123",
-            storeLabel: "RSB Cinema",
+            storeLabel: "Ninja Booking",
             terminalLabel: "Web-01",
             expirationTimestamp,
           },
