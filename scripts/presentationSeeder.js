@@ -5,6 +5,7 @@ const Hall = require('../models/hall.model');
 const Seat = require('../models/seat.model');
 const Movie = require('../models/movie.model');
 const Showtime = require('../models/showtime.model');
+const SeatBooking = require('../models/seatBooking.model'); // needed so mongoose model registry has it during Showtime pre-save hook
 const User = require('../models/user.model');
 const Customer = require('../models/customer.model');
 const { Role } = require('../data');
@@ -161,7 +162,7 @@ async function seedPresentationData() {
     console.log('Creating Showtimes...');
     const startDate = new Date('2026-05-01');
     const endDate = new Date('2026-05-15');
-    const times = ['10:00', '13:30', '16:00', '19:30', '22:00'];
+    const times = ['09:00', '11:30', '14:00', '16:30', '19:00']; // Morning to evening — no showtime crosses midnight
 
     const showtimePromises = [];
     // Iterate through dates from May 1 to May 15
@@ -192,6 +193,7 @@ async function seedPresentationData() {
     console.log('Hall: Theater 01 (VIP)');
     console.log('Price Range: $0.01 - $0.10');
     console.log('Movies: 4');
+    console.log('Times: 09:00 / 11:30 / 14:00 / 16:30 / 19:00 (no midnight crossings)');
     console.log('Dates: May 01 - May 15, 2026');
     console.log('=========================================\n');
     

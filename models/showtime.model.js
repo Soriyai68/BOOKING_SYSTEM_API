@@ -73,7 +73,7 @@ showtimeSchema.statics.safeNormalizeDate = function (dateInput) {
   if (!dateInput) return null;
   const d = new Date(dateInput);
   if (isNaN(d.getTime())) return null;
-  // Use local date parts to resolve the "calendar day" intended by the user/system, 
+  // Use local date parts to resolve the "calendar day" intended by the user/system,
   // then create a UTC date at midnight for that day.
   return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
 };
@@ -277,14 +277,30 @@ showtimeSchema.methods.isDeleted = function () {
 showtimeSchema.methods.isUpcoming = function () {
   const [hours, minutes] = this.start_time.split(":");
   const d = new Date(this.show_date);
-  const showDateTime = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hours, minutes));
+  const showDateTime = new Date(
+    Date.UTC(
+      d.getUTCFullYear(),
+      d.getUTCMonth(),
+      d.getUTCDate(),
+      hours,
+      minutes,
+    ),
+  );
   return showDateTime > new Date();
 };
 
 showtimeSchema.methods.isPast = function () {
   const [hours, minutes] = this.end_time.split(":");
   const d = new Date(this.show_date);
-  const showEndDateTime = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hours, minutes));
+  const showEndDateTime = new Date(
+    Date.UTC(
+      d.getUTCFullYear(),
+      d.getUTCMonth(),
+      d.getUTCDate(),
+      hours,
+      minutes,
+    ),
+  );
   return showEndDateTime < new Date();
 };
 
@@ -334,13 +350,15 @@ showtimeSchema.pre("save", async function (next) {
             .split(":")
             .map(Number);
           // startDateTime is the literal point in time represented by the UTC date and local time parts
-          const startDateTime = new Date(Date.UTC(
-            d.getUTCFullYear(),
-            d.getUTCMonth(),
-            d.getUTCDate(),
-            startHours,
-            startMinutes,
-          ));
+          const startDateTime = new Date(
+            Date.UTC(
+              d.getUTCFullYear(),
+              d.getUTCMonth(),
+              d.getUTCDate(),
+              startHours,
+              startMinutes,
+            ),
+          );
           const totalDuration = movie.duration_minutes;
           const endDateTime = new Date(
             startDateTime.getTime() + totalDuration * 60000,
@@ -409,7 +427,15 @@ showtimeSchema.pre("save", async function (next) {
   if (this.status === "scheduled") {
     const [hours, minutes] = this.end_time.split(":");
     const d = new Date(this.show_date);
-    const showEndDateTime = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hours, minutes));
+    const showEndDateTime = new Date(
+      Date.UTC(
+        d.getUTCFullYear(),
+        d.getUTCMonth(),
+        d.getUTCDate(),
+        hours,
+        minutes,
+      ),
+    );
     if (showEndDateTime < new Date()) {
       this.status = "completed";
     }
@@ -488,7 +514,15 @@ showtimeSchema.post(/^find/, async function (result, next) {
       if (doc && doc.status === "scheduled" && doc.end_time && doc.show_date) {
         const [hours, minutes] = doc.end_time.split(":");
         const d = new Date(doc.show_date);
-        const showEndDateTime = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hours, minutes));
+        const showEndDateTime = new Date(
+          Date.UTC(
+            d.getUTCFullYear(),
+            d.getUTCMonth(),
+            d.getUTCDate(),
+            hours,
+            minutes,
+          ),
+        );
 
         if (showEndDateTime < now) {
           doc.status = "completed";
