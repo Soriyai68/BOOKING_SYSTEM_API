@@ -452,12 +452,19 @@ class PaymentController {
               populate: { path: "movie_id", select: "title" },
             });
 
-            if (booking && booking.booking_status !== "Confirmed") {
-              await booking.markAsCompleted(payment._id);
+            if (booking) {
+              // Ensure booking is marked as completed (idempotent — the Payment
+              // pre-save middleware may have already called this, but the guard
+              // inside markAsConfirmed makes it safe to call again)
+              if (booking.booking_status !== "Confirmed" && booking.booking_status !== "Completed") {
+                await booking.markAsCompleted(payment._id);
+              }
 
+              // Log activity for Bakong payment confirmation
               await logActivity({
                 customerId: booking.customerId?._id || booking.customerId,
                 userId: req.user?.userId,
+                logType: "CUSTOMER",
                 action: "BOOK_CONFIRMED",
                 status: "SUCCESS",
                 targetId: booking._id,
@@ -467,6 +474,7 @@ class PaymentController {
                   totalPrice: booking.total_price,
                   referenceCode: booking.reference_code,
                   paymentId: payment._id,
+                  bakongHash: data.data?.hash || null,
                 },
               });
 
@@ -481,6 +489,12 @@ class PaymentController {
               }));
 
               const movieTitle = booking.showtimeId?.movie_id?.title || "Movie";
+
+              // Force payment_status to "Completed" on the in-memory object
+              // so generateBookingMessage returns "booking_confirmed" type
+              // (the DB is already updated by markAsCompleted / middleware)
+              booking.payment_status = "Completed";
+
               const {
                 message: dynamicMessage,
                 metadata,
@@ -490,7 +504,7 @@ class PaymentController {
                 movieTitle,
               );
 
-              // Notify customer
+              // Notify customer with the correct "Payment Confirmed" notification
               await NotificationController.notifyCustomer(
                 booking.customerId,
                 {
@@ -503,7 +517,7 @@ class PaymentController {
                 req,
               );
             }
-            }
+          }
         }
 
         // Notify via Socket.io

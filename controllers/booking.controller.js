@@ -753,11 +753,18 @@ class BookingController {
           metadata,
           type: notifType,
         } = NotificationController.generateBookingMessage(booking, movieTitle);
+        const titleMap = {
+          booking_cancelled: "Booking Cancelled",
+          booking_confirmed: "Payment Confirmed",
+          pay_at_cinema: "Booking Confirmed",
+          pending_payment: "Pending Payment",
+          booking_created: "Booking Confirmed",
+        };
         NotificationController.notifyCustomer(
           booking.customerId._id,
           {
             type: notifType,
-            title: "Booking Confirmed",
+            title: titleMap[notifType] || "Booking Created",
             message: dynamicMessage,
             metadata,
             relatedId: booking._id,
