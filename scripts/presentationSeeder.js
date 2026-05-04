@@ -61,16 +61,16 @@ async function seedPresentationData() {
     });
     await hall.save();
 
-    // 4. Create Seats with different types and prices (Starting from $0.01)
+    // 4. Create Seats with different types and prices (Starting from $0.05)
     console.log('Creating Seats...');
     const seatRows = [
-      { row: 'A', type: 'regular', price: 0.01, count: 10 },
-      { row: 'B', type: 'regular', price: 0.01, count: 10 },
-      { row: 'C', type: 'regular', price: 0.01, count: 10 },
-      { row: 'D', type: 'vip', price: 0.02, count: 8 },
-      { row: 'E', type: 'vip', price: 0.02, count: 8 },
-      { row: 'F', type: 'couple', price: 0.05, count: 5 }, 
-      { row: 'G', type: 'queen', price: 0.10, count: 4 }
+      { row: 'A', type: 'regular', price: 0.05, count: 10 },
+      { row: 'B', type: 'regular', price: 0.05, count: 10 },
+      { row: 'C', type: 'regular', price: 0.05, count: 10 },
+      { row: 'D', type: 'vip', price: 0.10, count: 8 },
+      { row: 'E', type: 'vip', price: 0.10, count: 8 },
+      { row: 'F', type: 'couple', price: 0.15, count: 5 }, 
+      { row: 'G', type: 'queen', price: 0.20, count: 4 }
     ];
 
     const seatPromises = [];
@@ -191,7 +191,7 @@ async function seedPresentationData() {
     console.log('Presentation Seeding Completed Successfully!');
     console.log('Location: Battambang City');
     console.log('Hall: Theater 01 (VIP)');
-    console.log('Price Range: $0.01 - $0.10');
+    console.log('Price Range: $0.05 - $0.20');
     console.log('Movies: 4');
     console.log('Times: 09:00 / 11:30 / 14:00 / 16:30 / 19:00 (no midnight crossings)');
     console.log('Dates: May 01 - May 15, 2026');

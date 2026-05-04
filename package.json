@@ -12,7 +12,8 @@
     "ngrok": "node scripts/ngrok.js",
     "check:mongodump": "node scripts/check-mongodump.js",
     "test:backup": "node scripts/test-backup-controller.js",
-    "verify:backup-permissions": "node scripts/verify-backup-permissions.js"
+    "verify:backup-permissions": "node scripts/verify-backup-permissions.js",
+    "seed:presentation": "node scripts/presentationSeeder.js"
   },
   "keywords": [],
   "author": "",
