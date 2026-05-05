@@ -58,7 +58,7 @@ const startShowtimeScheduler = () => {
           await Booking.updateMany(
             {
               showtimeId: { $in: showtimesToCompleteIds },
-              booking_status: "Confirmed",
+              booking_status: "Completed",
             },
             { $set: { booking_status: "Completed", updatedAt: now } },
           );
@@ -127,18 +127,18 @@ const startMovieScheduler = () => {
 const startBookingScheduler = () => {
   logger.info("Scheduling booking expiration job to run every minute.");
   cron.schedule("* * * * *", async () => {
-    logger.info("Running scheduled job to cancel expired bookings...");
+    logger.info("Running scheduled job to expire bookings...");
     try {
-      const cancelledBookingIds = await Booking.autoCancelExpiredBookings();
-      if (cancelledBookingIds.length > 0) {
+      const expiredBookingIds = await Booking.autoExpireBookings();
+      if (expiredBookingIds.length > 0) {
         logger.info(
-          `Auto-cancelled ${cancelledBookingIds.length} expired bookings.`,
+          `Auto-expired ${expiredBookingIds.length} bookings.`,
         );
       } else {
-        logger.info("No expired bookings found to cancel.");
+        logger.info("No bookings found to expire.");
       }
     } catch (error) {
-      logger.error("Error in scheduled booking cancellation job:", error);
+      logger.error("Error in scheduled booking expiration job:", error);
     }
   });
 };
@@ -200,21 +200,21 @@ const startSeatBookingSyncScheduler = () => {
  */
 const startSeatReleaseScheduler = () => {
   logger.info(
-    "Scheduling seat release job for failed/cancelled bookings to run every minute.",
+    "Scheduling seat release job for failed/expired bookings to run every minute.",
   );
   cron.schedule("* * * * *", async () => {
     logger.info(
-      "Running scheduled job to release seats for failed/cancelled bookings...",
+      "Running scheduled job to release seats for failed/expired bookings...",
     );
     try {
-      // Find bookings that are cancelled or have a failed payment
+      // Find bookings that are expired or have a failed payment
       const bookingsToClean = await Booking.find({
-        $or: [{ payment_status: "Failed" }, { booking_status: "Cancelled" }],
+        $or: [{ payment_status: "Failed" }, { booking_status: "Expired" }],
       }).select("_id");
 
       if (bookingsToClean.length === 0) {
         logger.info(
-          "No failed or cancelled bookings found that require seat release.",
+          "No failed or expired bookings found that require seat release.",
         );
         return;
       }
@@ -231,16 +231,16 @@ const startSeatReleaseScheduler = () => {
           _id: { $in: seatBookingsToDelete.map((sb) => sb._id) },
         });
 
-        // Update the corresponding history records to 'canceled'
+        // Update the corresponding history records to 'expired'
         await mongoose
           .model("SeatBookingHistory")
           .updateMany(
             { bookingId: { $in: bookingIdsToClean }, action: "booked" },
-            { $set: { action: "canceled" } },
+            { $set: { action: "expired" } },
           );
 
         logger.info(
-          `Released ${deletedCount} seats from ${bookingIdsToClean.length} failed/cancelled bookings via scheduler.`,
+          `Released ${deletedCount} seats from ${bookingIdsToClean.length} failed/expired bookings via scheduler.`,
         );
       }
     } catch (error) {
@@ -352,7 +352,7 @@ const startAccountCleanupScheduler = () => {
 };
 
 /**
- * Schedules a job to check customer reputation and deactivate accounts with high cancellation rates.
+ * Schedules a job to check customer reputation and deactivate accounts with high expiration rates.
  * Runs daily at 1 AM.
  */
 const startReputationCheckScheduler = () => {
@@ -363,11 +363,11 @@ const startReputationCheckScheduler = () => {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      // Find customers with more than 10 cancellations in the last 30 days
+      // Find customers with more than 10 expirations in the last 30 days
       const suspiciousActivities = await ActivityLog.aggregate([
         {
           $match: {
-            action: "BOOK_CANCEL",
+            action: "BOOK_EXPIRE",
             status: "SUCCESS",
             timestamp: { $gt: thirtyDaysAgo },
           },
@@ -375,12 +375,12 @@ const startReputationCheckScheduler = () => {
         {
           $group: {
             _id: "$customerId",
-            cancelCount: { $sum: 1 },
+            expireCount: { $sum: 1 },
           },
         },
         {
           $match: {
-            cancelCount: { $gt: 10 },
+            expireCount: { $gt: 10 },
           },
         },
       ]);
@@ -402,23 +402,23 @@ const startReputationCheckScheduler = () => {
           );
 
           for (const customer of customersToDeactivate) {
-            const cancelCount = suspiciousActivities.find(
+            const expireCount = suspiciousActivities.find(
               (a) => a._id.toString() === customer._id.toString(),
-            ).cancelCount;
+            ).expireCount;
             await logActivity({
               customerId: customer._id,
               logType: "CUSTOMER",
               action: "ACCOUNT_DEACTIVATED",
               status: "SUCCESS",
               metadata: {
-                reason: "High cancellation rate",
-                cancelCount: cancelCount,
+                reason: "High expiration rate",
+                expireCount: expireCount,
                 period: "Last 30 days",
               },
             });
           }
           logger.info(
-            `Deactivated ${customersToDeactivate.length} accounts due to high cancellation rates.`,
+            `Deactivated ${customersToDeactivate.length} accounts due to high expiration rates.`,
           );
         }
       }

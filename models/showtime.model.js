@@ -476,12 +476,12 @@ showtimeSchema.pre("save", async function (next) {
       );
       const bookingsToCancel = await Booking.find({
         showtimeId: this._id,
-        booking_status: { $ne: "Cancelled" },
+        booking_status: { $ne: "Expired" },
       });
 
       if (bookingsToCancel.length > 0) {
         const cancellationPromises = bookingsToCancel.map((booking) =>
-          booking.cancelBooking(`Showtime was cancelled.`),
+          booking.expireBooking(`Showtime was cancelled.`),
         );
         await Promise.all(cancellationPromises);
         logger.info(

@@ -119,11 +119,11 @@ const updateBookingSchema = Joi.object({
         "Payment status must be one of: Pending, Completed, Failed, Refunded",
     }),
   booking_status: Joi.string()
-    .valid("Pending", "Confirmed", "Cancelled", "Completed")
+    .valid("Pending", "Completed", "Expired")
     .optional()
     .messages({
       "any.only":
-        "Booking status must be one of: Pending, Confirmed, Cancelled, Completed",
+        "Booking status must be one of: Pending, Completed, Expired",
     }),
   expired_at: Joi.date().optional(),
   noted: Joi.string().allow("").optional(),
@@ -157,7 +157,7 @@ const getAllBookingsQuerySchema = Joi.object({
   search: Joi.string().allow("").optional(),
   includeDeleted: Joi.boolean().default(false),
   booking_status: Joi.string()
-    .valid("Pending", "Confirmed", "Cancelled", "Completed")
+    .valid("Pending", "Completed", "Expired")
     .optional(),
   payment_status: Joi.string()
     .valid("Pending", "Completed", "Failed", "Refunded")

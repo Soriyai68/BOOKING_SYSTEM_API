@@ -508,7 +508,7 @@ class BookingController {
         const existingBooking = await Booking.findOne({
           customerId: customer._id,
           showtimeId: showtimeId,
-          booking_status: { $in: ["Pending", "Confirmed", "Completed"] },
+          booking_status: { $in: ["Pending", "Completed"] },
           deletedAt: null,
         });
 
@@ -754,11 +754,11 @@ class BookingController {
           type: notifType,
         } = NotificationController.generateBookingMessage(booking, movieTitle);
         const titleMap = {
-          booking_cancelled: "Booking Cancelled",
-          booking_confirmed: "Payment Confirmed",
-          pay_at_cinema: "Booking Confirmed",
+          booking_expired: "Booking Expired",
+          booking_completed: "Payment Completed",
+          pay_at_cinema: "Booking Completed",
           pending_payment: "Pending Payment",
-          booking_created: "Booking Confirmed",
+          booking_created: "Booking Completed",
         };
         NotificationController.notifyCustomer(
           booking.customerId._id,
@@ -850,15 +850,15 @@ class BookingController {
         ? updateData.seats.map((s) => s.toString())
         : originalSeatIds;
 
-      const statusChangedToCancelled =
-        updateData.booking_status === "Cancelled" &&
-        booking.booking_status !== "Cancelled";
+      const statusChangedToExpired =
+        updateData.booking_status === "Expired" &&
+        booking.booking_status !== "Expired";
 
       // If showtime changed OR seats changed OR status changed to cancelled, we need to update SeatBookings
       if (
         showtimeChanged ||
         JSON.stringify(newSeatIds) !== JSON.stringify(originalSeatIds) ||
-        statusChangedToCancelled
+        statusChangedToExpired
       ) {
         // 1. Release all original seats and update history
         if (originalSeatIds.length > 0) {
@@ -878,15 +878,15 @@ class BookingController {
           );
         }
 
-        if (statusChangedToCancelled) {
-          booking.noted = "Cancelled by admin (Edit)";
+        if (statusChangedToExpired) {
+          booking.noted = "Expired by admin (Edit)";
         }
 
         // 2. Check availability of new seats for the potentially new showtime
         // ONLY if the booking is NOT being cancelled
         if (
           newSeatIds.length > 0 &&
-          updateData.booking_status !== "Cancelled"
+          updateData.booking_status !== "Expired"
         ) {
           // --- Seat Rule Validation ---
           const SeatModel = mongoose.model("Seat");
@@ -983,11 +983,11 @@ class BookingController {
 
         // Use the correct title based on actual notification type
         const titleMap = {
-          booking_cancelled: "Booking Cancelled",
-          booking_confirmed: "Payment Confirmed",
-          pay_at_cinema: "Booking Confirmed",
+          booking_expired: "Booking Expired",
+          booking_completed: "Payment Completed",
+          pay_at_cinema: "Booking Completed",
           pending_payment: "Booking Created",
-          booking_created: "Booking Confirmed",
+          booking_created: "Booking Completed",
         };
 
         NotificationController.notifyCustomer(
@@ -1005,16 +1005,16 @@ class BookingController {
 
       // Log activity
       let actionType = "BOOK_UPDATE";
-      if (statusChangedToCancelled) {
+      if (statusChangedToExpired) {
         actionType =
           originalStatus === "Pending"
-            ? "BOOK_CANCEL_PENDING"
-            : "BOOK_CANCEL_CONFIRMED";
+            ? "BOOK_EXPIRE_PENDING"
+            : "BOOK_EXPIRE_COMPLETED";
       } else if (
-        updateData.booking_status === "Confirmed" &&
+        updateData.booking_status === "Completed" &&
         originalStatus === "Pending"
       ) {
-        actionType = "BOOK_CONFIRMED";
+        actionType = "BOOK_COMPLETED";
       }
 
       await logActivity({
@@ -1027,15 +1027,15 @@ class BookingController {
         metadata: {
           referenceCode: booking.reference_code,
           updatedFields: Object.keys(updateData),
-          reason: statusChangedToCancelled
-            ? "Cancelled by admin (Edit)"
+          reason: statusChangedToExpired
+            ? "Expired by admin (Edit)"
             : undefined,
         },
       });
 
       // Notify via Socket.io
       emitEvent("booking:updated", { booking: populatedBooking });
-      if (statusChangedToCancelled) {
+      if (statusChangedToExpired) {
         emitEvent("seat:released", { 
           showtimeId: booking.showtimeId._id, 
           seats: originalSeatIds 
@@ -1070,10 +1070,10 @@ class BookingController {
       }
 
       // Check if booking allows seat changes
-      if (booking.booking_status === "Cancelled") {
+      if (booking.booking_status === "Expired") {
         return res
           .status(400)
-          .json({ success: false, message: "Cannot edit seats for cancelled bookings" });
+          .json({ success: false, message: "Cannot edit seats for expired bookings" });
       }
 
       const originalSeatIds = booking.seats.map((s) => s.toString());
@@ -1092,7 +1092,7 @@ class BookingController {
             seatId: { $in: originalSeatIds },
             action: "booked",
           },
-          { $set: { action: "canceled" } },
+          { $set: { action: "expired" } },
         );
       }
 
@@ -1197,17 +1197,17 @@ class BookingController {
       }
 
       const isDeletion = req.method === "DELETE";
-      const actionType = isDeletion ? "BOOK_DELETE" : "BOOK_CANCEL";
+      const actionType = isDeletion ? "BOOK_DELETE" : "BOOK_EXPIRE";
       const successMessage = isDeletion
         ? "Booking deleted successfully"
-        : "Booking cancelled successfully";
+        : "Booking expired successfully";
       const logReason = isDeletion
         ? "Deleted by admin"
         : userRole === Role.USER || userRole === Role.CUSTOMER
-          ? "Cancelled by user"
-          : "Cancelled by admin";
+          ? "Expired by user"
+          : "Expired by admin";
 
-      await booking.cancelBooking(logReason);
+      await booking.expireBooking(logReason);
 
       // If it's a hard "delete" request, set deletedAt manually
       if (isDeletion) {
@@ -1229,9 +1229,9 @@ class BookingController {
         NotificationController.notifyCustomer(
           booking.customerId,
           {
-            type: isDeletion ? "booking_deleted" : "booking_cancelled",
-            title: isDeletion ? "Booking Deleted" : "Booking Cancelled",
-            message: `Your booking ${booking.reference_code} for "${movieTitle}" has been ${isDeletion ? "deleted" : "cancelled"}.`,
+            type: isDeletion ? "booking_deleted" : "booking_expired",
+            title: isDeletion ? "Booking Deleted" : "Booking Expired",
+            message: `Your booking ${booking.reference_code} for "${movieTitle}" has been ${isDeletion ? "deleted" : "expired"}.`,
             metadata: {
               ref: booking.reference_code,
               movie: movieTitle,
@@ -1257,7 +1257,7 @@ class BookingController {
       });
 
       // Notify via Socket.io
-      emitEvent("booking:cancelled", { id: booking._id });
+      emitEvent("booking:expired", { id: booking._id });
       emitEvent("seat:released", { 
         showtimeId: booking.showtimeId, 
         seats: booking.seats 
@@ -1274,7 +1274,7 @@ class BookingController {
       );
       res.status(500).json({
         success: false,
-        message: `Failed to ${req.method === "DELETE" ? "delete" : "cancel"} booking`,
+        message: `Failed to ${req.method === "DELETE" ? "delete" : "expire"} booking`,
       });
     }
   }
@@ -1341,7 +1341,7 @@ class BookingController {
       if (booking.seats && booking.seats.length > 0) {
         await SeatBookingHistory.updateMany(
           { bookingId: booking._id, action: "booked" },
-          { $set: { action: "canceled" } },
+          { $set: { action: "expired" } },
         );
       }
 
@@ -1441,16 +1441,12 @@ class BookingController {
   static async getAnalytics(req, res) {
     try {
       const totalBookings = await Booking.countDocuments({ deletedAt: null });
-      const confirmedBookings = await Booking.countDocuments({
-        booking_status: "Confirmed",
-        deletedAt: null,
-      });
-      const cancelledBookings = await Booking.countDocuments({
-        booking_status: "Cancelled",
-        deletedAt: null,
-      });
       const completedBookings = await Booking.countDocuments({
         booking_status: "Completed",
+        deletedAt: null,
+      });
+      const expiredBookings = await Booking.countDocuments({
+        booking_status: "Expired",
         deletedAt: null,
       });
 
@@ -1513,10 +1509,10 @@ class BookingController {
       // Optional: Check if the booking is expired and update status if needed
       if (
         booking.isExpired() &&
-        booking.booking_status === "Confirmed" &&
+        booking.booking_status === "Pending" &&
         booking.payment_status === "Pending"
       ) {
-        await booking.cancelBooking(
+        await booking.expireBooking(
           "Found expired while fetching by reference",
         );
       }
@@ -1533,8 +1529,8 @@ class BookingController {
     }
   }
 
-  // 11. CANCEL A BOOKING (USER)
-  static async cancelUserBooking(req, res) {
+  // 11. EXPIRE A BOOKING (USER - Previously Cancel)
+  static async expireUserBooking(req, res) {
     try {
       const { id } = req.params;
       // Staff uses userId, Customer uses customerId
@@ -1555,7 +1551,7 @@ class BookingController {
           .json({ success: false, message: "Booking not found" });
       }
 
-      // Ensure the booking belongs to the user trying to cancel it
+      // Ensure the booking belongs to the user trying to expire it
       if (
         booking.customerId &&
         customerId &&
@@ -1563,45 +1559,45 @@ class BookingController {
       ) {
         return res.status(403).json({
           success: false,
-          message: "Forbidden: You cannot cancel this booking",
+          message: "Forbidden: You cannot expire this booking",
         });
       }
 
-      if (booking.booking_status === "Cancelled") {
+      if (booking.booking_status === "Expired") {
         return res
           .status(400)
-          .json({ success: false, message: "Booking is already cancelled" });
+          .json({ success: false, message: "Booking is already expired" });
       }
 
-      // Optional: Add logic here to prevent cancellation if the showtime is too close
+      // Optional: Add logic here to prevent expiration if the showtime is too close
 
       const originalStatus = booking.booking_status;
-      await booking.cancelBooking("Cancelled by user");
+      await booking.expireBooking("Expired by user");
 
       await logActivity({
         customerId: customerId,
         action:
           originalStatus === "Pending"
-            ? "BOOK_CANCEL_PENDING"
-            : "BOOK_CANCEL_CONFIRMED",
+            ? "BOOK_EXPIRE_PENDING"
+            : "BOOK_EXPIRE_COMPLETED",
         status: "SUCCESS",
         targetId: booking._id,
         req,
         metadata: {
           referenceCode: booking.reference_code,
-          reason: "Cancelled by user",
+          reason: "Expired by user",
         },
       });
 
       res.status(200).json({
         success: true,
-        message: "Your booking has been successfully cancelled",
+        message: "Your booking has been successfully expired",
       });
     } catch (error) {
-      logger.error("User cancel booking error:", error);
+      logger.error("User expire booking error:", error);
       res
         .status(500)
-        .json({ success: false, message: "Failed to cancel your booking" });
+        .json({ success: false, message: "Failed to expire your booking" });
     }
   }
 }

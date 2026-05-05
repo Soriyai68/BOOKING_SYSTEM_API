@@ -1,32 +1,49 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-// Import models
+// Register all models to avoid MissingSchemaError
+require('../models/showtime.model');
+require('../models/movie.model');
+require('../models/seat.model');
+require('../models/seatBooking.model');
+require('../models/bookingTicket.model');
+require('../models/customer.model');
+require('../models/activityLog.model');
+require('../models/seatBookingHistory.model');
 const Booking = require('../models/booking.model');
 
 async function migrateBookingStatus() {
   try {
     // Connect to MongoDB
+    if (!process.env.MONGODB_URI) {
+        throw new Error('MONGODB_URI is not defined in .env');
+    }
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('Connected to MongoDB');
 
-    // Find all "Confirmed" bookings with "Completed" payment status
-    const confirmedBookings = await Booking.find({
-      booking_status: 'Confirmed',
-      payment_status: 'Completed',
-      deletedAt: null
-    });
+    // 1. Migrate "Confirmed" to "Completed"
+    const confirmedResult = await Booking.updateMany(
+      { booking_status: 'Confirmed' },
+      { $set: { booking_status: 'Completed' } }
+    );
+    console.log(`Migrated ${confirmedResult.modifiedCount} bookings from 'Confirmed' to 'Completed'`);
 
-    console.log(`Found ${confirmedBookings.length} bookings to migrate from Confirmed to Completed`);
+    // 2. Migrate "Cancelled" to "Expired"
+    const cancelledResult = await Booking.updateMany(
+      { booking_status: 'Cancelled' },
+      { $set: { booking_status: 'Expired' } }
+    );
+    console.log(`Migrated ${cancelledResult.modifiedCount} bookings from 'Cancelled' to 'Expired'`);
 
-    let migratedCount = 0;
-    for (const booking of confirmedBookings) {
-      await booking.transitionToCompleted();
-      migratedCount++;
-      console.log(`Migrated booking ${booking.reference_code} (${migratedCount}/${confirmedBookings.length})`);
-    }
+    // 3. Migrate SeatBookingHistory actions
+    const SeatBookingHistory = mongoose.model('SeatBookingHistory');
+    const historyResult = await SeatBookingHistory.updateMany(
+      { action: 'canceled' },
+      { $set: { action: 'expired' } }
+    );
+    console.log(`Migrated ${historyResult.modifiedCount} seat booking history records from 'canceled' to 'expired'`);
 
-    console.log(`Migration completed. ${migratedCount} bookings updated.`);
+    console.log('Migration completed successfully.');
   } catch (error) {
     console.error('Migration failed:', error);
   } finally {

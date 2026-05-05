@@ -43,7 +43,7 @@ class CustomerBookingController {
         pipeline.push({
           $match: {
             "showtime.show_date": { $gte: new Date(now.setHours(0, 0, 0, 0)) },
-            booking_status: { $in: ["Pending", "Confirmed"] },
+            booking_status: { $in: ["Pending", "Completed"] },
           },
         });
       } else {
@@ -56,7 +56,7 @@ class CustomerBookingController {
                   $lt: new Date(now.setHours(0, 0, 0, 0)),
                 },
               },
-              { booking_status: { $in: ["Cancelled", "Completed"] } },
+              { booking_status: { $in: ["Expired", "Completed"] } },
             ],
           },
         });
@@ -267,7 +267,7 @@ class CustomerBookingController {
                   $lt: new Date(now.setHours(0, 0, 0, 0)),
                 },
               },
-              { booking_status: { $in: ["Cancelled", "Completed"] } },
+              { booking_status: { $in: ["Expired", "Completed"] } },
             ],
           },
         },

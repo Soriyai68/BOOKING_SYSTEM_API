@@ -147,7 +147,7 @@ exports.getCustomerBookingFrequency = async (req, res) => {
       {
         $match: {
           deletedAt: null,
-          booking_status: { $in: ["Confirmed", "Completed"] },
+          booking_status: { $in: ["Completed"] },
         },
       },
       {
@@ -270,7 +270,7 @@ exports.getBookingStatusReport = async (req, res) => {
 exports.getPopularMoviesReport = async (req, res) => {
   try {
     const popularMovies = await reports.Booking.aggregate([
-      { $match: { deletedAt: null, booking_status: { $ne: "Cancelled" } } },
+      { $match: { deletedAt: null, booking_status: { $ne: "Expired" } } },
       {
         $lookup: {
           from: "showtimes",
@@ -310,7 +310,7 @@ exports.getSeatTypeRevenueReport = async (req, res) => {
     const seatTypeRevenue = await reports.Booking.aggregate([
       {
         $match: {
-          booking_status: { $in: ["Confirmed", "Completed"] },
+          booking_status: { $in: ["Completed"] },
           deletedAt: null,
         },
       },
@@ -594,7 +594,7 @@ exports.getDetailedMovieReport = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const limitNum = parseInt(limit);
 
-    const match = { deletedAt: null, booking_status: { $ne: "Cancelled" } };
+    const match = { deletedAt: null, booking_status: { $ne: "Expired" } };
 
     if (dateFrom || dateTo) {
       match.booking_date = {};
@@ -1206,14 +1206,11 @@ exports.getStaffPerformanceReport = async (req, res) => {
               _id: null,
               total_transactions: { $sum: 1 },
               total_revenue: { $sum: "$amount" },
-              confirmed_bookings: {
-                $sum: { $cond: [{ $eq: ["$booking.booking_status", "Confirmed"] }, 1, 0] },
-              },
               completed_bookings: {
                 $sum: { $cond: [{ $eq: ["$booking.booking_status", "Completed"] }, 1, 0] },
               },
-              cancelled_bookings: {
-                $sum: { $cond: [{ $eq: ["$booking.booking_status", "Cancelled"] }, 1, 0] },
+              expired_bookings: {
+                $sum: { $cond: [{ $eq: ["$booking.booking_status", "Expired"] }, 1, 0] },
               },
               pending_bookings: {
                 $sum: { $cond: [{ $eq: ["$booking.booking_status", "Pending"] }, 1, 0] },
@@ -1228,17 +1225,16 @@ exports.getStaffPerformanceReport = async (req, res) => {
         const stats = result[0] || {
           total_transactions: 0,
           total_revenue: 0,
-          confirmed_bookings: 0,
           completed_bookings: 0,
-          cancelled_bookings: 0,
+          expired_bookings: 0,
           pending_bookings: 0,
           total_seats_sold: 0,
           avg_transaction_value: 0,
         };
 
-        const totalBookings = stats.confirmed_bookings + stats.completed_bookings + stats.cancelled_bookings + stats.pending_bookings;
+        const totalBookings = stats.completed_bookings + stats.expired_bookings + stats.pending_bookings;
         const completionRate = totalBookings > 0 ? parseFloat(((stats.completed_bookings / totalBookings) * 100).toFixed(2)) : 0;
-        const cancellationRate = totalBookings > 0 ? parseFloat(((stats.cancelled_bookings / totalBookings) * 100).toFixed(2)) : 0;
+        const expirationRate = totalBookings > 0 ? parseFloat(((stats.expired_bookings / totalBookings) * 100).toFixed(2)) : 0;
 
         return {
           _id: staff._id,
@@ -1247,14 +1243,13 @@ exports.getStaffPerformanceReport = async (req, res) => {
           staff_role: staff.role,
           total_bookings_processed: stats.total_transactions,
           total_revenue_generated: parseFloat((stats.total_revenue || 0).toFixed(2)),
-          confirmed_bookings: stats.confirmed_bookings,
           completed_bookings: stats.completed_bookings,
-          cancelled_bookings: stats.cancelled_bookings,
+          expired_bookings: stats.expired_bookings,
           pending_bookings: stats.pending_bookings,
           total_seats_sold: stats.total_seats_sold,
           avg_booking_value: parseFloat((stats.avg_transaction_value || 0).toFixed(2)),
           completion_rate: completionRate,
-          cancellation_rate: cancellationRate,
+          expiration_rate: expirationRate,
         };
       })
     );

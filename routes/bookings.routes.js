@@ -45,13 +45,13 @@ router.delete(
 
 // === User-Specific Routes ===
 
-// PATCH /api/bookings/my-bookings/:id/cancel - Cancel a booking made by the user
+// PATCH /api/bookings/my-bookings/:id/expire - Expire a booking made by the user
 router.patch(
-  "/my-bookings/:id/cancel",
+  "/my-bookings/:id/expire",
   middlewares.authenticate,
   middlewares.authorize(Role.USER, Role.CUSTOMER), // Ensure only users can access
   middlewares.validator(bookingSchema.bookingIdParamSchema, "params"),
-  BookingController.cancelUserBooking,
+  BookingController.expireUserBooking,
 );
 
 // === Standard CRUD Routes ===
@@ -114,9 +114,9 @@ router.patch(
   BookingController.changeSeat,
 );
 
-// PATCH /api/bookings/:id/cancel - Cancel a booking (soft delete) - primarily for customers/QR
+// PATCH /api/bookings/:id/expire - Expire a booking (soft delete) - primarily for customers/QR
 router.patch(
-  "/:id/cancel",
+  "/:id/expire",
   middlewares.authenticate,
   middlewares.authorize(
     Role.ADMIN,

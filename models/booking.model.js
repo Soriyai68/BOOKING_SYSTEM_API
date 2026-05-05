@@ -46,7 +46,7 @@ const bookingSchema = new mongoose.Schema(
     },
     booking_status: {
       type: String,
-      enum: ["Pending", "Confirmed", "Cancelled", "Completed"],
+      enum: ["Pending", "Completed", "Expired"],
       default: "Pending",
     },
     reference_code: {
@@ -96,12 +96,12 @@ bookingSchema.statics.findByReferenceCode = function (referenceCode) {
 bookingSchema.statics.findActiveBookingsByShowtime = function (showtimeId) {
   return this.find({
     showtimeId,
-    booking_status: { $in: ["Confirmed", "Completed"] },
+    booking_status: "Completed",
     deletedAt: null,
   });
 };
 
-bookingSchema.statics.autoCancelExpiredBookings = async function () {
+bookingSchema.statics.autoExpireBookings = async function () {
   const now = new Date();
   const expiredBookings = await this.find({
     expired_at: { $lte: now },
@@ -111,7 +111,7 @@ bookingSchema.statics.autoCancelExpiredBookings = async function () {
   });
 
   for (const booking of expiredBookings) {
-    await booking.cancelBooking("Auto-cancelled due to expiration");
+    await booking.expireBooking("Auto-expired due to timeout");
   }
 
   return expiredBookings.map((b) => b._id);
@@ -137,15 +137,15 @@ bookingSchema.methods.isExpired = function () {
   return this.expired_at < new Date();
 };
 
-bookingSchema.methods.markAsConfirmed = async function (paymentId) {
-  if (this.booking_status === "Confirmed" || this.booking_status === "Completed") {
+bookingSchema.methods.markAsCompleted = async function (paymentId) {
+  if (this.booking_status === "Completed") {
     logger.warn(
-      `Booking ${this.reference_code} (ID: ${this._id}) is already confirmed/completed. Skipping ticket generation.`,
+      `Booking ${this.reference_code} (ID: ${this._id}) is already completed. Skipping ticket generation.`,
     );
     return this;
   }
   this.payment_status = "Completed";
-  this.booking_status = "Confirmed";
+  this.booking_status = "Completed";
   if (paymentId) {
     this.payment_id = paymentId;
   }
@@ -172,7 +172,7 @@ bookingSchema.methods.markAsConfirmed = async function (paymentId) {
   }
 
   logger.info(
-    `Booking ${this.reference_code} (ID: ${this._id}) status updated to Confirmed. Payment ID: ${paymentId}.`,
+    `Booking ${this.reference_code} (ID: ${this._id}) status updated to Completed. Payment ID: ${paymentId}.`,
   );
 
   // Fetch seat documents to generate tickets
@@ -186,90 +186,22 @@ bookingSchema.methods.markAsConfirmed = async function (paymentId) {
   return this.save();
 };
 
-// Keep the old method for backward compatibility but update its behavior
-bookingSchema.methods.markAsCompleted = async function (paymentId) {
-  return this.markAsConfirmed(paymentId);
+// Legacy support (alias for markAsCompleted)
+bookingSchema.methods.markAsConfirmed = async function (paymentId) {
+  return this.markAsCompleted(paymentId);
 };
 
-// Method to transition existing "Confirmed" bookings to "Completed"
-bookingSchema.methods.transitionToCompleted = async function () {
-  if (this.booking_status === "Confirmed" && this.payment_status === "Completed") {
-    this.booking_status = "Completed";
-    logger.info(
-      `Booking ${this.reference_code} (ID: ${this._id}) transitioned from Confirmed to Completed.`,
-    );
-    return this.save();
-  }
-  return this;
-};
-
-// Static method to auto-complete bookings after showtime ends
-bookingSchema.statics.autoCompleteFinishedShowtimes = async function () {
-  const Showtime = mongoose.model("Showtime");
-  const now = new Date();
-  
-  // Find all showtimes that have ended (show_date + end_time < now)
-  const finishedShowtimes = await Showtime.find({
-    $expr: {
-      $lt: [
-        {
-          $dateFromString: {
-            dateString: {
-              $concat: [
-                { $dateToString: { format: "%Y-%m-%d", date: "$show_date" } },
-                "T",
-                "$end_time",
-                ":00.000Z"
-              ]
-            }
-          }
-        },
-        now
-      ]
-    }
-  });
-
-  const finishedShowtimeIds = finishedShowtimes.map(s => s._id);
-  
-  if (finishedShowtimeIds.length === 0) {
-    return [];
-  }
-
-  // Find all confirmed bookings for these finished showtimes
-  const confirmedBookings = await this.find({
-    showtimeId: { $in: finishedShowtimeIds },
-    booking_status: "Confirmed",
-    payment_status: "Completed",
-    deletedAt: null,
-  });
-
-  // Transition them to completed
-  const completedBookings = [];
-  for (const booking of confirmedBookings) {
-    await booking.transitionToCompleted();
-    completedBookings.push(booking._id);
-  }
-
-  if (completedBookings.length > 0) {
-    logger.info(
-      `Auto-completed ${completedBookings.length} bookings for finished showtimes.`,
-    );
-  }
-
-  return completedBookings;
-};
-
-bookingSchema.methods.cancelBooking = async function (
-  reason = "Cancelled by user",
+bookingSchema.methods.expireBooking = async function (
+  reason = "Expired due to timeout",
 ) {
-  this.booking_status = "Cancelled";
+  this.booking_status = "Expired";
   this.noted = reason;
 
-  // Instead of creating a new history record, update the existing one to 'canceled'.
+  // Instead of creating a new history record, update the existing one to 'expired'.
   const SeatBookingHistory = mongoose.model("SeatBookingHistory");
   await SeatBookingHistory.updateMany(
     { bookingId: this._id, action: "booked" },
-    { $set: { action: "canceled" } },
+    { $set: { action: "expired" } },
   );
 
   // New logic: Release the seats by deleting the corresponding SeatBooking documents.

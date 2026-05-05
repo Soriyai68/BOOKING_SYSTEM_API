@@ -287,16 +287,16 @@ class NotificationController {
 
     // payment_method: "Bakong", "Cash", "PayAtCinema"
 
-    if (status === "Cancelled") {
-      type = "booking_cancelled";
-      message = `Your booking ${ref} for "${movieTitle}" has been cancelled.`;
+    if (status === "Expired") {
+      type = "booking_expired";
+      message = `Your booking ${ref} for "${movieTitle}" has expired.`;
     } else if (method === "PayAtCinema") {
       type = "pay_at_cinema";
-      message = `Booking ${ref} confirmed for "${movieTitle}".\n\n📌 Important: Please arrive at the cinema at least 30 minutes before the show starts to complete your payment and collect your tickets.\n\nSeats: ${seats}`;
+      message = `Booking ${ref} completed for "${movieTitle}".\n\n📌 Important: Please arrive at the cinema at least 30 minutes before the show starts to collect your tickets.\n\nSeats: ${seats}`;
     } else if (method === "Bakong") {
       if (booking.payment_status === "Completed") {
-        type = "booking_confirmed";
-        message = `Payment received! Your tickets for "${movieTitle}" are confirmed.\n\nReference: ${ref}\nSeats: ${seats}\n\nShow this code at the counter or use it to enter.`;
+        type = "booking_completed";
+        message = `Payment received! Your tickets for "${movieTitle}" are completed.\n\nReference: ${ref}\nSeats: ${seats}\n\nShow this code at the counter or use it to enter.`;
       } else {
         type = "pending_payment";
         message = `Booking ${ref} created for "${movieTitle}".\n\nPlease complete your Bakong payment to confirm your seats.\n\nSeats: ${seats}`;

@@ -342,7 +342,7 @@ class PaymentController {
           userId: req.user?.userId, // The Admin/Staff processing the cash
           customerId: booking.customerId,
           logType: "ADMIN",
-          action: "BOOK_CONFIRMED",
+          action: "BOOK_COMPLETED",
           status: "SUCCESS",
           targetId: booking._id,
           req,
@@ -456,7 +456,7 @@ class PaymentController {
               // Ensure booking is marked as completed (idempotent — the Payment
               // pre-save middleware may have already called this, but the guard
               // inside markAsConfirmed makes it safe to call again)
-              if (booking.booking_status !== "Confirmed" && booking.booking_status !== "Completed") {
+              if (booking.booking_status !== "Completed") {
                 await booking.markAsCompleted(payment._id);
               }
 
@@ -465,7 +465,7 @@ class PaymentController {
                 customerId: booking.customerId?._id || booking.customerId,
                 userId: req.user?.userId,
                 logType: "CUSTOMER",
-                action: "BOOK_CONFIRMED",
+                action: "BOOK_COMPLETED",
                 status: "SUCCESS",
                 targetId: booking._id,
                 req,
@@ -509,7 +509,7 @@ class PaymentController {
                 booking.customerId,
                 {
                   type: notifType,
-                  title: "Payment Confirmed",
+                  title: "Payment Completed",
                   message: dynamicMessage,
                   metadata,
                   relatedId: booking._id,
@@ -631,7 +631,7 @@ class PaymentController {
           await logActivity({
             customerId: booking.customerId?._id || booking.customerId,
             userId: req.user?.userId,
-            action: "BOOK_CREATE_CONFIRMED",
+            action: "BOOK_COMPLETED",
             status: "SUCCESS",
             targetId: booking._id,
             req,
@@ -668,7 +668,7 @@ class PaymentController {
             booking.customerId,
             {
               type: notifType,
-              title: "Payment Confirmed",
+              title: "Payment Completed",
               message: dynamicMessage,
               metadata,
               relatedId: booking._id,

@@ -22,7 +22,7 @@ const seatBookingHistorySchema = new mongoose.Schema(
     },
     action: {
       type: String,
-      enum: ["booked", "canceled"],
+      enum: ["booked", "expired"],
       required: true,
     },
   },
@@ -52,9 +52,9 @@ seatBookingHistorySchema.methods.isBooked = function () {
   return this.action === "booked";
 };
 
-// Instance method to check if the action was 'canceled'
-seatBookingHistorySchema.methods.isCanceled = function () {
-  return this.action === "canceled";
+// Instance method to check if the action was 'expired'
+seatBookingHistorySchema.methods.isExpired = function () {
+  return this.action === "expired";
 };
 
 module.exports = mongoose.model("SeatBookingHistory", seatBookingHistorySchema);
