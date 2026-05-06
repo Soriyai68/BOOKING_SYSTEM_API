@@ -755,7 +755,7 @@ class BookingController {
         } = NotificationController.generateBookingMessage(booking, movieTitle);
         const titleMap = {
           booking_expired: "Booking Expired",
-          booking_completed: "Payment Completed",
+          booking_confirmed: "Payment Completed",
           pay_at_cinema: "Booking Completed",
           pending_payment: "Pending Payment",
           booking_created: "Booking Completed",

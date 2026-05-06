@@ -342,7 +342,7 @@ class PaymentController {
           userId: req.user?.userId, // The Admin/Staff processing the cash
           customerId: booking.customerId,
           logType: "ADMIN",
-          action: "BOOK_COMPLETED",
+          action: "BOOK_CREATE_COMPLETED",
           status: "SUCCESS",
           targetId: booking._id,
           req,
@@ -465,7 +465,7 @@ class PaymentController {
                 customerId: booking.customerId?._id || booking.customerId,
                 userId: req.user?.userId,
                 logType: "CUSTOMER",
-                action: "BOOK_COMPLETED",
+                action: "BOOK_CREATE_COMPLETED",
                 status: "SUCCESS",
                 targetId: booking._id,
                 req,
@@ -631,7 +631,7 @@ class PaymentController {
           await logActivity({
             customerId: booking.customerId?._id || booking.customerId,
             userId: req.user?.userId,
-            action: "BOOK_COMPLETED",
+            action: "BOOK_CREATE_COMPLETED",
             status: "SUCCESS",
             targetId: booking._id,
             req,
