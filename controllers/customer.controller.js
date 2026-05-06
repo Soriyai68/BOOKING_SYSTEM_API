@@ -6,7 +6,7 @@ const { Providers } = require("../data");
 const Telegram = require("../utils/telegram");
 const AuthService = require("../service/auth.service");
 const { emitEvent, emitToRoom } = require("../utils/socket");
-const { normalizePhone } = require("../utils/helpers");
+const { normalizePhone, createPhoneRegex } = require("../utils/helpers");
 const NotificationController = require("./notification.controller");
 
 const PREFIX = "customer_";
