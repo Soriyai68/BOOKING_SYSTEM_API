@@ -295,7 +295,7 @@ class NotificationController {
       message = `Booking ${ref} completed for "${movieTitle}".\n\n📌 Important: Please arrive at the cinema at least 30 minutes before the show starts to collect your tickets.\n\nSeats: ${seats}`;
     } else if (method === "Bakong") {
       if (booking.payment_status === "Completed") {
-        type = "booking_completed";
+        type = "booking_confirmed";
         message = `Payment received! Your tickets for "${movieTitle}" are completed.\n\nReference: ${ref}\nSeats: ${seats}\n\nShow this code at the counter or use it to enter.`;
       } else {
         type = "pending_payment";
