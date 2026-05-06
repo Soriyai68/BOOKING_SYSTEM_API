@@ -60,6 +60,9 @@ class PaymentController {
   // 1. GET ALL PAYMENTS
   static async getAll(req, res) {
     try {
+      // Auto-expire payments before listing
+      await Payment.autoExpirePayments();
+
       const {
         page = 1,
         limit = 10,

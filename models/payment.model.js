@@ -31,7 +31,7 @@ const paymentSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Pending', 'Completed', 'Failed', 'Refunded'],
+        enum: ['Pending', 'Completed', 'Failed', 'Refunded', 'Expired'],
         default: 'Pending',
     },
     qr: {
@@ -77,6 +77,7 @@ paymentSchema.index({status: 1});
 paymentSchema.index({payment_method: 1});
 paymentSchema.index({deletedAt: 1});
 paymentSchema.index({createdAt: -1});
+paymentSchema.index({expiration: 1});
 
 // Instance methods
 paymentSchema.methods.markAsPaid = function (transactionDetails) {
@@ -116,6 +117,13 @@ paymentSchema.pre('save', async function (next) {
                 } else if (this.status === 'Failed' && booking.payment_status !== 'Failed') {
                     booking.payment_status = 'Failed';
                     await booking.save();
+                } else if (this.status === 'Expired' && booking.payment_status !== 'Expired') {
+                    booking.payment_status = 'Expired';
+                    if (booking.booking_status !== 'Expired') {
+                        await booking.expireBooking('Auto-expired due to payment timeout');
+                    } else {
+                        await booking.save();
+                    }
                 }
             }
         } catch (error) {
@@ -126,6 +134,31 @@ paymentSchema.pre('save', async function (next) {
     }
     next();
 });
+
+// Static methods
+paymentSchema.statics.autoExpirePayments = async function () {
+    const now = Date.now();
+    const expiredPayments = await this.find({
+        status: 'Pending',
+        expiration: { $lte: now },
+        deletedAt: null,
+    });
+
+    for (const payment of expiredPayments) {
+        payment.status = 'Expired';
+        payment.description = 'Auto-expired due to timeout (5 minutes)';
+        await payment.save();
+
+        // Also update the associated booking if it exists and is still pending
+        const Booking = mongoose.model('Booking');
+        const booking = await Booking.findById(payment.bookingId);
+        if (booking && booking.booking_status === 'Pending' && booking.payment_status === 'Pending') {
+            await booking.expireBooking('Auto-expired due to payment timeout');
+        }
+    }
+
+    return expiredPayments.map((p) => p._id);
+};
 
 const Payment = mongoose.model('Payment', paymentSchema);
 

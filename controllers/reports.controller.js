@@ -705,6 +705,9 @@ exports.getPaymentMethodAnalysisReport = async (req, res) => {
           pending_transactions: {
             $sum: { $cond: [{ $eq: ["$status", "Pending"] }, 1, 0] },
           },
+          expired_transactions: {
+            $sum: { $cond: [{ $eq: ["$status", "Expired"] }, 1, 0] },
+          },
           avg_transaction_value: { $avg: "$amount" },
           first_transaction_date: { $min: "$createdAt" },
           last_transaction_date: { $max: "$createdAt" },
@@ -719,6 +722,7 @@ exports.getPaymentMethodAnalysisReport = async (req, res) => {
           successful_transactions: 1,
           failed_transactions: 1,
           pending_transactions: 1,
+          expired_transactions: 1,
           success_rate: {
             $round: [
               {

@@ -7,6 +7,7 @@ const SeatBooking = require("../models/seatBooking.model");
 const Promotion = require("../models/promotion.model");
 const Customer = require("../models/customer.model");
 const ActivityLog = require("../models/activityLog.model");
+const Payment = require("../models/payment.model");
 const { logActivity } = require("../utils/activityLogger");
 
 const logger = require("../utils/logger");
@@ -129,6 +130,12 @@ const startBookingScheduler = () => {
   cron.schedule("* * * * *", async () => {
     logger.info("Running scheduled job to expire bookings...");
     try {
+      // Auto-expire payments first
+      const expiredPaymentIds = await Payment.autoExpirePayments();
+      if (expiredPaymentIds.length > 0) {
+        logger.info(`Auto-expired ${expiredPaymentIds.length} payments.`);
+      }
+
       const expiredBookingIds = await Booking.autoExpireBookings();
       if (expiredBookingIds.length > 0) {
         logger.info(
