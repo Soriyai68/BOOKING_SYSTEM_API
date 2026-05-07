@@ -1217,6 +1217,238 @@ class UserController {
       });
     }
   }
+
+  // Reset user password (admin function)
+  static async resetUserPassword(req, res) {
+    try {
+      const { id } = req.params;
+      const { newPassword, sendNotification = true } = req.body;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "User ID is required",
+        });
+      }
+
+      if (!newPassword) {
+        return res.status(400).json({
+          success: false,
+          message: "New password is required",
+        });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: "Password must be at least 6 characters long",
+        });
+      }
+
+      UserController.validateObjectId(id);
+
+      // Find the user
+      const user = await User.findById(id).select("+password");
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      // Check if new password is different from current password (if they have one)
+      if (user.password && user.password.length > 0) {
+        const isSamePassword = await user.comparePassword(newPassword);
+        if (isSamePassword) {
+          return res.status(400).json({
+            success: false,
+            message: "New password must be different from current password",
+          });
+        }
+      }
+
+      // Update password
+      user.password = newPassword;
+      user.passwordChangedAt = new Date();
+      if (req.user) {
+        user.updatedBy = req.user.userId;
+      }
+      await user.save();
+
+      // Send SMS notification if requested and user has phone
+      if (sendNotification && user.phone) {
+        try {
+          const twilio = require("twilio");
+          const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
+          const message = `Your password has been reset by an administrator. Please login with your new password. If you did not request this change, please contact support immediately.`;
+
+          await client.messages.create({
+            body: message,
+            from: process.env.TWILIO_PHONE_NUMBER,
+            to: user.phone,
+          });
+
+          logger.info(`Password reset notification sent to user: ${user.username}`);
+        } catch (twilioError) {
+          logger.warn("Failed to send password reset notification:", twilioError.message);
+          // Don't fail the request if SMS fails
+        }
+      }
+
+      logger.info(`Password reset by admin for user: ${user.username} (${user._id})`);
+
+      // Log activity
+      const { logActivity } = require("../utils/activityLogger");
+      await logActivity({
+        userId: req.user?.userId,
+        logType: "ADMIN",
+        action: "USER_PASSWORD_RESET",
+        targetId: user._id,
+        req,
+        metadata: {
+          username: user.username,
+          notificationSent: sendNotification && !!user.phone,
+        },
+      });
+
+      // Return user without password
+      const userResponse = user.toObject();
+      delete userResponse.password;
+
+      res.status(200).json({
+        success: true,
+        message: "User password reset successfully",
+        data: { 
+          user: userResponse,
+          notificationSent: sendNotification && !!user.phone,
+        },
+      });
+    } catch (error) {
+      if (error.message === "Invalid user ID format") {
+        return res.status(400).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      logger.error("Reset user password error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to reset user password",
+      });
+    }
+  }
+
+  // Update user phone number
+  static async updateUserPhone(req, res) {
+    try {
+      const { id } = req.params;
+      const { phone } = req.body;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "User ID is required",
+        });
+      }
+
+      if (!phone) {
+        return res.status(400).json({
+          success: false,
+          message: "Phone number is required",
+        });
+      }
+
+      // Validate phone format
+      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+      if (!phoneRegex.test(phone)) {
+        return res.status(400).json({
+          success: false,
+          message: "Please enter a valid phone number",
+        });
+      }
+
+      UserController.validateObjectId(id);
+
+      // Check if phone is already taken by another user
+      const existingUser = await User.findOne({
+        phone: phone,
+        _id: { $ne: id },
+      });
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message: "Phone number is already in use",
+        });
+      }
+
+      // Find and update user
+      const user = await User.findByIdAndUpdate(
+        id,
+        { 
+          phone: phone,
+          updatedBy: req.user?.userId,
+        },
+        {
+          new: true,
+          runValidators: true,
+          context: "query",
+        }
+      ).select("-password");
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      logger.info(`Updated phone number for user: ${id}`);
+
+      // Log activity
+      const { logActivity } = require("../utils/activityLogger");
+      await logActivity({
+        userId: req.user?.userId,
+        logType: "ADMIN",
+        action: "USER_PHONE_UPDATE",
+        targetId: user._id,
+        req,
+        metadata: {
+          username: user.username,
+          newPhone: phone,
+        },
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Phone number updated successfully",
+        data: { user },
+      });
+    } catch (error) {
+      if (error.message === "Invalid user ID format") {
+        return res.status(400).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      if (error.name === "ValidationError") {
+        return res.status(400).json({
+          success: false,
+          message: "Validation error",
+          errors: Object.values(error.errors).map((err) => err.message),
+        });
+      }
+
+      logger.error("Update user phone error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to update phone number",
+      });
+    }
+  }
 }
 
 module.exports = UserController;

@@ -68,6 +68,24 @@ router.put('/:id/photo',
   UserController.updateProfilePhoto
 );
 
+// PUT /api/users/:id/reset-password - Reset user password (Admin/SuperAdmin only)
+router.put('/:id/reset-password',
+  middlewares.authenticate,
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.validator(userSchema.userIdParamSchema, 'params'),
+  middlewares.validator(userSchema.resetUserPasswordSchema),
+  UserController.resetUserPassword
+);
+
+// PUT /api/users/:id/phone - Update user phone number (Admin/SuperAdmin only)
+router.put('/:id/phone',
+  middlewares.authenticate,
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+  middlewares.validator(userSchema.userIdParamSchema, 'params'),
+  middlewares.validator(userSchema.updatePhoneSchema),
+  UserController.updateUserPhone
+);
+
 // DELETE /api/users/:id/force - Permanently delete user (SuperAdmin only)
 router.delete('/:id/force-delete',
   middlewares.authenticate,

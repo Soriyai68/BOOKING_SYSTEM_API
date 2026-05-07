@@ -26,6 +26,12 @@ const userSchema = new mongoose.Schema({
     minlength: 2,
     maxlength: 50
   },
+  phone: {
+    type: String,
+    trim: true,
+    match: [/^\+?[1-9]\d{1,14}$/, 'Please enter a valid phone number'],
+    index: { unique: true, sparse: true } // sparse allows null values while maintaining uniqueness
+  },
   photoUrl: {
     type: String,
     trim: true

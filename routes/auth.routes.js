@@ -6,6 +6,8 @@ const {
   adminLoginSchema,
   changePasswordSchema,
   resetPasswordSchema,
+  requestPasswordResetSchema,
+  verifyPasswordResetSchema,
 } = require("../schemas/authSchema");
 
 const router = express.Router();
@@ -32,6 +34,18 @@ router.post(
   authenticate,
   validator(resetPasswordSchema),
   AuthController.resetPassword,
+);
+
+// Password reset with OTP (public routes)
+router.post(
+  "/request-password-reset",
+  validator(requestPasswordResetSchema),
+  AuthController.requestPasswordReset,
+);
+router.post(
+  "/verify-password-reset",
+  validator(verifyPasswordResetSchema),
+  AuthController.verifyPasswordResetOTP,
 );
 
 // Session management

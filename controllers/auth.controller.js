@@ -880,7 +880,7 @@ class AuthController {
     }
   }
 
-  // Reset password (no OTP — looks up user by username or email)
+  // Reset password (no OTP — admin tool for direct password reset)
   static async resetPassword(req, res) {
     try {
       const { username, newPassword } = req.body || {};
@@ -973,6 +973,340 @@ class AuthController {
       });
     } catch (error) {
       logger.error("Reset password error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  }
+
+  // Request password reset - sends OTP to user's phone
+  static async requestPasswordReset(req, res) {
+    try {
+      const { phone } = req.body || {};
+
+      if (!phone) {
+        return res.status(400).json({
+          success: false,
+          message: "Phone number is required",
+        });
+      }
+
+      // Validate phone format
+      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+      if (!phoneRegex.test(phone)) {
+        return res.status(400).json({
+          success: false,
+          message: "Please enter a valid phone number",
+        });
+      }
+
+      // Find user by phone
+      const user = await User.findOne({ phone });
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "No account found with this phone number",
+        });
+      }
+
+      // Check if user is active
+      if (!user.isActive) {
+        return res.status(403).json({
+          success: false,
+          message: "Your account has been deactivated. Please contact support.",
+        });
+      }
+
+      // Check rate limiting
+      try {
+        const redisClient = getRedisClient();
+        const rateLimitKey = `password_reset_rate_limit:${phone}`;
+        const attempts = await redisClient.get(rateLimitKey);
+
+        if (attempts && parseInt(attempts) >= 3) {
+          return res.status(429).json({
+            success: false,
+            message: "Too many password reset attempts. Please try again in 15 minutes.",
+          });
+        }
+
+        // Increment rate limit counter
+        const newAttempts = attempts ? parseInt(attempts) + 1 : 1;
+        await redisClient.setEx(rateLimitKey, 15 * 60, newAttempts.toString()); // 15 minutes
+      } catch (redisError) {
+        logger.warn("Redis rate limiting failed:", redisError.message);
+        // Continue without rate limiting if Redis is not available
+      }
+
+      // Generate OTP
+      const otpGenerator = require("otp-generator");
+      const otp = otpGenerator.generate(6, {
+        digits: true,
+        lowerCaseAlphabets: false,
+        upperCaseAlphabets: false,
+        specialChars: false,
+      });
+
+      // Store OTP in Redis
+      try {
+        const redisClient = getRedisClient();
+        const otpKey = `password_reset_otp:${phone}`;
+        const otpData = {
+          otp,
+          userId: user._id.toString(),
+          phone,
+          createdAt: Date.now(),
+          attempts: 0,
+        };
+
+        await redisClient.setEx(otpKey, 10 * 60, JSON.stringify(otpData)); // 10 minutes expiry
+        logger.info(`Password reset OTP stored for phone: ${phone}`);
+      } catch (redisError) {
+        logger.error("Failed to store password reset OTP:", redisError.message);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to generate password reset code. Please try again.",
+        });
+      }
+
+      // Send OTP via SMS
+      try {
+        const twilio = require("twilio");
+        const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
+        const message = `Your password reset code is: ${otp}. This code will expire in 10 minutes. Do not share this code with anyone.`;
+
+        await client.messages.create({
+          body: message,
+          from: process.env.TWILIO_PHONE_NUMBER,
+          to: phone,
+        });
+
+        logger.info(`Password reset OTP sent to phone: ${phone}`);
+      } catch (twilioError) {
+        logger.error("Failed to send password reset OTP:", twilioError.message);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to send password reset code. Please try again.",
+        });
+      }
+
+      // Log activity
+      const { logActivity } = require("../utils/activityLogger");
+      await logActivity({
+        userId: user._id,
+        logType: "USER",
+        action: "PASSWORD_RESET_REQUEST",
+        req,
+        metadata: {
+          phone,
+          username: user.username,
+        },
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Password reset code sent to your phone number",
+        data: {
+          phone: phone.replace(/(\+\d{1,3})\d{4,}(\d{4})/, "$1****$2"), // Mask phone number
+          expiresIn: "10 minutes",
+        },
+      });
+    } catch (error) {
+      logger.error("Request password reset error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  }
+
+  // Verify OTP and reset password
+  static async verifyPasswordResetOTP(req, res) {
+    try {
+      const { phone, otp, newPassword } = req.body || {};
+
+      if (!phone || !otp || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          message: "Phone number, OTP, and new password are required",
+        });
+      }
+
+      // Validate phone format
+      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+      if (!phoneRegex.test(phone)) {
+        return res.status(400).json({
+          success: false,
+          message: "Please enter a valid phone number",
+        });
+      }
+
+      // Validate password length
+      if (newPassword.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: "Password must be at least 6 characters long",
+        });
+      }
+
+      // Get OTP data from Redis
+      let otpData;
+      try {
+        const redisClient = getRedisClient();
+        const otpKey = `password_reset_otp:${phone}`;
+        const storedOtpData = await redisClient.get(otpKey);
+
+        if (!storedOtpData) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid or expired password reset code",
+          });
+        }
+
+        otpData = JSON.parse(storedOtpData);
+
+        // Check attempt limit
+        if (otpData.attempts >= 3) {
+          await redisClient.del(otpKey);
+          return res.status(400).json({
+            success: false,
+            message: "Too many failed attempts. Please request a new password reset code.",
+          });
+        }
+
+        // Verify OTP
+        if (otpData.otp !== otp) {
+          // Increment attempts
+          otpData.attempts += 1;
+          await redisClient.setEx(otpKey, await redisClient.ttl(otpKey), JSON.stringify(otpData));
+
+          return res.status(400).json({
+            success: false,
+            message: `Invalid password reset code. ${3 - otpData.attempts} attempts remaining.`,
+          });
+        }
+
+        // OTP is valid, delete it from Redis
+        await redisClient.del(otpKey);
+      } catch (redisError) {
+        logger.error("Redis operations failed during OTP verification:", redisError.message);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to verify password reset code. Please try again.",
+        });
+      }
+
+      // Find user
+      const user = await User.findById(otpData.userId).select("+password");
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      // Check if user is active
+      if (!user.isActive) {
+        return res.status(403).json({
+          success: false,
+          message: "Your account has been deactivated. Please contact support.",
+        });
+      }
+
+      // Check if new password is different from current password (if they have one)
+      if (user.password && user.password.length > 0) {
+        const isSamePassword = await user.comparePassword(newPassword);
+        if (isSamePassword) {
+          return res.status(400).json({
+            success: false,
+            message: "New password must be different from current password",
+          });
+        }
+      }
+
+      // Update password
+      user.password = newPassword;
+      user.passwordChangedAt = new Date();
+      await user.save();
+
+      // Invalidate all existing sessions
+      try {
+        const redisClient = getRedisClient();
+
+        const refreshTokenKey = `refresh_token:${user._id}`;
+        await redisClient.del(refreshTokenKey);
+
+        const userSessionsKey = `user_sessions:${user._id}`;
+        const adminSessionsKey = `admin_sessions:${user._id}`;
+
+        let sessionIds = [];
+        let adminSessionIds = [];
+
+        if (redisClient.sMembers) {
+          sessionIds = (await redisClient.sMembers(userSessionsKey)) || [];
+          adminSessionIds =
+            (await redisClient.sMembers(adminSessionsKey)) || [];
+        } else if (redisClient.smembers) {
+          sessionIds = (await redisClient.smembers(userSessionsKey)) || [];
+          adminSessionIds =
+            (await redisClient.smembers(adminSessionsKey)) || [];
+        }
+
+        const allSessionKeys = [
+          ...sessionIds.map((id) => `session:${user._id}:${id}`),
+          ...adminSessionIds.map((id) => `admin_session:${user._id}:${id}`),
+        ];
+
+        if (allSessionKeys.length > 0) {
+          await redisClient.del(allSessionKeys);
+        }
+
+        await redisClient.del([userSessionsKey, adminSessionsKey]);
+
+        // Clear rate limiting
+        const rateLimitKey = `password_reset_rate_limit:${phone}`;
+        await redisClient.del(rateLimitKey);
+
+        logger.info(
+          `All sessions cleared for user ${user._id} after password reset via OTP`,
+        );
+      } catch (redisError) {
+        logger.warn(
+          "Redis operations failed during password reset:",
+          redisError.message,
+        );
+      }
+
+      // Log activity
+      const { logActivity } = require("../utils/activityLogger");
+      await logActivity({
+        userId: user._id,
+        logType: "USER",
+        action: "PASSWORD_RESET_SUCCESS",
+        req,
+        metadata: {
+          phone,
+          username: user.username,
+          method: "OTP",
+        },
+      });
+
+      logger.info(`Password reset successfully via OTP for user: ${user.username || user.email}`);
+
+      res.status(200).json({
+        success: true,
+        message: "Password reset successfully. You can now login with your new password.",
+        data: {
+          username: user.username,
+          email: user.email,
+        },
+      });
+    } catch (error) {
+      logger.error("Verify password reset OTP error:", error);
       res.status(500).json({
         success: false,
         message: "Internal server error",

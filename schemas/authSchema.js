@@ -74,6 +74,46 @@ const resetPasswordSchema = Joi.object({
   })
 });
 
+// Request password reset schema (public route)
+const requestPasswordResetSchema = Joi.object({
+  phone: Joi.string()
+    .pattern(/^\+?[1-9]\d{1,14}$/)
+    .required()
+    .messages({
+      'string.pattern.base': 'Please enter a valid phone number',
+      'any.required': 'Phone number is required'
+    })
+});
+
+// Verify password reset OTP schema (public route)
+const verifyPasswordResetSchema = Joi.object({
+  phone: Joi.string()
+    .pattern(/^\+?[1-9]\d{1,14}$/)
+    .required()
+    .messages({
+      'string.pattern.base': 'Please enter a valid phone number',
+      'any.required': 'Phone number is required'
+    }),
+  otp: Joi.string()
+    .length(6)
+    .pattern(/^\d{6}$/)
+    .required()
+    .messages({
+      'string.length': 'OTP must be exactly 6 digits',
+      'string.pattern.base': 'OTP must contain only numbers',
+      'any.required': 'OTP is required'
+    }),
+  newPassword: Joi.string().min(6).required().messages({
+    'string.min': 'New password must be at least 6 characters',
+    'string.empty': 'New password is required',
+    'any.required': 'New password is required'
+  }),
+  confirmPassword: Joi.string().valid(Joi.ref('newPassword')).required().messages({
+    'any.only': 'Passwords do not match',
+    'any.required': 'Password confirmation is required'
+  })
+});
+
 module.exports = {
   // Admin auth
   adminLoginSchema,
@@ -87,5 +127,7 @@ module.exports = {
 
   // Password management schemas
   changePasswordSchema,
-  resetPasswordSchema
+  resetPasswordSchema,
+  requestPasswordResetSchema,
+  verifyPasswordResetSchema
 };

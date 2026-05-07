@@ -333,6 +333,33 @@ const sessionIdParamSchema = Joi.object({
   })
 });
 
+// Reset user password schema (admin function)
+const resetUserPasswordSchema = Joi.object({
+  newPassword: Joi.string().min(6).required().messages({
+    'string.min': 'New password must be at least 6 characters',
+    'string.empty': 'New password is required',
+    'any.required': 'New password is required'
+  }),
+  confirmPassword: Joi.string().valid(Joi.ref('newPassword')).required().messages({
+    'any.only': 'Passwords do not match',
+    'any.required': 'Password confirmation is required'
+  }),
+  sendNotification: Joi.boolean().default(true).messages({
+    'boolean.base': 'sendNotification must be a boolean value'
+  })
+});
+
+// Update phone schema
+const updatePhoneSchema = Joi.object({
+  phone: Joi.string()
+    .pattern(/^\+?[1-9]\d{1,14}$/)
+    .required()
+    .messages({
+      'string.pattern.base': 'Please enter a valid phone number',
+      'any.required': 'Phone number is required'
+    })
+});
+
 module.exports = {
   // Core CRUD schemas
   createUserSchema,
@@ -356,5 +383,9 @@ module.exports = {
   // Utility schemas
   activateUserSchema,
   sessionSchema,
-  paginationSchema
+  paginationSchema,
+  
+  // Password management schemas
+  resetUserPasswordSchema,
+  updatePhoneSchema
 };
