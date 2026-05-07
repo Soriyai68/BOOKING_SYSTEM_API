@@ -8,6 +8,136 @@ const calculateTrend = (current, previous) => {
   return parseFloat(trend.toFixed(1));
 };
 
+// Diagnostic function to check revenue data integrity
+exports.getDiagnosticRevenue = async (req, res) => {
+  try {
+    // Check all payment statuses
+    const paymentStatusBreakdown = await reports.Payment.aggregate([
+      { $match: { deletedAt: null } },
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+          totalAmount: { $sum: "$amount" },
+          avgAmount: { $avg: "$amount" }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Check all booking statuses
+    const bookingStatusBreakdown = await reports.Booking.aggregate([
+      { $match: { deletedAt: null } },
+      {
+        $group: {
+          _id: {
+            booking_status: "$booking_status",
+            payment_status: "$payment_status"
+          },
+          count: { $sum: 1 },
+          totalAmount: { $sum: "$total_price" },
+          avgAmount: { $avg: "$total_price" }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Check recent payments
+    const recentPayments = await reports.Payment.find(
+      { deletedAt: null },
+      { amount: 1, status: 1, payment_method: 1, createdAt: 1, bookingId: 1 }
+    ).sort({ createdAt: -1 }).limit(10);
+
+    // Check recent bookings
+    const recentBookings = await reports.Booking.find(
+      { deletedAt: null },
+      { total_price: 1, booking_status: 1, payment_status: 1, createdAt: 1, reference_code: 1 }
+    ).sort({ createdAt: -1 }).limit(10);
+
+    // Check for orphaned payments (payments without bookings)
+    const orphanedPayments = await reports.Payment.aggregate([
+      { $match: { deletedAt: null } },
+      {
+        $lookup: {
+          from: "bookings",
+          localField: "bookingId",
+          foreignField: "_id",
+          as: "booking"
+        }
+      },
+      {
+        $match: {
+          $or: [
+            { booking: { $size: 0 } },
+            { "booking.deletedAt": { $ne: null } }
+          ]
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          amount: 1,
+          status: 1,
+          bookingId: 1,
+          createdAt: 1
+        }
+      }
+    ]);
+
+    // Check for bookings without payments
+    const bookingsWithoutPayments = await reports.Booking.aggregate([
+      { $match: { deletedAt: null, booking_status: "Completed" } },
+      {
+        $lookup: {
+          from: "payments",
+          localField: "_id",
+          foreignField: "bookingId",
+          as: "payments"
+        }
+      },
+      {
+        $match: {
+          $or: [
+            { payments: { $size: 0 } },
+            { "payments.status": { $ne: "Completed" } }
+          ]
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          total_price: 1,
+          booking_status: 1,
+          payment_status: 1,
+          reference_code: 1,
+          createdAt: 1
+        }
+      }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        paymentStatusBreakdown,
+        bookingStatusBreakdown,
+        recentPayments,
+        recentBookings,
+        orphanedPayments,
+        bookingsWithoutPayments,
+        summary: {
+          totalPayments: await reports.Payment.countDocuments({ deletedAt: null }),
+          completedPayments: await reports.Payment.countDocuments({ status: "Completed", deletedAt: null }),
+          totalBookings: await reports.Booking.countDocuments({ deletedAt: null }),
+          completedBookings: await reports.Booking.countDocuments({ booking_status: "Completed", deletedAt: null })
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Diagnostic Revenue Error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 //repost total customers
 exports.getTotalCustomers = async (req, res) => {
   try {
@@ -65,18 +195,60 @@ exports.getTotalBookings = async (req, res) => {
 //report total revenue
 exports.getTotalRevenue = async (req, res) => {
   try {
+    // Get total revenue from completed payments
     const totalRevenueResult = await reports.Payment.aggregate([
       { $match: { status: "Completed", deletedAt: null } },
       {
         $group: {
           _id: null,
           totalRevenue: { $sum: "$amount" },
+          paymentCount: { $sum: 1 },
+          avgPayment: { $avg: "$amount" },
+          minPayment: { $min: "$amount" },
+          maxPayment: { $max: "$amount" }
         },
       },
     ]);
 
-    const totalRevenue =
-      totalRevenueResult.length > 0 ? totalRevenueResult[0].totalRevenue : 0;
+    const paymentRevenue = totalRevenueResult.length > 0 ? totalRevenueResult[0] : {
+      totalRevenue: 0,
+      paymentCount: 0,
+      avgPayment: 0,
+      minPayment: 0,
+      maxPayment: 0
+    };
+
+    // Also get revenue from completed bookings as backup/verification
+    const bookingRevenueResult = await reports.Booking.aggregate([
+      { 
+        $match: { 
+          booking_status: "Completed", 
+          payment_status: "Completed",
+          deletedAt: null 
+        } 
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$total_price" },
+          bookingCount: { $sum: 1 },
+          avgBooking: { $avg: "$total_price" },
+          minBooking: { $min: "$total_price" },
+          maxBooking: { $max: "$total_price" }
+        },
+      },
+    ]);
+
+    const bookingRevenue = bookingRevenueResult.length > 0 ? bookingRevenueResult[0] : {
+      totalRevenue: 0,
+      bookingCount: 0,
+      avgBooking: 0,
+      minBooking: 0,
+      maxBooking: 0
+    };
+
+    // Use payment revenue as primary, booking revenue as fallback
+    const totalRevenue = paymentRevenue.totalRevenue > 0 ? paymentRevenue.totalRevenue : bookingRevenue.totalRevenue;
 
     // Trend calculation
     const now = new Date();
@@ -84,18 +256,36 @@ exports.getTotalRevenue = async (req, res) => {
     const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
     const getRevenueForPeriod = async (start, end) => {
-      const match = {
+      const paymentMatch = {
         status: "Completed",
         deletedAt: null,
         createdAt: { $gte: start },
       };
-      if (end) match.createdAt.$lt = end;
+      if (end) paymentMatch.createdAt.$lt = end;
 
-      const result = await reports.Payment.aggregate([
-        { $match: match },
+      const paymentResult = await reports.Payment.aggregate([
+        { $match: paymentMatch },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]);
-      return result.length > 0 ? result[0].total : 0;
+
+      // Fallback to booking data if no payment data
+      if (!paymentResult.length || paymentResult[0].total === 0) {
+        const bookingMatch = {
+          booking_status: "Completed",
+          payment_status: "Completed",
+          deletedAt: null,
+          createdAt: { $gte: start },
+        };
+        if (end) bookingMatch.createdAt.$lt = end;
+
+        const bookingResult = await reports.Booking.aggregate([
+          { $match: bookingMatch },
+          { $group: { _id: null, total: { $sum: "$total_price" } } },
+        ]);
+        return bookingResult.length > 0 ? bookingResult[0].total : 0;
+      }
+
+      return paymentResult.length > 0 ? paymentResult[0].total : 0;
     };
 
     const [currentPeriod, previousPeriod] = await Promise.all([
@@ -105,8 +295,33 @@ exports.getTotalRevenue = async (req, res) => {
 
     const trend = calculateTrend(currentPeriod, previousPeriod);
 
-    res.status(200).json({ totalRevenue, trend });
+    // Enhanced response with debugging information
+    res.status(200).json({ 
+      totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+      trend,
+      debug: {
+        paymentData: {
+          revenue: parseFloat(paymentRevenue.totalRevenue.toFixed(2)),
+          count: paymentRevenue.paymentCount,
+          average: parseFloat(paymentRevenue.avgPayment.toFixed(2)),
+          min: parseFloat(paymentRevenue.minPayment.toFixed(2)),
+          max: parseFloat(paymentRevenue.maxPayment.toFixed(2))
+        },
+        bookingData: {
+          revenue: parseFloat(bookingRevenue.totalRevenue.toFixed(2)),
+          count: bookingRevenue.bookingCount,
+          average: parseFloat(bookingRevenue.avgBooking.toFixed(2)),
+          min: parseFloat(bookingRevenue.minBooking.toFixed(2)),
+          max: parseFloat(bookingRevenue.maxBooking.toFixed(2))
+        },
+        trendData: {
+          currentPeriod: parseFloat(currentPeriod.toFixed(2)),
+          previousPeriod: parseFloat(previousPeriod.toFixed(2))
+        }
+      }
+    });
   } catch (error) {
+    console.error("Total Revenue Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -222,28 +437,117 @@ exports.getCustomerBookingFrequency = async (req, res) => {
 // get revenue report (grouped by date)
 exports.getRevenueReport = async (req, res) => {
   try {
-    const { timeframe = "month" } = req.query;
+    const { timeframe = "month", source = "payments" } = req.query;
     let groupBy = {
       $dateToString: { format: "%Y-%m-%d", date: "$payment_date" },
     };
 
     if (timeframe === "year") {
       groupBy = { $dateToString: { format: "%Y-%m", date: "$payment_date" } };
+    } else if (timeframe === "week") {
+      groupBy = { $dateToString: { format: "%Y-%U", date: "$payment_date" } };
     }
 
-    const revenueData = await reports.Payment.aggregate([
-      { $match: { status: "Completed", deletedAt: null } },
-      {
-        $group: {
-          _id: groupBy,
-          revenue: { $sum: "$amount" },
-        },
-      },
-      { $sort: { _id: 1 } },
-    ]);
+    let revenueData = [];
 
-    res.status(200).json({ success: true, data: revenueData });
+    if (source === "payments" || source === "both") {
+      // Get revenue from payments
+      const paymentRevenue = await reports.Payment.aggregate([
+        { $match: { status: "Completed", deletedAt: null } },
+        {
+          $group: {
+            _id: groupBy,
+            revenue: { $sum: "$amount" },
+            count: { $sum: 1 }
+          },
+        },
+        {
+          $addFields: {
+            source: "payments"
+          }
+        },
+        { $sort: { _id: 1 } },
+      ]);
+      revenueData = [...revenueData, ...paymentRevenue];
+    }
+
+    if (source === "bookings" || source === "both") {
+      // Get revenue from bookings as backup
+      let bookingGroupBy = {
+        $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+      };
+
+      if (timeframe === "year") {
+        bookingGroupBy = { $dateToString: { format: "%Y-%m", date: "$createdAt" } };
+      } else if (timeframe === "week") {
+        bookingGroupBy = { $dateToString: { format: "%Y-%U", date: "$createdAt" } };
+      }
+
+      const bookingRevenue = await reports.Booking.aggregate([
+        { 
+          $match: { 
+            booking_status: "Completed", 
+            payment_status: "Completed",
+            deletedAt: null 
+          } 
+        },
+        {
+          $group: {
+            _id: bookingGroupBy,
+            revenue: { $sum: "$total_price" },
+            count: { $sum: 1 }
+          },
+        },
+        {
+          $addFields: {
+            source: "bookings"
+          }
+        },
+        { $sort: { _id: 1 } },
+      ]);
+      revenueData = [...revenueData, ...bookingRevenue];
+    }
+
+    // If both sources requested, merge the data by date
+    if (source === "both") {
+      const mergedData = {};
+      revenueData.forEach(item => {
+        const key = item._id;
+        if (!mergedData[key]) {
+          mergedData[key] = {
+            _id: key,
+            paymentRevenue: 0,
+            bookingRevenue: 0,
+            paymentCount: 0,
+            bookingCount: 0
+          };
+        }
+        if (item.source === "payments") {
+          mergedData[key].paymentRevenue = item.revenue;
+          mergedData[key].paymentCount = item.count;
+        } else {
+          mergedData[key].bookingRevenue = item.revenue;
+          mergedData[key].bookingCount = item.count;
+        }
+        mergedData[key].totalRevenue = mergedData[key].paymentRevenue + mergedData[key].bookingRevenue;
+      });
+      revenueData = Object.values(mergedData).sort((a, b) => a._id.localeCompare(b._id));
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      data: revenueData,
+      metadata: {
+        timeframe,
+        source,
+        totalRecords: revenueData.length,
+        totalRevenue: revenueData.reduce((sum, item) => {
+          return sum + (item.totalRevenue || item.revenue || 0);
+        }, 0)
+      }
+    });
   } catch (error) {
+    console.error("Revenue Report Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -672,116 +976,96 @@ exports.getDetailedMovieReport = async (req, res) => {
   }
 };
 
-// get payment method analysis report
+// get payment method analysis report (only completed payments for accurate revenue)
 exports.getPaymentMethodAnalysisReport = async (req, res) => {
   try {
     const { dateFrom, dateTo } = req.query;
 
-    const match = { deletedAt: null };
+    // Only include completed payments to match dashboard total revenue calculation
+    const match = { status: "Completed", deletedAt: null };
 
-    if (dateFrom || dateTo) {
-      match.createdAt = {};
-      if (dateFrom) match.createdAt.$gte = new Date(dateFrom);
-      if (dateTo) {
-        const end = new Date(dateTo);
-        end.setHours(23, 59, 59, 999);
-        match.createdAt.$lte = end;
+      if (dateFrom || dateTo) {
+        match.createdAt = {};
+        if (dateFrom) match.createdAt.$gte = new Date(dateFrom);
+        if (dateTo) {
+          const end = new Date(dateTo);
+          end.setHours(23, 59, 59, 999);
+          match.createdAt.$lte = end;
+        }
       }
+
+      const paymentMethodData = await reports.Payment.aggregate([
+        { $match: match },
+        {
+          $group: {
+            _id: "$payment_method",
+            total_transactions: { $sum: 1 },
+            total_revenue: { $sum: "$amount" },
+            successful_transactions: { $sum: 1 }, // All are successful since we filter by Completed
+            failed_transactions: { $sum: 0 }, // None since we filter by Completed
+            pending_transactions: { $sum: 0 }, // None since we filter by Completed
+            expired_transactions: { $sum: 0 }, // None since we filter by Completed
+            avg_transaction_value: { $avg: "$amount" },
+            first_transaction_date: { $min: "$createdAt" },
+            last_transaction_date: { $max: "$createdAt" },
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            payment_method: "$_id",
+            total_transactions: 1,
+            total_revenue: { $round: ["$total_revenue", 2] },
+            successful_transactions: 1,
+            failed_transactions: 1,
+            pending_transactions: 1,
+            expired_transactions: 1,
+            success_rate: 100, // Always 100% since we only include completed payments
+            failed_rate: 0, // Always 0% since we only include completed payments
+            avg_transaction_value: { $round: ["$avg_transaction_value", 2] },
+            first_transaction_date: 1,
+            last_transaction_date: 1,
+          },
+        },
+        { $sort: { total_revenue: -1 } },
+      ]);
+
+      // Calculate total revenue for contribution percentage
+      const totalRevenue = paymentMethodData.reduce(
+        (sum, item) => sum + item.total_revenue,
+        0
+      );
+
+      // Add revenue contribution percentage
+      const enrichedData = paymentMethodData.map((item) => ({
+        ...item,
+        revenue_contribution_percentage:
+          totalRevenue > 0
+            ? parseFloat(((item.total_revenue / totalRevenue) * 100).toFixed(2))
+            : 0,
+      }));
+
+      res.status(200).json({ 
+      success: true, 
+      data: enrichedData,
+      debug: {
+        totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+        paymentMethodCount: enrichedData.length,
+        onlyCompletedPayments: true,
+        dateFilter: { dateFrom, dateTo }
+      }
+    });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
     }
+  };
 
-    const paymentMethodData = await reports.Payment.aggregate([
-      { $match: match },
-      {
-        $group: {
-          _id: "$payment_method",
-          total_transactions: { $sum: 1 },
-          total_revenue: { $sum: "$amount" },
-          successful_transactions: {
-            $sum: { $cond: [{ $eq: ["$status", "Completed"] }, 1, 0] },
-          },
-          failed_transactions: {
-            $sum: { $cond: [{ $eq: ["$status", "Failed"] }, 1, 0] },
-          },
-          pending_transactions: {
-            $sum: { $cond: [{ $eq: ["$status", "Pending"] }, 1, 0] },
-          },
-          expired_transactions: {
-            $sum: { $cond: [{ $eq: ["$status", "Expired"] }, 1, 0] },
-          },
-          avg_transaction_value: { $avg: "$amount" },
-          first_transaction_date: { $min: "$createdAt" },
-          last_transaction_date: { $max: "$createdAt" },
-        },
-      },
-      {
-        $project: {
-          _id: 1,
-          payment_method: "$_id",
-          total_transactions: 1,
-          total_revenue: { $round: ["$total_revenue", 2] },
-          successful_transactions: 1,
-          failed_transactions: 1,
-          pending_transactions: 1,
-          expired_transactions: 1,
-          success_rate: {
-            $round: [
-              {
-                $multiply: [
-                  {
-                    $divide: ["$successful_transactions", "$total_transactions"],
-                  },
-                  100,
-                ],
-              },
-              2,
-            ],
-          },
-          failed_rate: {
-            $round: [
-              {
-                $multiply: [
-                  { $divide: ["$failed_transactions", "$total_transactions"] },
-                  100,
-                ],
-              },
-              2,
-            ],
-          },
-          avg_transaction_value: { $round: ["$avg_transaction_value", 2] },
-          first_transaction_date: 1,
-          last_transaction_date: 1,
-        },
-      },
-      { $sort: { total_revenue: -1 } },
-    ]);
-
-    // Calculate total revenue for contribution percentage
-    const totalRevenue = paymentMethodData.reduce(
-      (sum, item) => sum + item.total_revenue,
-      0
-    );
-
-    // Add revenue contribution percentage
-    const enrichedData = paymentMethodData.map((item) => ({
-      ...item,
-      revenue_contribution_percentage:
-        totalRevenue > 0
-          ? parseFloat(((item.total_revenue / totalRevenue) * 100).toFixed(2))
-          : 0,
-    }));
-
-    res.status(200).json({ success: true, data: enrichedData });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// get showtime utilization report
-exports.getShowtimeUtilizationReport = async (req, res) => {
-  try {
-    const { dateFrom, dateTo, page = 1, limit = 10 } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const limitNum = parseInt(limit);
+  // get showtime utilization report
+  exports.getShowtimeUtilizationReport = async (req, res) => {
+    try {
+      const { dateFrom, dateTo, page = 1, limit = 10 } = req.query;
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      const limitNum = parseInt(limit);
 
     const match = { deletedAt: null };
 

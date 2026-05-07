@@ -17,6 +17,15 @@ router.get(
   ShowtimeController.getAnalytics,
 );
 
+// GET /api/showtimes/validate-integrity - Validate showtime integrity (Admin/SuperAdmin only)
+router.get(
+  "/validate-integrity",
+  middlewares.authenticate,
+  middlewares.authorize(Role.ADMIN, Role.SUPERADMIN),
+
+  ShowtimeController.validateIntegrity,
+);
+
 // GET /api/showtimes/deleted lists - Get deleted showtimes (Admin/SuperAdmin only)
 router.get(
   "/deleted",

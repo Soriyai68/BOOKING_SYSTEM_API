@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const reportController = require("../controllers/reports.controller");
 
+// Basic Reports
 router.get("/total-customers", reportController.getTotalCustomers);
 router.get("/total-bookings", reportController.getTotalBookings);
 router.get("/total-revenue", reportController.getTotalRevenue);
@@ -10,6 +11,9 @@ router.get(
   "/customer-booking-frequency",
   reportController.getCustomerBookingFrequency,
 );
+
+// Diagnostic endpoint for revenue debugging
+router.get("/diagnostic-revenue", reportController.getDiagnosticRevenue);
 
 router.get("/revenue-report", reportController.getRevenueReport);
 router.get("/booking-status-report", reportController.getBookingStatusReport);

@@ -104,6 +104,100 @@ showtimeSchema.statics.findOverlappingShowtimes = function (
   return this.find(query);
 };
 
+// Enhanced method to check if a showtime can be created at a specific time
+showtimeSchema.statics.canCreateShowtimeAt = async function (
+  hallId,
+  showDate,
+  startTime,
+  endTime,
+  showtimeId = null,
+  bufferMinutes = 0, // Add buffer time parameter
+) {
+  // Add buffer time to the time range for checking
+  let bufferedStartTime = startTime;
+  let bufferedEndTime = endTime;
+  
+  if (bufferMinutes > 0) {
+    // Convert times to minutes for calculation
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    
+    // Apply buffer
+    const bufferedStart = Math.max(0, startMinutes - bufferMinutes);
+    const bufferedEnd = Math.min(24 * 60 - 1, endMinutes + bufferMinutes);
+    
+    // Convert back to HH:MM format
+    bufferedStartTime = `${String(Math.floor(bufferedStart / 60)).padStart(2, '0')}:${String(bufferedStart % 60).padStart(2, '0')}`;
+    bufferedEndTime = `${String(Math.floor(bufferedEnd / 60)).padStart(2, '0')}:${String(bufferedEnd % 60).padStart(2, '0')}`;
+  }
+  
+  const overlapping = await this.findOverlappingShowtimes(
+    hallId,
+    showDate,
+    bufferedStartTime,
+    bufferedEndTime,
+    showtimeId
+  );
+  
+  if (overlapping.length > 0) {
+    const conflict = overlapping[0];
+    let message = `Time conflict: Another showtime exists from ${conflict.start_time} to ${conflict.end_time}`;
+    
+    if (bufferMinutes > 0) {
+      message += ` (including ${bufferMinutes}-minute buffer time)`;
+    }
+    
+    return {
+      canCreate: false,
+      reason: 'TIME_CONFLICT',
+      message: message,
+      conflictingShowtime: {
+        id: conflict._id,
+        start_time: conflict.start_time,
+        end_time: conflict.end_time,
+        movie_id: conflict.movie_id
+      },
+      bufferApplied: bufferMinutes
+    };
+  }
+  
+  return {
+    canCreate: true,
+    message: 'Time slot is available'
+  };
+};
+
+// Method to validate if a showtime is in the past
+showtimeSchema.statics.validateNotInPast = function (showDate, startTime) {
+  const [hours, minutes] = startTime.split(':').map(Number);
+  const normalizedDate = this.safeNormalizeDate(showDate);
+  const startDateTime = new Date(Date.UTC(
+    normalizedDate.getUTCFullYear(),
+    normalizedDate.getUTCMonth(),
+    normalizedDate.getUTCDate(),
+    hours,
+    minutes
+  ));
+  
+  const now = new Date();
+  
+  if (startDateTime <= now) {
+    return {
+      isValid: false,
+      reason: 'PAST_TIME',
+      message: `Showtime cannot be scheduled in the past. Selected time: ${showDate} ${startTime}, Current time: ${now.toISOString()}`
+    };
+  }
+  
+  return {
+    isValid: true,
+    message: 'Showtime is scheduled for the future'
+  };
+};
+
 showtimeSchema.statics.findAvailableByMovie = function (movieId, date) {
   const startOfDay = this.safeNormalizeDate(date);
 
@@ -255,6 +349,129 @@ showtimeSchema.statics.getAnalytics = async function (query = {}) {
   );
 };
 
+// Enhanced method to validate showtime integrity and find overlaps
+showtimeSchema.statics.validateIntegrity = async function () {
+  const issues = [];
+  
+  try {
+    // 1. Find showtimes without end_time
+    const noEndTime = await this.find({ 
+      deletedAt: null, 
+      $or: [{ end_time: null }, { end_time: { $exists: false } }] 
+    });
+    
+    if (noEndTime.length > 0) {
+      issues.push({
+        type: 'missing_end_time',
+        count: noEndTime.length,
+        message: `${noEndTime.length} showtimes missing end_time`,
+        showtimes: noEndTime.map(st => ({ id: st._id, start_time: st.start_time }))
+      });
+    }
+    
+    // 2. Find showtimes with invalid times (start >= end)
+    const allShowtimes = await this.find({ deletedAt: null });
+    const invalidTimes = allShowtimes.filter(st => {
+      if (st.start_time && st.end_time) {
+        return st.start_time >= st.end_time;
+      }
+      return false;
+    });
+    
+    if (invalidTimes.length > 0) {
+      issues.push({
+        type: 'invalid_times',
+        count: invalidTimes.length,
+        message: `${invalidTimes.length} showtimes with start_time >= end_time`,
+        showtimes: invalidTimes.map(st => ({ 
+          id: st._id, 
+          start_time: st.start_time, 
+          end_time: st.end_time 
+        }))
+      });
+    }
+    
+    // 3. Find overlapping showtimes
+    const overlaps = await this.findAllOverlaps();
+    if (overlaps.length > 0) {
+      issues.push({
+        type: 'overlaps',
+        count: overlaps.length,
+        message: `${overlaps.length} overlapping showtime pairs`,
+        overlaps: overlaps
+      });
+    }
+    
+    return {
+      isValid: issues.length === 0,
+      issues: issues,
+      summary: issues.length === 0 ? 'All showtimes are valid' : `Found ${issues.length} types of issues`
+    };
+    
+  } catch (error) {
+    return {
+      isValid: false,
+      error: error.message,
+      summary: 'Validation failed due to error'
+    };
+  }
+};
+
+// Method to find all overlapping showtimes
+showtimeSchema.statics.findAllOverlaps = async function () {
+  const showtimes = await this.find({ deletedAt: null })
+    .populate('hall_id', 'hall_name')
+    .populate('movie_id', 'title')
+    .sort({ hall_id: 1, show_date: 1, start_time: 1 });
+
+  const groupedShowtimes = {};
+  
+  showtimes.forEach(showtime => {
+    const hallId = showtime.hall_id._id.toString();
+    const date = showtime.show_date.toISOString().split('T')[0];
+    const key = `${hallId}_${date}`;
+    
+    if (!groupedShowtimes[key]) {
+      groupedShowtimes[key] = {
+        hall: showtime.hall_id.hall_name,
+        date: date,
+        showtimes: []
+      };
+    }
+    
+    groupedShowtimes[key].showtimes.push({
+      id: showtime._id,
+      movie: showtime.movie_id?.title || 'Unknown',
+      start_time: showtime.start_time,
+      end_time: showtime.end_time,
+      status: showtime.status,
+      createdAt: showtime.createdAt
+    });
+  });
+
+  const allOverlaps = [];
+  
+  for (const [key, group] of Object.entries(groupedShowtimes)) {
+    for (let i = 0; i < group.showtimes.length; i++) {
+      for (let j = i + 1; j < group.showtimes.length; j++) {
+        const showtime1 = group.showtimes[i];
+        const showtime2 = group.showtimes[j];
+        
+        if (showtime1.start_time < showtime2.end_time && showtime1.end_time > showtime2.start_time) {
+          allOverlaps.push({
+            hall: group.hall,
+            date: group.date,
+            showtime1: showtime1,
+            showtime2: showtime2
+          });
+        }
+      }
+    }
+  }
+
+  return allOverlaps;
+};
+
 // Instance methods
 showtimeSchema.methods.softDelete = function (deletedBy = null) {
   this.deletedAt = new Date();
@@ -334,6 +551,17 @@ showtimeSchema.pre("save", async function (next) {
     this.show_date = this.constructor.safeNormalizeDate(this.show_date);
   }
 
+  // Validate that showtime is not in the past (for new showtimes or when date/time is modified)
+  if (
+    (this.isNew || this.isModified("show_date") || this.isModified("start_time")) &&
+    this.show_date && this.start_time
+  ) {
+    const pastValidation = this.constructor.validateNotInPast(this.show_date, this.start_time);
+    if (!pastValidation.isValid) {
+      return next(new Error(pastValidation.message));
+    }
+  }
+
   // Auto-calculate end_time from movie duration if not provided or if dependencies change
   if (
     this.isNew ||
@@ -384,42 +612,38 @@ showtimeSchema.pre("save", async function (next) {
     );
   }
 
-  if (
-    this.isNew ||
-    this.isModified("start_time") ||
-    this.isModified("show_date")
-  ) {
-    // Relaxed: Allow creating showtimes in the past for administrative purposes.
-    // The post-save/find hooks will automatically mark them as 'completed' if needed.
-    /*
-    if (startDateTime < new Date()) {
-      return next(
-        new Error("Showtime start date and time cannot be in the past."),
-      );
-    }
-    */
-  }
-
+  // Enhanced overlap validation with better error messages
   if (
     this.isNew ||
     this.isModified("start_time") ||
     this.isModified("end_time") ||
-    this.isModified("show_date")
+    this.isModified("show_date") ||
+    this.isModified("hall_id")
   ) {
-    const overlapping = await this.constructor.findOverlappingShowtimes(
+    // Use the enhanced validation method
+    const validation = await this.constructor.canCreateShowtimeAt(
       this.hall_id,
       this.show_date,
       this.start_time,
       this.end_time,
       this._id,
     );
-    if (overlapping.length > 0) {
-      const match = overlapping[0];
-      return next(
-        new Error(
-          `Showtime conflict: This hall already has a show at ${match.start_time} - ${match.end_time} on this date.`,
-        ),
-      );
+    
+    if (!validation.canCreate) {
+      // Get hall information for better error message
+      try {
+        const Hall = mongoose.model("Hall");
+        const hall = await Hall.findById(this.hall_id);
+        const hallName = hall ? hall.hall_name : 'Unknown Hall';
+        
+        return next(
+          new Error(
+            `Showtime conflict in ${hallName}: Cannot schedule from ${this.start_time} to ${this.end_time} because it overlaps with an existing showtime (${validation.conflictingShowtime.start_time} - ${validation.conflictingShowtime.end_time}). Please choose a different time slot.`,
+          ),
+        );
+      } catch (error) {
+        return next(new Error(validation.message));
+      }
     }
   }
 
