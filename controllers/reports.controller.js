@@ -1020,8 +1020,8 @@ exports.getPaymentMethodAnalysisReport = async (req, res) => {
             failed_transactions: 1,
             pending_transactions: 1,
             expired_transactions: 1,
-            success_rate: 100, // Always 100% since we only include completed payments
-            failed_rate: 0, // Always 0% since we only include completed payments
+            success_rate: { $literal: 100 }, // Always 100% since we only include completed payments
+            failed_rate: { $literal: 0 }, // Always 0% since we only include completed payments
             avg_transaction_value: { $round: ["$avg_transaction_value", 2] },
             first_transaction_date: 1,
             last_transaction_date: 1,
