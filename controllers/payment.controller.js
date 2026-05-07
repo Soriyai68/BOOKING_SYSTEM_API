@@ -1,5 +1,12 @@
 const mongoose = require("mongoose");
-const { Payment, Booking, Showtime, SeatBooking, Movie, Customer } = require("../models");
+const {
+  Payment,
+  Booking,
+  Showtime,
+  SeatBooking,
+  Movie,
+  Customer,
+} = require("../models");
 const { Role } = require("../data");
 const { logger, Telegram } = require("../utils");
 const { emitEvent } = require("../utils/socket");
@@ -45,7 +52,9 @@ class PaymentController {
         query.payment_date.$gte = new Date(filters.dateFrom);
       if (filters.dateTo) query.payment_date.$lte = new Date(filters.dateTo);
     }
-
+    if (filters.date) {
+      query.payment_date = new Date(filters.date);
+    }
     // Amount range filter
     if (filters.amountFrom || filters.amountTo) {
       query.amount = {};
