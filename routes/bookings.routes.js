@@ -111,6 +111,7 @@ router.patch(
   middlewares.authenticate,
   middlewares.authorize(Role.ADMIN, Role.SUPERADMIN, Role.CASHIER),
   middlewares.validator(bookingSchema.bookingIdParamSchema, "params"),
+  middlewares.validator(bookingSchema.changeSeatSchema),
   BookingController.changeSeat,
 );
 

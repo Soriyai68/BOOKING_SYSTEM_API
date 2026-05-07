@@ -193,6 +193,25 @@ const referenceCodeParamSchema = Joi.object({
   }),
 });
 
+// Change seat validation schema
+const changeSeatSchema = Joi.object({
+  seats: Joi.array()
+    .items(Joi.string().pattern(/^[0-9a-fA-F]{24}$/))
+    .min(1)
+    .max(10)
+    .required()
+    .messages({
+      "array.base": "Seats must be an array of seat IDs",
+      "array.min": "At least one seat ID is required",
+      "array.max": "Maximum 10 seats can be selected",
+      "string.pattern.base": "Invalid seat ID format in seats array",
+      "any.required": "Seats are required",
+    }),
+  totalPrice: Joi.number().min(0).optional().messages({
+    "number.min": "Total price must be a positive number",
+  }),
+});
+
 module.exports = {
   bookingIdParamSchema,
   createBookingSchema,
@@ -200,4 +219,5 @@ module.exports = {
   getAllBookingsQuerySchema,
   paginationSchema,
   referenceCodeParamSchema,
+  changeSeatSchema,
 };

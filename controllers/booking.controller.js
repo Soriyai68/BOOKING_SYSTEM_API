@@ -1069,95 +1069,218 @@ class BookingController {
           .json({ success: false, message: "Booking not found" });
       }
 
-      // Check if booking allows seat changes
+      // Check if booking allows seat changes - ONLY allow for completed payments
       if (booking.booking_status === "Expired") {
         return res
           .status(400)
-          .json({ success: false, message: "Cannot edit seats for expired bookings" });
+          .json({ 
+            success: false, 
+            message: "Cannot change seats for expired bookings" 
+          });
+      }
+
+      if (booking.payment_status !== "Completed") {
+        return res
+          .status(400)
+          .json({ 
+            success: false, 
+            message: "Seat changes are only allowed for completed payments. Please complete payment first." 
+          });
+      }
+
+      if (booking.booking_status !== "Completed") {
+        return res
+          .status(400)
+          .json({ 
+            success: false, 
+            message: "Seat changes are only allowed for confirmed bookings" 
+          });
+      }
+
+      // Validate seat count matches original booking
+      if (seats.length !== booking.seat_count) {
+        return res
+          .status(400)
+          .json({ 
+            success: false, 
+            message: `You can only change to the same number of seats (${booking.seat_count}). Adding or removing seats is not allowed for completed bookings.` 
+          });
+      }
+
+      // Validate seat rules (same row, no gaps, max 10)
+      const Seat = mongoose.model("Seat");
+      const seatDocs = await Seat.find({ _id: { $in: seats } });
+      
+      if (seatDocs.length !== seats.length) {
+        return res
+          .status(400)
+          .json({ 
+            success: false, 
+            message: "One or more selected seats do not exist" 
+          });
+      }
+
+      try {
+        BookingController.validateSeatRules(seatDocs);
+      } catch (validationError) {
+        return res
+          .status(400)
+          .json({ 
+            success: false, 
+            message: validationError.message 
+          });
       }
 
       const originalSeatIds = booking.seats.map((s) => s.toString());
       const newSeatIds = seats.map((s) => s.toString());
 
-      // 1. Release original seats
-      if (originalSeatIds.length > 0) {
-        await SeatBooking.deleteMany({
-          bookingId: booking._id,
-          showtimeId: booking.showtimeId,
-        });
-
-        await SeatBookingHistory.updateMany(
-          {
-            bookingId: booking._id,
-            seatId: { $in: originalSeatIds },
-            action: "booked",
-          },
-          { $set: { action: "expired" } },
-        );
+      // Check if seats are actually different
+      const seatsSame = originalSeatIds.length === newSeatIds.length && 
+                       originalSeatIds.every(id => newSeatIds.includes(id));
+      
+      if (seatsSame) {
+        return res
+          .status(400)
+          .json({ 
+            success: false, 
+            message: "The selected seats are the same as current booking. No changes made." 
+          });
       }
 
-      // 2. Lock/Book new seats based on booking status
-      if (newSeatIds.length > 0) {
-        const existingBookings = await SeatBooking.find({
-          showtimeId: booking.showtimeId,
-          seatId: { $in: newSeatIds },
-        });
+      // Check if new seats are available
+      const existingBookings = await SeatBooking.find({
+        showtimeId: booking.showtimeId,
+        seatId: { $in: newSeatIds },
+        bookingId: { $ne: booking._id } // Exclude current booking
+      });
 
-        if (existingBookings.length > 0) {
-          throw new Error("One or more selected seats are already taken.");
+      if (existingBookings.length > 0) {
+        return res
+          .status(400)
+          .json({ 
+            success: false, 
+            message: "One or more selected seats are already taken by another booking" 
+          });
+      }
+
+      // Perform seat change operations without transaction (for standalone MongoDB)
+      try {
+        // 1. Release original seats
+        if (originalSeatIds.length > 0) {
+          await SeatBooking.deleteMany({
+            bookingId: booking._id,
+            showtimeId: booking.showtimeId,
+          });
+
+          await SeatBookingHistory.updateMany(
+            {
+              bookingId: booking._id,
+              seatId: { $in: originalSeatIds },
+              action: "booked",
+            },
+            { $set: { action: "changed" } }
+          );
         }
 
-        // For completed bookings, directly book the seats. For others, lock them.
-        const seatStatus = booking.booking_status === "Completed" ? "booked" : "locked";
-        const seatBookingDocs = newSeatIds.map((seatId) => ({
-          showtimeId: booking.showtimeId,
-          seatId,
-          bookingId: booking._id,
-          status: seatStatus,
-          ...(seatStatus === "locked" && {
-            locked_until: booking.expired_at || new Date(Date.now() + 15 * 60 * 1000)
-          })
-        }));
-        await SeatBooking.insertMany(seatBookingDocs);
+        // 2. Book new seats (since payment is completed, directly book them)
+        if (newSeatIds.length > 0) {
+          const seatBookingDocs = newSeatIds.map((seatId) => ({
+            showtimeId: booking.showtimeId,
+            seatId,
+            bookingId: booking._id,
+            status: "booked", // Always booked since payment is completed
+          }));
+          await SeatBooking.insertMany(seatBookingDocs);
 
-        const historyDocs = newSeatIds.map((seatId) => ({
-          showtimeId: booking.showtimeId,
-          seatId,
-          bookingId: booking._id,
-          action: "booked",
-        }));
-        await SeatBookingHistory.insertMany(historyDocs);
+          const historyDocs = newSeatIds.map((seatId) => ({
+            showtimeId: booking.showtimeId,
+            seatId,
+            bookingId: booking._id,
+            action: "booked",
+          }));
+          await SeatBookingHistory.insertMany(historyDocs);
+        }
+
+        // 3. Update booking with new seats
+        booking.seats = newSeatIds;
+        booking.seat_count = newSeatIds.length;
+        if (totalPrice !== undefined && totalPrice !== null) {
+          booking.total_price = totalPrice;
+        }
+
+        await booking.save();
+
+        res.status(200).json({
+          success: true,
+          message: "Seats changed successfully",
+          data: { 
+            booking,
+            originalSeats: originalSeatIds,
+            newSeats: newSeatIds,
+            seatCount: booking.seat_count
+          },
+        });
+
+        // Log activity
+        await logActivity({
+          customerId: booking.customerId,
+          userId: req.user?.userId,
+          action: "BOOK_UPDATE_SEATS",
+          status: "SUCCESS",
+          targetId: booking._id,
+          req,
+          metadata: {
+            referenceCode: booking.reference_code,
+            originalSeats: originalSeatIds,
+            newSeats: newSeatIds,
+            seatCount: booking.seat_count,
+            bookingStatus: booking.booking_status,
+            paymentStatus: booking.payment_status,
+          },
+        });
+
+      } catch (operationError) {
+        // If any operation fails, try to rollback what we can
+        logger.error("Seat change operation failed, attempting rollback:", operationError);
+        
+        try {
+          // Try to restore original seats if possible
+          await SeatBooking.deleteMany({
+            bookingId: booking._id,
+            showtimeId: booking.showtimeId,
+          });
+
+          if (originalSeatIds.length > 0) {
+            const originalSeatBookingDocs = originalSeatIds.map((seatId) => ({
+              showtimeId: booking.showtimeId,
+              seatId,
+              bookingId: booking._id,
+              status: "booked",
+            }));
+            await SeatBooking.insertMany(originalSeatBookingDocs);
+          }
+        } catch (rollbackError) {
+          logger.error("Rollback failed:", rollbackError);
+        }
+        
+        throw operationError;
       }
 
-      booking.seats = newSeatIds;
-      booking.seat_count = newSeatIds.length;
-      if (totalPrice) booking.total_price = totalPrice;
-
-      await booking.save();
-
-      res.status(200).json({
-        success: true,
-        message: "Seats updated successfully",
-        data: { booking },
-      });
-
-      // Log activity
-      await logActivity({
-        customerId: booking.customerId,
-        userId: req.user?.userId,
-        action: "BOOK_UPDATE_SEATS",
-        status: "SUCCESS",
-        targetId: booking._id,
-        req,
-        metadata: {
-          referenceCode: booking.reference_code,
-          seatCount: booking.seat_count,
-          bookingStatus: booking.booking_status,
-        },
-      });
     } catch (error) {
       logger.error("Change seat error:", error);
-      res.status(500).json({ success: false, message: error.message });
+      
+      if (error.name === "ValidationError") {
+        return res.status(400).json({
+          success: false,
+          message: "Validation error",
+          errors: Object.values(error.errors).map((err) => err.message),
+        });
+      }
+
+      res.status(500).json({ 
+        success: false, 
+        message: error.message || "Failed to change seats" 
+      });
     }
   }
 
