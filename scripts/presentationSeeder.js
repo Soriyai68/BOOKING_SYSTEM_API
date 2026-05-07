@@ -1,206 +1,238 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
-const Theater = require('../models/theater.model');
-const Hall = require('../models/hall.model');
-const Seat = require('../models/seat.model');
-const Movie = require('../models/movie.model');
-const Showtime = require('../models/showtime.model');
-const SeatBooking = require('../models/seatBooking.model'); // needed so mongoose model registry has it during Showtime pre-save hook
-const User = require('../models/user.model');
-const Customer = require('../models/customer.model');
-const { Role } = require('../data');
-const connectDB = require('../config/db');
+require("dotenv").config();
+const mongoose = require("mongoose");
+
+const Theater = require("../models/theater.model");
+const Hall = require("../models/hall.model");
+const Seat = require("../models/seat.model");
+const Movie = require("../models/movie.model");
+const Showtime = require("../models/showtime.model");
+const SeatBooking = require("../models/seatBooking.model");
+const User = require("../models/user.model");
+const { Role } = require("../data");
+const connectDB = require("../config/db");
 
 async function seedPresentationData() {
   try {
     await connectDB();
-    console.log('Connected to database for presentation seeding...');
+    console.log("Connected to database for presentation seeding...");
 
-    // 1. Get an admin user for audit fields
+    // =========================
+    // 1. GET ADMIN
+    // =========================
     let admin = await User.findOne({ role: Role.SUPERADMIN });
     if (!admin) {
       admin = await User.findOne({ role: Role.ADMIN });
     }
     const adminId = admin ? admin._id : null;
 
-    console.log('Cleaning up existing presentation data...');
-    // Clear specific presentation data to avoid duplicates on re-run
-    await Theater.deleteMany({ name: 'Grand Cinema Battambang' });
-    const halls = await Hall.find({ hall_name: 'Theater 01' });
-    const hallIds = halls.map(h => h._id);
-    await Hall.deleteMany({ hall_name: 'Theater 01' });
-    await Seat.deleteMany({ hall_id: { $in: hallIds } });
-    await Movie.deleteMany({ title: { $in: ['Midnight Strike', 'Eternal Sunset', 'Neon Frontier', 'The Silent Forest'] } });
-    await Showtime.deleteMany({ hall_id: { $in: hallIds } });
+    // =========================
+    // 2. CLEAN OLD DATA (IMPORTANT)
+    // =========================
+    console.log("Cleaning up existing presentation data...");
 
-    // 2. Create One Theater in Battambang
-    console.log('Creating Theater in Battambang...');
-    const theater = new Theater({
-      name: 'Grand Cinema Battambang',
-      address: 'Street 1, Battambang City',
-      city: 'Battambang',
-      province: 'Battambang',
-      status: 'active',
-      contact_info: {
-        phone: '+85512345678',
-        email: 'battambang@grandcinema.com'
+    const existingTheater = await Theater.findOne({
+      name: "Grand Cinema Battambang",
+    });
+
+    if (existingTheater) {
+      const halls = await Hall.find({
+        theater_id: existingTheater._id,
+      });
+
+      const hallIds = halls.map((h) => h._id);
+
+      // Delete child → parent
+      await SeatBooking.deleteMany({});
+      await Showtime.deleteMany({ hall_id: { $in: hallIds } });
+      await Seat.deleteMany({ hall_id: { $in: hallIds } });
+      await Hall.deleteMany({ theater_id: existingTheater._id });
+      await Theater.deleteMany({ _id: existingTheater._id });
+    }
+
+    await Movie.deleteMany({
+      title: {
+        $in: [
+          "Midnight Strike",
+          "Eternal Sunset",
+          "Neon Frontier",
+          "The Silent Forest",
+        ],
       },
-      features: ['parking', 'air_conditioning', 'wifi'],
-      createdBy: adminId
     });
-    await theater.save();
 
-    // 3. Create One Hall
-    console.log('Creating Hall...');
-    const hall = new Hall({
-      hall_name: 'Theater 01',
+    console.log("Old data cleaned.");
+
+    // =========================
+    // 3. CREATE THEATER
+    // =========================
+    console.log("Creating Theater...");
+    const theater = await Theater.create({
+      name: "Grand Cinema Battambang",
+      address: "Street 1, Battambang City",
+      city: "Battambang",
+      province: "Battambang",
+      status: "active",
+      contact_info: {
+        phone: "+85512345678",
+        email: "battambang@grandcinema.com",
+      },
+      features: ["parking", "air_conditioning", "wifi"],
+      createdBy: adminId,
+    });
+
+    // =========================
+    // 4. CREATE HALL
+    // =========================
+    console.log("Creating Hall...");
+    const hall = await Hall.create({
+      hall_name: "Theater 01",
       theater_id: theater._id,
-      screen_type: 'vip',
-      features: ['dolby_atmos', 'premium_seating', 'air_conditioning'],
-      createdBy: adminId
+      screen_type: "vip",
+      features: ["dolby_atmos", "premium_seating", "air_conditioning"],
+      createdBy: adminId,
     });
-    await hall.save();
 
-    // 4. Create Seats with different types and prices (Starting from $0.05)
-    console.log('Creating Seats...');
+    // =========================
+    // 5. CREATE SEATS
+    // =========================
+    console.log("Creating Seats...");
     const seatRows = [
-      { row: 'A', type: 'regular', price: 0.05, count: 10 },
-      { row: 'B', type: 'regular', price: 0.05, count: 10 },
-      { row: 'C', type: 'regular', price: 0.05, count: 10 },
-      { row: 'D', type: 'vip', price: 0.10, count: 8 },
-      { row: 'E', type: 'vip', price: 0.10, count: 8 },
-      { row: 'F', type: 'couple', price: 0.15, count: 5 }, 
-      { row: 'G', type: 'queen', price: 0.20, count: 4 }
+      { row: "A", type: "regular", price: 0.05, count: 10 },
+      { row: "B", type: "regular", price: 0.05, count: 10 },
+      { row: "C", type: "regular", price: 0.05, count: 10 },
+      { row: "D", type: "vip", price: 0.1, count: 8 },
+      { row: "E", type: "vip", price: 0.1, count: 8 },
+      { row: "F", type: "couple", price: 0.15, count: 5 },
+      { row: "G", type: "queen", price: 0.2, count: 4 },
     ];
 
-    const seatPromises = [];
-    for (const rowConfig of seatRows) {
-      for (let i = 1; i <= rowConfig.count; i++) {
-        seatPromises.push(new Seat({
+    const seats = [];
+
+    for (const config of seatRows) {
+      for (let i = 1; i <= config.count; i++) {
+        seats.push({
           hall_id: hall._id,
-          row: rowConfig.row,
+          row: config.row,
           seat_number: i,
-          seat_type: rowConfig.type,
-          price: rowConfig.price,
-          status: 'active',
-          createdBy: adminId
-        }).save());
+          seat_type: config.type,
+          price: config.price,
+          status: "active",
+          createdBy: adminId,
+        });
       }
     }
-    await Promise.all(seatPromises);
-    console.log(`Created ${seatPromises.length} seats.`);
 
-    // Update hall total seats
+    await Seat.insertMany(seats);
+    console.log(`Created ${seats.length} seats.`);
+
     await Hall.updateTotalSeatsForHall(hall._id);
 
-    // 5. Create 4 Movies with real image logos (Posters)
-    // Genres must be lowercase: "action", "adventure", "animation", "comedy", "crime", "documentary", "drama", "family", "fantasy", "horror", "mystery", "romance", "sci-fi", "thriller", "war", "western"
-    console.log('Creating Movies...');
-    const movies = [
+    // =========================
+    // 6. CREATE MOVIES
+    // =========================
+    console.log("Creating Movies...");
+    const movieDocs = await Movie.insertMany([
       {
-        title: 'Midnight Strike',
-        description: 'An elite special forces unit must prevent a global catastrophe when a secret weapon is stolen.',
+        title: "Midnight Strike",
+        description: "Elite forces stop a global catastrophe.",
         duration_minutes: 125,
-        genres: ['action', 'thriller'],
-        director: 'James Cameron',
-        release_date: new Date('2026-04-01'),
-        end_date: new Date('2026-05-30'),
-        languages: ['English'],
-        poster_url: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80&w=800', 
+        genres: ["action", "thriller"],
+        director: "James Cameron",
+        release_date: new Date("2026-04-01"),
+        end_date: new Date("2026-05-30"),
+        languages: ["English"],
+        poster_url:
+          "https://images.unsplash.com/photo-1536440136628-849c177e76a1",
         rating: 8.5,
-        status: 'now_showing',
-        createdBy: adminId
+        status: "now_showing",
+        createdBy: adminId,
       },
       {
-        title: 'Eternal Sunset',
-        description: 'Two strangers meet on a train across Europe and discover a connection that defies time.',
+        title: "Eternal Sunset",
+        description: "Romantic journey across Europe.",
         duration_minutes: 110,
-        genres: ['romance', 'drama'],
-        director: 'Sofia Coppola',
-        release_date: new Date('2026-04-15'),
-        end_date: new Date('2026-05-30'),
-        languages: ['English'],
-        poster_url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=800',
+        genres: ["romance", "drama"],
+        director: "Sofia Coppola",
+        release_date: new Date("2026-04-15"),
+        end_date: new Date("2026-05-30"),
+        languages: ["English"],
+        poster_url:
+          "https://images.unsplash.com/photo-1518709268805-4e9042af9f23",
         rating: 7.8,
-        status: 'now_showing',
-        createdBy: adminId
+        status: "now_showing",
+        createdBy: adminId,
       },
       {
-        title: 'Neon Frontier',
-        description: 'In the year 2150, a rogue AI and a cynical detective must team up to save the last city on Earth.',
+        title: "Neon Frontier",
+        description: "AI + detective save last city.",
         duration_minutes: 140,
-        genres: ['sci-fi', 'adventure'],
-        director: 'Denis Villeneuve',
-        release_date: new Date('2026-04-20'),
-        end_date: new Date('2026-05-30'),
-        languages: ['English'],
-        poster_url: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&q=80&w=800',
+        genres: ["sci-fi", "adventure"],
+        director: "Denis Villeneuve",
+        release_date: new Date("2026-04-20"),
+        end_date: new Date("2026-05-30"),
+        languages: ["English"],
+        poster_url:
+          "https://images.unsplash.com/photo-1478720568477-152d9b164e26",
         rating: 9.0,
-        status: 'now_showing',
-        createdBy: adminId
+        status: "now_showing",
+        createdBy: adminId,
       },
       {
-        title: 'The Silent Forest',
-        description: 'A group of friends goes camping in a remote forest, only to find they are not alone.',
+        title: "The Silent Forest",
+        description: "Horror camping story.",
         duration_minutes: 95,
-        genres: ['horror', 'mystery'],
-        director: 'Ari Aster',
-        release_date: new Date('2026-04-25'),
-        end_date: new Date('2026-05-30'),
-        languages: ['English'],
-        poster_url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=800',
+        genres: ["horror", "mystery"],
+        director: "Ari Aster",
+        release_date: new Date("2026-04-25"),
+        end_date: new Date("2026-05-30"),
+        languages: ["English"],
+        poster_url:
+          "https://images.unsplash.com/photo-1441974231531-c6227db76b6e",
         rating: 6.5,
-        status: 'now_showing',
-        createdBy: adminId
-      }
-    ];
+        status: "now_showing",
+        createdBy: adminId,
+      },
+    ]);
 
-    const movieDocs = await Movie.insertMany(movies);
-    console.log(`Created ${movieDocs.length} movies.`);
+    // =========================
+    // 7. CREATE SHOWTIMES
+    // =========================
+    console.log("Creating Showtimes...");
+    const startDate = new Date("2026-05-08");
+    const endDate = new Date("2026-05-10");
+    const times = ["09:00", "11:30", "14:00", "16:30", "19:00"];
 
-    // 6. Create Showtimes from May 1 to May 15
-    console.log('Creating Showtimes...');
-    const startDate = new Date('2026-05-01');
-    const endDate = new Date('2026-05-15');
-    const times = ['09:00', '11:30', '14:00', '16:30', '19:00']; // Morning to evening — no showtime crosses midnight
+    const showtimes = [];
 
-    const showtimePromises = [];
-    // Iterate through dates from May 1 to May 15
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      const currentDate = new Date(d);
-      
-      // Assign movies per day
-      times.forEach((time, index) => {
-        const movieIndex = index % movieDocs.length;
-        const movie = movieDocs[movieIndex];
-        
-        showtimePromises.push(new Showtime({
+    for (
+      let d = new Date(startDate);
+      d <= endDate;
+      d.setDate(d.getDate() + 1)
+    ) {
+      for (let i = 0; i < times.length; i++) {
+        const movie = movieDocs[i % movieDocs.length];
+
+        showtimes.push({
           hall_id: hall._id,
           movie_id: movie._id,
-          show_date: currentDate,
-          start_time: time,
-          status: 'scheduled',
-          createdBy: adminId
-        }).save());
-      });
+          show_date: new Date(d),
+          start_time: times[i],
+          status: "scheduled",
+          createdBy: adminId,
+        });
+      }
     }
-    await Promise.all(showtimePromises);
-    console.log(`Created ${showtimePromises.length} showtimes.`);
 
-    console.log('\n=========================================');
-    console.log('Presentation Seeding Completed Successfully!');
-    console.log('Location: Battambang City');
-    console.log('Hall: Theater 01 (VIP)');
-    console.log('Price Range: $0.05 - $0.20');
-    console.log('Movies: 4');
-    console.log('Times: 09:00 / 11:30 / 14:00 / 16:30 / 19:00 (no midnight crossings)');
-    console.log('Dates: May 01 - May 15, 2026');
-    console.log('=========================================\n');
-    
+    await Showtime.insertMany(showtimes);
+    console.log(`Created ${showtimes.length} showtimes.`);
+
+    console.log("\n=========================================");
+    console.log("Presentation Seeding Completed Successfully!");
+    console.log("=========================================\n");
   } catch (error) {
-    console.error('Error during presentation seeding:', error);
+    console.error("Error during seeding:", error);
   } finally {
-    mongoose.connection.close();
+    await mongoose.connection.close();
     process.exit(0);
   }
 }
