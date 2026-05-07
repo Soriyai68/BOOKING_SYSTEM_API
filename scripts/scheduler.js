@@ -216,7 +216,7 @@ const startSeatReleaseScheduler = () => {
     try {
       // Find bookings that are expired or have a failed payment
       const bookingsToClean = await Booking.find({
-        $or: [{ payment_status: "Failed" }, { booking_status: "Expired" }],
+        $or: [{ payment_status: "Failed" }, { booking_status: "Failed" }],
       }).select("_id");
 
       if (bookingsToClean.length === 0) {
@@ -243,7 +243,7 @@ const startSeatReleaseScheduler = () => {
           .model("SeatBookingHistory")
           .updateMany(
             { bookingId: { $in: bookingIdsToClean }, action: "booked" },
-            { $set: { action: "expired" } },
+            { $set: { action: "failed" } },
           );
 
         logger.info(
