@@ -1,5 +1,12 @@
 const mongoose = require("mongoose");
-const { Theater, Hall, Movie, Showtime, SeatBooking, Booking } = require("../models");
+const {
+  Theater,
+  Hall,
+  Movie,
+  Showtime,
+  SeatBooking,
+  Booking,
+} = require("../models");
 const { Role } = require("../data");
 const logger = require("../utils/logger");
 const { logActivity } = require("../utils/activityLogger");
@@ -17,14 +24,14 @@ class ShowtimeController {
   // Helper method to calculate recommended start time with buffer
   static calculateRecommendedTime(endTime, bufferMinutes) {
     if (!endTime || bufferMinutes <= 0) return endTime;
-    
-    const [hours, minutes] = endTime.split(':').map(Number);
+
+    const [hours, minutes] = endTime.split(":").map(Number);
     const totalMinutes = hours * 60 + minutes + bufferMinutes;
-    
+
     const newHours = Math.floor(totalMinutes / 60);
     const newMinutes = totalMinutes % 60;
-    
-    return `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`;
+
+    return `${String(newHours).padStart(2, "0")}:${String(newMinutes).padStart(2, "0")}`;
   }
   // Build search query
   static async buildSearchQuery(search) {
@@ -362,7 +369,8 @@ class ShowtimeController {
       if (!timeRegex.test(start_time)) {
         return res.status(400).json({
           success: false,
-          message: "Invalid start_time format. Please use HH:MM format (e.g., 14:30).",
+          message:
+            "Invalid start_time format. Please use HH:MM format (e.g., 14:30).",
         });
       }
 
@@ -414,30 +422,36 @@ class ShowtimeController {
       let end_time = showTimeData.end_time;
       if (!end_time && movie.duration_minutes) {
         const normalizedDate = Showtime.safeNormalizeDate(show_date);
-        const [hours, minutes] = start_time.split(':').map(Number);
-        const startDateTime = new Date(Date.UTC(
-          normalizedDate.getUTCFullYear(),
-          normalizedDate.getUTCMonth(),
-          normalizedDate.getUTCDate(),
-          hours,
-          minutes
-        ));
-        const endDateTime = new Date(startDateTime.getTime() + movie.duration_minutes * 60000);
+        const [hours, minutes] = start_time.split(":").map(Number);
+        const startDateTime = new Date(
+          Date.UTC(
+            normalizedDate.getUTCFullYear(),
+            normalizedDate.getUTCMonth(),
+            normalizedDate.getUTCDate(),
+            hours,
+            minutes,
+          ),
+        );
+        const endDateTime = new Date(
+          startDateTime.getTime() + movie.duration_minutes * 60000,
+        );
         end_time = `${String(endDateTime.getUTCHours()).padStart(2, "0")}:${String(endDateTime.getUTCMinutes()).padStart(2, "0")}`;
       }
 
       // Pre-validate time slot availability with buffer time
       if (end_time) {
-        const bufferTime = showtimeConfig.VALIDATION.ENFORCE_BUFFER ? showtimeConfig.BUFFER_TIME_MINUTES : 0;
+        const bufferTime = showtimeConfig.VALIDATION.ENFORCE_BUFFER
+          ? showtimeConfig.BUFFER_TIME_MINUTES
+          : 0;
         const validation = await Showtime.canCreateShowtimeAt(
           hall_id,
           show_date,
           start_time,
           end_time,
           null, // No exclusion for new showtime
-          bufferTime
+          bufferTime,
         );
-        
+
         if (!validation.canCreate) {
           return res.status(409).json({
             success: false,
@@ -448,8 +462,11 @@ class ShowtimeController {
             suggestions: {
               message: `Try scheduling at least ${bufferTime} minutes after the conflicting showtime ends`,
               earliestAvailableTime: validation.conflictingShowtime.end_time,
-              recommendedStartTime: this.calculateRecommendedTime(validation.conflictingShowtime.end_time, bufferTime)
-            }
+              recommendedStartTime: this.calculateRecommendedTime(
+                validation.conflictingShowtime.end_time,
+                bufferTime,
+              ),
+            },
           });
         }
       }
@@ -491,14 +508,20 @@ class ShowtimeController {
       });
     } catch (error) {
       // Handle known validation errors from the model's pre-save hook
-      if (error.message.includes("cannot be scheduled in the past") || error.message.includes("Showtime cannot be scheduled in the past")) {
+      if (
+        error.message.includes("cannot be scheduled in the past") ||
+        error.message.includes("Showtime cannot be scheduled in the past")
+      ) {
         return res.status(409).json({
           success: false,
           message: "Cannot create showtime in the past",
           details: error.message,
         });
       }
-      if (error.message.includes("conflict") || error.message.includes("overlaps")) {
+      if (
+        error.message.includes("conflict") ||
+        error.message.includes("overlaps")
+      ) {
         return res.status(409).json({
           success: false,
           message: "Showtime scheduling conflict",
@@ -540,25 +563,34 @@ class ShowtimeController {
       }
 
       // Check if showtime is completed - limit what can be updated
-      if (showtime.status === "completed" && showtimeConfig.COMPLETED_SHOWTIME_PROTECTION.PREVENT_MODIFY) {
+      if (
+        showtime.status === "completed" &&
+        showtimeConfig.COMPLETED_SHOWTIME_PROTECTION.PREVENT_MODIFY
+      ) {
         // Only allow specific fields to be updated for completed showtimes
-        const allowedFields = showtimeConfig.COMPLETED_SHOWTIME_PROTECTION.ALLOWED_UPDATE_FIELDS;
+        const allowedFields =
+          showtimeConfig.COMPLETED_SHOWTIME_PROTECTION.ALLOWED_UPDATE_FIELDS;
         const updateFields = Object.keys(updateData);
-        const unauthorizedFields = updateFields.filter(field => !allowedFields.includes(field));
-        
+        const unauthorizedFields = updateFields.filter(
+          (field) => !allowedFields.includes(field),
+        );
+
         if (unauthorizedFields.length > 0) {
           return res.status(409).json({
             success: false,
-            message: "Cannot modify completed showtime details. Only specific fields are allowed for completed showtimes.",
+            message:
+              "Cannot modify completed showtime details. Only specific fields are allowed for completed showtimes.",
             details: {
               showtimeId: id,
               currentStatus: showtime.status,
               attemptedFields: updateFields,
               unauthorizedFields: unauthorizedFields,
               allowedFields: allowedFields,
-              reason: "Completed showtimes are protected to maintain historical accuracy and audit trail.",
-              configSetting: "COMPLETED_SHOWTIME_PROTECTION.PREVENT_MODIFY = true"
-            }
+              reason:
+                "Completed showtimes are protected to maintain historical accuracy and audit trail.",
+              configSetting:
+                "COMPLETED_SHOWTIME_PROTECTION.PREVENT_MODIFY = true",
+            },
           });
         }
       }
@@ -569,7 +601,8 @@ class ShowtimeController {
         if (!timeRegex.test(updateData.start_time)) {
           return res.status(400).json({
             success: false,
-            message: "Invalid start_time format. Please use HH:MM format (e.g., 14:30).",
+            message:
+              "Invalid start_time format. Please use HH:MM format (e.g., 14:30).",
           });
         }
       }
@@ -578,7 +611,7 @@ class ShowtimeController {
       if (updateData.show_date || updateData.start_time) {
         const checkDate = updateData.show_date || showtime.show_date;
         const checkTime = updateData.start_time || showtime.start_time;
-        
+
         const pastValidation = Showtime.validateNotInPast(checkDate, checkTime);
         if (!pastValidation.isValid) {
           return res.status(409).json({
@@ -590,7 +623,12 @@ class ShowtimeController {
       }
 
       // If updating movie_id, hall_id, date, or time, do pre-validation
-      if (updateData.movie_id || updateData.hall_id || updateData.show_date || updateData.start_time) {
+      if (
+        updateData.movie_id ||
+        updateData.hall_id ||
+        updateData.show_date ||
+        updateData.start_time
+      ) {
         const checkMovieId = updateData.movie_id || showtime.movie_id;
         const checkHallId = updateData.hall_id || showtime.hall_id;
         const checkDate = updateData.show_date || showtime.show_date;
@@ -633,30 +671,36 @@ class ShowtimeController {
         let checkEndTime = updateData.end_time || showtime.end_time;
         if (!checkEndTime && movie.duration_minutes) {
           const normalizedDate = Showtime.safeNormalizeDate(checkDate);
-          const [hours, minutes] = checkStartTime.split(':').map(Number);
-          const startDateTime = new Date(Date.UTC(
-            normalizedDate.getUTCFullYear(),
-            normalizedDate.getUTCMonth(),
-            normalizedDate.getUTCDate(),
-            hours,
-            minutes
-          ));
-          const endDateTime = new Date(startDateTime.getTime() + movie.duration_minutes * 60000);
+          const [hours, minutes] = checkStartTime.split(":").map(Number);
+          const startDateTime = new Date(
+            Date.UTC(
+              normalizedDate.getUTCFullYear(),
+              normalizedDate.getUTCMonth(),
+              normalizedDate.getUTCDate(),
+              hours,
+              minutes,
+            ),
+          );
+          const endDateTime = new Date(
+            startDateTime.getTime() + movie.duration_minutes * 60000,
+          );
           checkEndTime = `${String(endDateTime.getUTCHours()).padStart(2, "0")}:${String(endDateTime.getUTCMinutes()).padStart(2, "0")}`;
         }
 
         // Pre-validate time slot availability with buffer time
         if (checkEndTime) {
-          const bufferTime = showtimeConfig.VALIDATION.ENFORCE_BUFFER ? showtimeConfig.BUFFER_TIME_MINUTES : 0;
+          const bufferTime = showtimeConfig.VALIDATION.ENFORCE_BUFFER
+            ? showtimeConfig.BUFFER_TIME_MINUTES
+            : 0;
           const validation = await Showtime.canCreateShowtimeAt(
             checkHallId,
             checkDate,
             checkStartTime,
             checkEndTime,
             showtime._id, // Exclude current showtime from conflict check
-            bufferTime
+            bufferTime,
           );
-          
+
           if (!validation.canCreate) {
             return res.status(409).json({
               success: false,
@@ -667,8 +711,12 @@ class ShowtimeController {
               suggestions: {
                 message: `Try scheduling at least ${bufferTime} minutes after the conflicting showtime ends`,
                 earliestAvailableTime: validation.conflictingShowtime.end_time,
-                recommendedStartTime: ShowtimeController.calculateRecommendedTime(validation.conflictingShowtime.end_time, bufferTime)
-              }
+                recommendedStartTime:
+                  ShowtimeController.calculateRecommendedTime(
+                    validation.conflictingShowtime.end_time,
+                    bufferTime,
+                  ),
+              },
             });
           }
         }
@@ -711,14 +759,20 @@ class ShowtimeController {
       });
     } catch (error) {
       // Handle known validation errors from the model's pre-save hook
-      if (error.message.includes("cannot be scheduled in the past") || error.message.includes("Showtime cannot be scheduled in the past")) {
+      if (
+        error.message.includes("cannot be scheduled in the past") ||
+        error.message.includes("Showtime cannot be scheduled in the past")
+      ) {
         return res.status(409).json({
           success: false,
           message: "Cannot update showtime to a past date/time",
           details: error.message,
         });
       }
-      if (error.message.includes("conflict") || error.message.includes("overlaps")) {
+      if (
+        error.message.includes("conflict") ||
+        error.message.includes("overlaps")
+      ) {
         return res.status(409).json({
           success: false,
           message: "Showtime scheduling conflict",
@@ -764,18 +818,24 @@ class ShowtimeController {
       }
 
       // Check if showtime is completed - completed showtimes cannot be deleted
-      if (showtime.status === "completed" && showtimeConfig.COMPLETED_SHOWTIME_PROTECTION.PREVENT_DELETE) {
+      if (
+        showtime.status === "completed" &&
+        showtimeConfig.COMPLETED_SHOWTIME_PROTECTION.PREVENT_DELETE
+      ) {
         return res.status(409).json({
           success: false,
-          message: "Cannot delete completed showtime. Completed showtimes are protected for historical records and audit purposes.",
+          message:
+            "Cannot delete completed showtime. Completed showtimes are protected for historical records and audit purposes.",
           details: {
             showtimeId: id,
             status: showtime.status,
             showDate: showtime.show_date,
             startTime: showtime.start_time,
-            reason: "Completed showtimes contain important historical data and should be preserved for reporting and audit purposes.",
-            configSetting: "COMPLETED_SHOWTIME_PROTECTION.PREVENT_DELETE = true"
-          }
+            reason:
+              "Completed showtimes contain important historical data and should be preserved for reporting and audit purposes.",
+            configSetting:
+              "COMPLETED_SHOWTIME_PROTECTION.PREVENT_DELETE = true",
+          },
         });
       }
 
@@ -795,7 +855,7 @@ class ShowtimeController {
         }
       } else {
         logger.warn(
-          `Booking model not found. Skipping check for associated bookings on showtime deletion. ID: ${id}`
+          `Booking model not found. Skipping check for associated bookings on showtime deletion. ID: ${id}`,
         );
       }
       // Check if showtime is already soft deleted
@@ -1145,7 +1205,7 @@ class ShowtimeController {
   static async validateIntegrity(req, res) {
     try {
       const validation = await Showtime.validateIntegrity();
-      
+
       if (validation.isValid) {
         logger.info("Showtime integrity validation passed");
         res.status(200).json({
@@ -1154,12 +1214,15 @@ class ShowtimeController {
           data: { validation },
         });
       } else {
-        logger.warn("Showtime integrity issues found", { issues: validation.issues });
+        logger.warn("Showtime integrity issues found", {
+          issues: validation.issues,
+        });
         res.status(200).json({
           success: true,
           message: validation.summary,
           data: { validation },
-          warning: "Integrity issues found - see data.validation.issues for details"
+          warning:
+            "Integrity issues found - see data.validation.issues for details",
         });
       }
     } catch (error) {
@@ -1203,7 +1266,9 @@ class ShowtimeController {
 
         // Check movie and hall
         const [movie, hall] = await Promise.all([
-          Movie.findOne({ _id: movie_id, deletedAt: null }, null, { skipAutoUpdate: true }),
+          Movie.findOne({ _id: movie_id, deletedAt: null }, null, {
+            skipAutoUpdate: true,
+          }),
           Hall.findOne({ _id: hall_id, deletedAt: null }),
         ]);
 
@@ -1213,9 +1278,9 @@ class ShowtimeController {
 
         if (!hall) errors.push({ index: i, error: "Hall not found." });
         else if (hall.status !== "active")
-          errors.push({ 
-            index: i, 
-            error: `Hall "${hall.hall_name}" is not active (status: ${hall.status}). Only active halls can have showtimes.` 
+          errors.push({
+            index: i,
+            error: `Hall "${hall.hall_name}" is not active (status: ${hall.status}). Only active halls can have showtimes.`,
           });
 
         // Check duplicates in this batch
@@ -1237,9 +1302,9 @@ class ShowtimeController {
           showtimeDate.getMonth(),
           showtimeDate.getDate(),
           hours,
-          minutes
+          minutes,
         );
-        
+
         if (localStartDateTime < new Date()) {
           errors.push({
             index: i,
@@ -1263,7 +1328,8 @@ class ShowtimeController {
             const idx = showtimes.findIndex(
               (s) =>
                 s.hall_id.toString() === e.hall_id.toString() &&
-                Showtime.safeNormalizeDate(s.show_date).toISOString() === Showtime.safeNormalizeDate(e.show_date).toISOString() &&
+                Showtime.safeNormalizeDate(s.show_date).toISOString() ===
+                  Showtime.safeNormalizeDate(e.show_date).toISOString() &&
                 s.start_time === e.start_time,
             );
             errors.push({
@@ -1288,10 +1354,10 @@ class ShowtimeController {
         ...s,
         createdBy: userId,
       }));
-      
+
       const createdShowtimes = [];
       const creationErrors = [];
-      
+
       // Create each showtime individually to ensure validation runs
       for (let i = 0; i < showtimesToCreate.length; i++) {
         try {
@@ -1302,22 +1368,23 @@ class ShowtimeController {
           creationErrors.push({
             index: i,
             showtime: showtimesToCreate[i],
-            error: error.message
+            error: error.message,
           });
         }
       }
-      
+
       // If any creation errors occurred, return them
       if (creationErrors.length > 0) {
         return res.status(409).json({
           success: false,
-          message: "Some showtimes could not be created due to validation errors.",
+          message:
+            "Some showtimes could not be created due to validation errors.",
           data: {
             createdCount: createdShowtimes.length,
             failedCount: creationErrors.length,
             createdShowtimes,
-            errors: creationErrors
-          }
+            errors: creationErrors,
+          },
         });
       }
 
@@ -1330,7 +1397,9 @@ class ShowtimeController {
       ];
 
       const [movies, halls] = await Promise.all([
-        Movie.find({ _id: { $in: movieIds } }, "title", { skipAutoUpdate: true }).lean(),
+        Movie.find({ _id: { $in: movieIds } }, "title", {
+          skipAutoUpdate: true,
+        }).lean(),
         Hall.find({ _id: { $in: hallIds } }, "hall_name").lean(),
       ]);
 
@@ -1415,10 +1484,14 @@ class ShowtimeController {
         }
 
         // Check if showtime is completed - completed showtimes cannot be deleted
-        if (showtime.status === "completed" && showtimeConfig.COMPLETED_SHOWTIME_PROTECTION.PREVENT_DELETE) {
-          errors.push({ 
-            id, 
-            error: "Cannot delete completed showtime. Completed showtimes are protected for historical records and audit purposes." 
+        if (
+          showtime.status === "completed" &&
+          showtimeConfig.COMPLETED_SHOWTIME_PROTECTION.PREVENT_DELETE
+        ) {
+          errors.push({
+            id,
+            error:
+              "Cannot delete completed showtime. Completed showtimes are protected for historical records and audit purposes.",
           });
           continue;
         }
@@ -1576,7 +1649,10 @@ class ShowtimeController {
         }
 
         // Check if showtime is completed - add extra warning for force delete
-        if (showtime.status === "completed" && showtimeConfig.COMPLETED_SHOWTIME_PROTECTION.LOG_FORCE_DELETE_WARNINGS) {
+        if (
+          showtime.status === "completed" &&
+          showtimeConfig.COMPLETED_SHOWTIME_PROTECTION.LOG_FORCE_DELETE_WARNINGS
+        ) {
           // Allow force delete for completed showtimes but with strong warning
           logger.warn(
             `FORCE DELETE WARNING: Attempting to permanently delete completed showtime ${id}. This will remove historical data.`,
@@ -1585,8 +1661,9 @@ class ShowtimeController {
               status: showtime.status,
               deletedBy: req.user.userId,
               userRole: req.user.role,
-              configSetting: "COMPLETED_SHOWTIME_PROTECTION.ALLOW_FORCE_DELETE = true"
-            }
+              configSetting:
+                "COMPLETED_SHOWTIME_PROTECTION.ALLOW_FORCE_DELETE = true",
+            },
           );
         }
 
@@ -1766,9 +1843,9 @@ class ShowtimeController {
 
         // Check internal batch duplicates
         const normalizedDate = Showtime.safeNormalizeDate(show_date);
-        const isoDate = normalizedDate.toISOString().split('T')[0];
+        const isoDate = normalizedDate.toISOString().split("T")[0];
         const batchKey = `${hall_id}_${isoDate}_${start_time}`;
-        
+
         if (batchKeys.has(batchKey)) {
           errors.push({
             index: i,
@@ -1793,19 +1870,26 @@ class ShowtimeController {
           continue;
         }
         if (movie.status === "ended") {
-          errors.push({ index: i, error: `Row ${i + 1}: Movie "${movie.title}" has ended.` });
+          errors.push({
+            index: i,
+            error: `Row ${i + 1}: Movie "${movie.title}" has ended.`,
+          });
           continue;
         }
 
         // Calculate end_time for overlap check
         const tempShowtime = new Showtime(showtimeData);
         if (!tempShowtime.end_time && movie.duration_minutes) {
-             const d = Showtime.safeNormalizeDate(tempShowtime.show_date);
-             const [h, m] = tempShowtime.start_time.split(":").map(Number);
-             const startDT = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h, m));
-             const endDT = new Date(startDT.getTime() + movie.duration_minutes * 60000);
-             // CRITICAL FIX: Use getUTCHours/Minutes
-             tempShowtime.end_time = `${String(endDT.getUTCHours()).padStart(2, "0")}:${String(endDT.getUTCMinutes()).padStart(2, "0")}`;
+          const d = Showtime.safeNormalizeDate(tempShowtime.show_date);
+          const [h, m] = tempShowtime.start_time.split(":").map(Number);
+          const startDT = new Date(
+            Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h, m),
+          );
+          const endDT = new Date(
+            startDT.getTime() + movie.duration_minutes * 60000,
+          );
+          // CRITICAL FIX: Use getUTCHours/Minutes
+          tempShowtime.end_time = `${String(endDT.getUTCHours()).padStart(2, "0")}:${String(endDT.getUTCMinutes()).padStart(2, "0")}`;
         }
 
         const overlapping = await Showtime.findOverlappingShowtimes(
@@ -1813,7 +1897,7 @@ class ShowtimeController {
           show_date,
           start_time,
           tempShowtime.end_time,
-          null
+          null,
         );
 
         if (overlapping.length > 0) {
@@ -1846,21 +1930,24 @@ class ShowtimeController {
         logger.error("Error during showtime creation loop:", saveError);
         // If we hit an error here, it might be a conflict that pre-validation missed
         let message = "An unexpected error occurred during creation.";
-        if (saveError.name === 'MongoError' && saveError.code === 11000) {
-          message = "Duplicate showtime detected during batch creation. Some rows may conflict.";
+        if (saveError.name === "MongoError" && saveError.code === 11000) {
+          message =
+            "Duplicate showtime detected during batch creation. Some rows may conflict.";
         } else if (saveError.message.includes("conflict")) {
           message = saveError.message;
         }
 
-        return res.status(saveError.name === 'ValidationError' ? 400 : 409).json({
-          success: false,
-          message: message,
-          details: saveError.message,
-          data: {
-            createdCount: createdShowtimes.length,
-            createdShowtimes
-          }
-        });
+        return res
+          .status(saveError.name === "ValidationError" ? 400 : 409)
+          .json({
+            success: false,
+            message: message,
+            details: saveError.message,
+            data: {
+              createdCount: createdShowtimes.length,
+              createdShowtimes,
+            },
+          });
       }
 
       logger.info(
