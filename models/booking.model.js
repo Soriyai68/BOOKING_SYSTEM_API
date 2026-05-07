@@ -22,7 +22,7 @@ const bookingSchema = new mongoose.Schema(
     },
     payment_status: {
       type: String,
-      enum: ["Pending", "Completed", "Failed", "Refunded", "Expired"],
+      enum: ["Pending", "Completed", "Failed", "Refunded"],
       default: "Pending",
     },
     payment_method: {
@@ -46,7 +46,7 @@ const bookingSchema = new mongoose.Schema(
     },
     booking_status: {
       type: String,
-      enum: ["Pending", "Completed", "Expired"],
+      enum: ["Pending", "Completed", "Failed"],
       default: "Pending",
     },
     reference_code: {
@@ -194,14 +194,14 @@ bookingSchema.methods.markAsConfirmed = async function (paymentId) {
 bookingSchema.methods.expireBooking = async function (
   reason = "Expired due to timeout",
 ) {
-  this.booking_status = "Expired";
+  this.booking_status = "Failed";
   this.noted = reason;
 
   // Instead of creating a new history record, update the existing one to 'expired'.
   const SeatBookingHistory = mongoose.model("SeatBookingHistory");
   await SeatBookingHistory.updateMany(
     { bookingId: this._id, action: "booked" },
-    { $set: { action: "expired" } },
+    { $set: { action: "failed" } },
   );
 
   // New logic: Release the seats by deleting the corresponding SeatBooking documents.
