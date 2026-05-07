@@ -173,22 +173,25 @@ showtimeSchema.statics.canCreateShowtimeAt = async function (
 // Method to validate if a showtime is in the past
 showtimeSchema.statics.validateNotInPast = function (showDate, startTime) {
   const [hours, minutes] = startTime.split(':').map(Number);
-  const normalizedDate = this.safeNormalizeDate(showDate);
-  const startDateTime = new Date(Date.UTC(
-    normalizedDate.getUTCFullYear(),
-    normalizedDate.getUTCMonth(),
-    normalizedDate.getUTCDate(),
+  
+  // Create showtime datetime in local timezone (Cambodia GMT+7)
+  const showtimeDate = new Date(showDate);
+  const localShowtimeDateTime = new Date(
+    showtimeDate.getFullYear(),
+    showtimeDate.getMonth(),
+    showtimeDate.getDate(),
     hours,
     minutes
-  ));
+  );
   
+  // Get current local time
   const now = new Date();
   
-  if (startDateTime <= now) {
+  if (localShowtimeDateTime <= now) {
     return {
       isValid: false,
       reason: 'PAST_TIME',
-      message: `Showtime cannot be scheduled in the past. Selected time: ${showDate} ${startTime}, Current time: ${now.toISOString()}`
+      message: `Showtime cannot be scheduled in the past. Selected time: ${showDate} ${startTime} (local time), Current time: ${now.toString()}`
     };
   }
   
@@ -493,32 +496,34 @@ showtimeSchema.methods.isDeleted = function () {
 
 showtimeSchema.methods.isUpcoming = function () {
   const [hours, minutes] = this.start_time.split(":");
-  const d = new Date(this.show_date);
-  const showDateTime = new Date(
-    Date.UTC(
-      d.getUTCFullYear(),
-      d.getUTCMonth(),
-      d.getUTCDate(),
-      hours,
-      minutes,
-    ),
+  
+  // Create showtime datetime in local timezone
+  const showtimeDate = new Date(this.show_date);
+  const localShowDateTime = new Date(
+    showtimeDate.getFullYear(),
+    showtimeDate.getMonth(),
+    showtimeDate.getDate(),
+    parseInt(hours),
+    parseInt(minutes)
   );
-  return showDateTime > new Date();
+  
+  return localShowDateTime > new Date();
 };
 
 showtimeSchema.methods.isPast = function () {
   const [hours, minutes] = this.end_time.split(":");
-  const d = new Date(this.show_date);
-  const showEndDateTime = new Date(
-    Date.UTC(
-      d.getUTCFullYear(),
-      d.getUTCMonth(),
-      d.getUTCDate(),
-      hours,
-      minutes,
-    ),
+  
+  // Create showtime end datetime in local timezone
+  const showtimeDate = new Date(this.show_date);
+  const localShowEndDateTime = new Date(
+    showtimeDate.getFullYear(),
+    showtimeDate.getMonth(),
+    showtimeDate.getDate(),
+    parseInt(hours),
+    parseInt(minutes)
   );
-  return showEndDateTime < new Date();
+  
+  return localShowEndDateTime < new Date();
 };
 
 showtimeSchema.methods.updateStatus = function (newStatus, updateBy = null) {
@@ -650,17 +655,18 @@ showtimeSchema.pre("save", async function (next) {
   // Auto-update status if end_time has passed
   if (this.status === "scheduled") {
     const [hours, minutes] = this.end_time.split(":");
-    const d = new Date(this.show_date);
-    const showEndDateTime = new Date(
-      Date.UTC(
-        d.getUTCFullYear(),
-        d.getUTCMonth(),
-        d.getUTCDate(),
-        hours,
-        minutes,
-      ),
+    
+    // Create showtime end datetime in local timezone
+    const showtimeDate = new Date(this.show_date);
+    const localShowEndDateTime = new Date(
+      showtimeDate.getFullYear(),
+      showtimeDate.getMonth(),
+      showtimeDate.getDate(),
+      parseInt(hours),
+      parseInt(minutes)
     );
-    if (showEndDateTime < new Date()) {
+    
+    if (localShowEndDateTime < new Date()) {
       this.status = "completed";
     }
   }
@@ -737,18 +743,18 @@ showtimeSchema.post(/^find/, async function (result, next) {
     for (const doc of docs) {
       if (doc && doc.status === "scheduled" && doc.end_time && doc.show_date) {
         const [hours, minutes] = doc.end_time.split(":");
-        const d = new Date(doc.show_date);
-        const showEndDateTime = new Date(
-          Date.UTC(
-            d.getUTCFullYear(),
-            d.getUTCMonth(),
-            d.getUTCDate(),
-            hours,
-            minutes,
-          ),
+        
+        // Create showtime end datetime in local timezone
+        const showtimeDate = new Date(doc.show_date);
+        const localShowEndDateTime = new Date(
+          showtimeDate.getFullYear(),
+          showtimeDate.getMonth(),
+          showtimeDate.getDate(),
+          parseInt(hours),
+          parseInt(minutes)
         );
 
-        if (showEndDateTime < now) {
+        if (localShowEndDateTime < now) {
           doc.status = "completed";
           updates.push(doc.save()); // This will trigger a save and its own middleware
         }

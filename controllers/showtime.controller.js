@@ -1230,17 +1230,17 @@ class ShowtimeController {
         }
 
         // Safety Check: Prevent accidental creation of past showtimes in bulk create
-        const normalizedDate = Showtime.safeNormalizeDate(show_date);
+        const showtimeDate = new Date(show_date);
         const [hours, minutes] = start_time.split(":").map(Number);
-        const startDateTime = new Date(Date.UTC(
-          normalizedDate.getUTCFullYear(),
-          normalizedDate.getUTCMonth(),
-          normalizedDate.getUTCDate(),
+        const localStartDateTime = new Date(
+          showtimeDate.getFullYear(),
+          showtimeDate.getMonth(),
+          showtimeDate.getDate(),
           hours,
           minutes
-        ));
+        );
         
-        if (startDateTime < new Date()) {
+        if (localStartDateTime < new Date()) {
           errors.push({
             index: i,
             error: `Row ${i + 1}: Showtime at ${start_time} is in the past. Please choose a future date/time.`,
