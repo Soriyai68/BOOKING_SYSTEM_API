@@ -157,12 +157,20 @@ class BookingTicketController {
 
       // 5. Match for the search filter
       if (filters.search) {
+        // Normalize phone search: if input starts with '0' (local format),
+        // convert to international +855 format for matching stored numbers.
+        let phoneSearchPattern = filters.search;
+        if (/^0\d/.test(filters.search)) {
+          phoneSearchPattern = `\\+855${filters.search.substring(1)}`;
+        }
+
         const searchQuery = {
           $or: [
             { ticket_code: { $regex: filters.search, $options: "i" } },
             { "seats.seat_number": { $regex: filters.search, $options: "i" } },
             { "customer.name": { $regex: filters.search, $options: "i" } },
             { "movie.title": { $regex: filters.search, $options: "i" } },
+            { "customer.phone": { $regex: phoneSearchPattern, $options: "i" } },
             {
               "booking.reference_code": {
                 $regex: filters.search,
@@ -193,6 +201,8 @@ class BookingTicketController {
                   _id: "$customer._id",
                   name: "$customer.name",
                   email: "$customer.email",
+                  phone: "$customer.phone",
+                  customerType: "$customer.customerType",
                 },
                 booking_id: {
                   _id: "$booking._id",
