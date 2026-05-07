@@ -1,0 +1,8 @@
+{
+  "name": "backup_2026-05-07T07-40-23-320Z",
+  "description": "backup for movie booking system version 2",
+  "createdAt": "2026-05-07T07:40:24.209Z",
+  "database": "movie_booking_systemv2",
+  "size": 315178,
+  "path": "D:\\BOOKING_SYSTEM\\BOOKING_SYSTEM_API\\backups\\backup_2026-05-07T07-40-23-320Z"
+}
