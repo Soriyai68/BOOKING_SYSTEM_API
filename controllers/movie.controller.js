@@ -247,16 +247,17 @@ class MovieController {
         });
       }
 
-      // Check if movie already exists
+      // Check if movie already exists (case-insensitive)
+      const titleRegex = new RegExp(`^${movieData.title.trim()}$`, 'i');
       const existingMovie = await Movie.findOne({
-        title: movieData.title.trim(),
-        release_date: new Date(movieData.release_date),
+        title: titleRegex,
+        deletedAt: null
       });
 
       if (existingMovie) {
         return res.status(409).json({
           success: false,
-          message: "Movie with this title and release date already exists",
+          message: "A movie with this title already exists",
         });
       }
 
@@ -296,10 +297,10 @@ class MovieController {
         });
       }
 
-      if (error.code === 11000) {
+      if (error.code === 11000 || error.message.includes('already exists')) {
         return res.status(409).json({
           success: false,
-          message: "Movie with this title already exists",
+          message: "A movie with this title already exists",
         });
       }
 
@@ -325,6 +326,23 @@ class MovieController {
       }
 
       MovieController.validateObjectId(id);
+
+      // Check for duplicate title if title is being updated
+      if (updateData.title) {
+        const titleRegex = new RegExp(`^${updateData.title.trim()}$`, 'i');
+        const existingMovie = await Movie.findOne({
+          title: titleRegex,
+          _id: { $ne: id },
+          deletedAt: null
+        });
+
+        if (existingMovie) {
+          return res.status(409).json({
+            success: false,
+            message: "A movie with this title already exists",
+          });
+        }
+      }
 
       // 1. Fetch existing movie to compare current dates
       const movieToUpdate = await Movie.findById(id);
@@ -433,6 +451,13 @@ class MovieController {
           success: false,
           message: "Validation error",
           errors: Object.values(error.errors).map((err) => err.message),
+        });
+      }
+
+      if (error.code === 11000 || error.message.includes('already exists')) {
+        return res.status(409).json({
+          success: false,
+          message: "A movie with this title already exists",
         });
       }
 

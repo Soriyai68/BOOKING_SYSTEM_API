@@ -9,6 +9,26 @@ const theaterSchema = new mongoose.Schema(
       minlength: 1,
       maxlength: 100,
       index: true,
+      validate: {
+        validator: function(value) {
+          // Check for proper format - no leading/trailing spaces
+          if (value !== value.trim()) return false;
+          
+          // Must start with alphanumeric characters
+          if (!/^[a-zA-Z0-9]/.test(value)) {
+            return false;
+          }
+          
+          // Must end with alphanumeric or allowed punctuation: ! ? ) "
+          if (!/[a-zA-Z0-9\!\?\)\"]$/.test(value)) {
+            return false;
+          }
+          
+          // Only allow letters, numbers, spaces, and basic punctuation
+          return /^[a-zA-Z0-9\s\-\.\,\:\!\?\'\"\(\)]+$/.test(value);
+        },
+        message: 'Theater name must start with a letter or number, end with a letter, number, or allowed punctuation (! ? ) "), and can only contain letters, numbers, spaces, and basic punctuation (- . , : ! ? \' " ( ))'
+      }
     },
     address: {
       type: String,
@@ -182,6 +202,57 @@ theaterSchema.index({ total_halls: 1 });
 theaterSchema.index({ deletedAt: 1 });
 theaterSchema.index({ createdAt: 1 });
 theaterSchema.index({ "location.coordinates": "2dsphere" });
+
+// Pre-save middleware to check for duplicate names (case-insensitive) in the same city
+theaterSchema.pre('save', async function(next) {
+  if (this.isModified('name') || this.isModified('city')) {
+    const nameRegex = new RegExp(`^${this.name.trim()}$`, 'i');
+    const cityRegex = new RegExp(`^${this.city.trim()}$`, 'i');
+    
+    const existingTheater = await this.constructor.findOne({
+      name: nameRegex,
+      city: cityRegex,
+      _id: { $ne: this._id },
+      deletedAt: null
+    });
+    
+    if (existingTheater) {
+      const error = new Error('A theater with this name already exists in this city');
+      error.code = 11000; // Duplicate key error code
+      return next(error);
+    }
+  }
+  next();
+});
+
+// Pre-validate middleware to ensure name format
+theaterSchema.pre('validate', function(next) {
+  if (this.name) {
+    // Check for leading/trailing spaces (before trim)
+    if (this.name !== this.name.trim()) {
+      return next(new Error('Theater name cannot have leading or trailing spaces'));
+    }
+    
+    // Trim the name
+    this.name = this.name.trim();
+    
+    // Validate start format
+    if (!/^[a-zA-Z0-9]/.test(this.name)) {
+      return next(new Error('Theater name must start with a letter or number'));
+    }
+    
+    // Validate end format - allow ! ? ) "
+    if (!/[a-zA-Z0-9\!\?\)\"]$/.test(this.name)) {
+      return next(new Error('Theater name must end with a letter, number, or allowed punctuation (! ? ) ")'));
+    }
+    
+    // Validate allowed characters
+    if (!/^[a-zA-Z0-9\s\-\.\,\:\!\?\'\"\(\)]+$/.test(this.name)) {
+      return next(new Error('Theater name can only contain letters, numbers, spaces, and basic punctuation (- . , : ! ? \' " ( ))'));
+    }
+  }
+  next();
+});
 
 // Instance method for soft delete
 theaterSchema.methods.softDelete = function (deletedBy = null) {

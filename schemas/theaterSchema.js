@@ -96,12 +96,39 @@ const locationSchema = Joi.object({
 });
 
 const createTheaterSchema = Joi.object({
-  name: Joi.string().trim().min(1).max(100).required().messages({
-    "string.empty": "Theater name is required",
-    "string.min": "Theater name must be at least 1 character",
-    "string.max": "Theater name cannot exceed 100 characters",
-    "any.required": "Theater name is required",
-  }),
+  name: Joi.string()
+    .min(1)
+    .max(100)
+    .required()
+    .pattern(/^[a-zA-Z0-9\s\-\.\,\:\!\?\'\"\(\)]+$/)
+    .custom((value, helpers) => {
+      // Check for leading/trailing spaces
+      if (value !== value.trim()) {
+        return helpers.error('string.leadingTrailing');
+      }
+      
+      // Check that it starts and ends with alphanumeric or allowed ending punctuation
+      if (!/^[a-zA-Z0-9]/.test(value)) {
+        return helpers.error('string.invalidStart');
+      }
+      
+      // Allow alphanumeric or specific punctuation at the end: ! ? ) "
+      if (!/[a-zA-Z0-9\!\?\)\"]$/.test(value)) {
+        return helpers.error('string.invalidEnd');
+      }
+      
+      return value;
+    })
+    .messages({
+      "string.empty": "Theater name is required",
+      "string.min": "Theater name must be at least 1 character",
+      "string.max": "Theater name cannot exceed 100 characters",
+      "string.pattern.base": "Theater name can only contain letters, numbers, spaces, and basic punctuation (- . , : ! ? ' \" ( ))",
+      "string.leadingTrailing": "Theater name cannot have leading or trailing spaces",
+      "string.invalidStart": "Theater name must start with a letter or number",
+      "string.invalidEnd": "Theater name must end with a letter, number, or allowed punctuation (! ? ) \")",
+      "any.required": "Theater name is required",
+    }),
 
   halls_id: Joi.array()
     .items(Joi.string().pattern(/^[0-9a-fA-F]{24}$/))
@@ -172,10 +199,36 @@ const createTheaterSchema = Joi.object({
 });
 
 const updateTheaterSchema = Joi.object({
-  name: Joi.string().trim().min(1).max(100).messages({
-    "string.min": "Theater name must be at least 1 character",
-    "string.max": "Theater name cannot exceed 100 characters",
-  }),
+  name: Joi.string()
+    .min(1)
+    .max(100)
+    .pattern(/^[a-zA-Z0-9\s\-\.\,\:\!\?\'\"\(\)]+$/)
+    .custom((value, helpers) => {
+      // Check for leading/trailing spaces
+      if (value !== value.trim()) {
+        return helpers.error('string.leadingTrailing');
+      }
+      
+      // Check that it starts and ends with alphanumeric or allowed ending punctuation
+      if (!/^[a-zA-Z0-9]/.test(value)) {
+        return helpers.error('string.invalidStart');
+      }
+      
+      // Allow alphanumeric or specific punctuation at the end: ! ? ) "
+      if (!/[a-zA-Z0-9\!\?\)\"]$/.test(value)) {
+        return helpers.error('string.invalidEnd');
+      }
+      
+      return value;
+    })
+    .messages({
+      "string.min": "Theater name must be at least 1 character",
+      "string.max": "Theater name cannot exceed 100 characters",
+      "string.pattern.base": "Theater name can only contain letters, numbers, spaces, and basic punctuation (- . , : ! ? ' \" ( ))",
+      "string.leadingTrailing": "Theater name cannot have leading or trailing spaces",
+      "string.invalidStart": "Theater name must start with a letter or number",
+      "string.invalidEnd": "Theater name must end with a letter, number, or allowed punctuation (! ? ) \")",
+    }),
 
   halls_id: Joi.array()
     .items(Joi.string().pattern(/^[0-9a-fA-F]{24}$/))

@@ -230,16 +230,20 @@ class TheaterController {
         });
       }
 
-      // Check if theater already exists in the same city with same name
+      // Check if theater already exists in the same city with same name (case-insensitive)
+      const nameRegex = new RegExp(`^${theaterData.name.trim()}$`, 'i');
+      const cityRegex = new RegExp(`^${theaterData.city.trim()}$`, 'i');
+      
       const existingTheater = await Theater.findOne({
-        name: theaterData.name.trim(),
-        city: theaterData.city.trim(),
+        name: nameRegex,
+        city: cityRegex,
+        deletedAt: null
       });
 
       if (existingTheater) {
         return res.status(409).json({
           success: false,
-          message: "Theater with this name already exists in this city",
+          message: "A theater with this name already exists in this city",
         });
       }
 
@@ -288,10 +292,10 @@ class TheaterController {
         });
       }
 
-      if (error.code === 11000) {
+      if (error.code === 11000 || error.message.includes('already exists')) {
         return res.status(409).json({
           success: false,
-          message: "Theater with this name already exists in this city",
+          message: "A theater with this name already exists in this city",
         });
       }
 
@@ -332,8 +336,8 @@ class TheaterController {
         updateData.updatedBy = req.user.userId;
       }
 
-      // Validate unique constraint if name is being updated
-      if (updateData.name) {
+      // Validate unique constraint if name or city is being updated
+      if (updateData.name || updateData.city) {
         const currentTheater = await Theater.findById(id);
         if (!currentTheater) {
           return res.status(404).json({
@@ -342,17 +346,23 @@ class TheaterController {
           });
         }
 
-        const checkQuery = {
-          name: updateData.name.trim(),
-          city: updateData.city || currentTheater.city,
-          _id: { $ne: id },
-        };
+        const nameToCheck = updateData.name || currentTheater.name;
+        const cityToCheck = updateData.city || currentTheater.city;
+        
+        const nameRegex = new RegExp(`^${nameToCheck.trim()}$`, 'i');
+        const cityRegex = new RegExp(`^${cityToCheck.trim()}$`, 'i');
 
-        const existingTheater = await Theater.findOne(checkQuery);
+        const existingTheater = await Theater.findOne({
+          name: nameRegex,
+          city: cityRegex,
+          _id: { $ne: id },
+          deletedAt: null
+        });
+        
         if (existingTheater) {
           return res.status(409).json({
             success: false,
-            message: "Theater with this name already exists in this city",
+            message: "A theater with this name already exists in this city",
           });
         }
       }
@@ -402,6 +412,13 @@ class TheaterController {
           success: false,
           message: "Validation error",
           errors: Object.values(error.errors).map((err) => err.message),
+        });
+      }
+
+      if (error.code === 11000 || error.message.includes('already exists')) {
+        return res.status(409).json({
+          success: false,
+          message: "A theater with this name already exists in this city",
         });
       }
 

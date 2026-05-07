@@ -27,12 +27,39 @@ const dimensionsSchema = Joi.object({
 });
 
 const createHallSchema = Joi.object({
-  hall_name: Joi.string().trim().min(1).max(100).required().messages({
-    "string.empty": "Hall name is required",
-    "string.min": "Hall name must be at least 1 character",
-    "string.max": "Hall name cannot exceed 100 characters",
-    "any.required": "Hall name is required",
-  }),
+  hall_name: Joi.string()
+    .min(1)
+    .max(100)
+    .required()
+    .pattern(/^[a-zA-Z0-9\s\-\.\,\:\!\?\'\"\(\)]+$/)
+    .custom((value, helpers) => {
+      // Check for leading/trailing spaces
+      if (value !== value.trim()) {
+        return helpers.error('string.leadingTrailing');
+      }
+      
+      // Check that it starts and ends with alphanumeric or allowed ending punctuation
+      if (!/^[a-zA-Z0-9]/.test(value)) {
+        return helpers.error('string.invalidStart');
+      }
+      
+      // Allow alphanumeric or specific punctuation at the end: ! ? ) "
+      if (!/[a-zA-Z0-9\!\?\)\"]$/.test(value)) {
+        return helpers.error('string.invalidEnd');
+      }
+      
+      return value;
+    })
+    .messages({
+      "string.empty": "Hall name is required",
+      "string.min": "Hall name must be at least 1 character",
+      "string.max": "Hall name cannot exceed 100 characters",
+      "string.pattern.base": "Hall name can only contain letters, numbers, spaces, and basic punctuation (- . , : ! ? ' \" ( ))",
+      "string.leadingTrailing": "Hall name cannot have leading or trailing spaces",
+      "string.invalidStart": "Hall name must start with a letter or number",
+      "string.invalidEnd": "Hall name must end with a letter, number, or allowed punctuation (! ? ) \")",
+      "any.required": "Hall name is required",
+    }),
 
   total_seats: Joi.number()
     .integer()
@@ -90,10 +117,36 @@ const createHallSchema = Joi.object({
 });
 
 const updateHallSchema = Joi.object({
-  hall_name: Joi.string().trim().min(1).max(100).messages({
-    "string.min": "Hall name must be at least 1 character",
-    "string.max": "Hall name cannot exceed 100 characters",
-  }),
+  hall_name: Joi.string()
+    .min(1)
+    .max(100)
+    .pattern(/^[a-zA-Z0-9\s\-\.\,\:\!\?\'\"\(\)]+$/)
+    .custom((value, helpers) => {
+      // Check for leading/trailing spaces
+      if (value !== value.trim()) {
+        return helpers.error('string.leadingTrailing');
+      }
+      
+      // Check that it starts and ends with alphanumeric or allowed ending punctuation
+      if (!/^[a-zA-Z0-9]/.test(value)) {
+        return helpers.error('string.invalidStart');
+      }
+      
+      // Allow alphanumeric or specific punctuation at the end: ! ? ) "
+      if (!/[a-zA-Z0-9\!\?\)\"]$/.test(value)) {
+        return helpers.error('string.invalidEnd');
+      }
+      
+      return value;
+    })
+    .messages({
+      "string.min": "Hall name must be at least 1 character",
+      "string.max": "Hall name cannot exceed 100 characters",
+      "string.pattern.base": "Hall name can only contain letters, numbers, spaces, and basic punctuation (- . , : ! ? ' \" ( ))",
+      "string.leadingTrailing": "Hall name cannot have leading or trailing spaces",
+      "string.invalidStart": "Hall name must start with a letter or number",
+      "string.invalidEnd": "Hall name must end with a letter, number, or allowed punctuation (! ? ) \")",
+    }),
 
   total_seats: Joi.number().integer().min(1).max(1000).messages({
     "number.base": "Total seats must be a number",

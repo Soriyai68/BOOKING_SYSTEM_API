@@ -44,12 +44,39 @@ const genreParamSchema = Joi.object({
 
 // Create movie validation schema
 const createMovieSchema = Joi.object({
-  title: Joi.string().trim().min(1).max(200).required().messages({
-    "string.empty": "Movie title is required",
-    "string.min": "Movie title must be at least 1 character",
-    "string.max": "Movie title cannot exceed 200 characters",
-    "any.required": "Movie title is required",
-  }),
+  title: Joi.string()
+    .min(1)
+    .max(200)
+    .required()
+    .pattern(/^[a-zA-Z0-9\s\-\.\,\:\!\?\'\"\(\)]+$/)
+    .custom((value, helpers) => {
+      // Check for leading/trailing spaces
+      if (value !== value.trim()) {
+        return helpers.error('string.leadingTrailing');
+      }
+      
+      // Check that it starts and ends with alphanumeric or allowed ending punctuation
+      if (!/^[a-zA-Z0-9]/.test(value)) {
+        return helpers.error('string.invalidStart');
+      }
+      
+      // Allow alphanumeric or specific punctuation at the end: ! ? ) "
+      if (!/[a-zA-Z0-9\!\?\)\"]$/.test(value)) {
+        return helpers.error('string.invalidEnd');
+      }
+      
+      return value;
+    })
+    .messages({
+      "string.empty": "Movie title is required",
+      "string.min": "Movie title must be at least 1 character",
+      "string.max": "Movie title cannot exceed 200 characters",
+      "string.pattern.base": "Movie title can only contain letters, numbers, spaces, and basic punctuation (- . , : ! ? ' \" ( ))",
+      "string.leadingTrailing": "Movie title cannot have leading or trailing spaces",
+      "string.invalidStart": "Movie title must start with a letter or number",
+      "string.invalidEnd": "Movie title must end with a letter, number, or allowed punctuation (! ? ) \")",
+      "any.required": "Movie title is required",
+    }),
 
   description: Joi.string().trim().max(2000).allow("").default("").messages({
     "string.max": "Description cannot exceed 2000 characters",
@@ -133,10 +160,36 @@ const createMovieSchema = Joi.object({
 
 // Update movie validation schema (all fields optional)
 const updateMovieSchema = Joi.object({
-  title: Joi.string().trim().min(1).max(200).messages({
-    "string.min": "Movie title must be at least 1 character",
-    "string.max": "Movie title cannot exceed 200 characters",
-  }),
+  title: Joi.string()
+    .min(1)
+    .max(200)
+    .pattern(/^[a-zA-Z0-9\s\-\.\,\:\!\?\'\"\(\)]+$/)
+    .custom((value, helpers) => {
+      // Check for leading/trailing spaces
+      if (value !== value.trim()) {
+        return helpers.error('string.leadingTrailing');
+      }
+      
+      // Check that it starts and ends with alphanumeric or allowed ending punctuation
+      if (!/^[a-zA-Z0-9]/.test(value)) {
+        return helpers.error('string.invalidStart');
+      }
+      
+      // Allow alphanumeric or specific punctuation at the end: ! ? ) "
+      if (!/[a-zA-Z0-9\!\?\)\"]$/.test(value)) {
+        return helpers.error('string.invalidEnd');
+      }
+      
+      return value;
+    })
+    .messages({
+      "string.min": "Movie title must be at least 1 character",
+      "string.max": "Movie title cannot exceed 200 characters",
+      "string.pattern.base": "Movie title can only contain letters, numbers, spaces, and basic punctuation (- . , : ! ? ' \" ( ))",
+      "string.leadingTrailing": "Movie title cannot have leading or trailing spaces",
+      "string.invalidStart": "Movie title must start with a letter or number",
+      "string.invalidEnd": "Movie title must end with a letter, number, or allowed punctuation (! ? ) \")",
+    }),
 
   description: Joi.string().trim().max(2000).allow("").messages({
     "string.max": "Description cannot exceed 2000 characters",

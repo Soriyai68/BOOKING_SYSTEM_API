@@ -13,6 +13,26 @@ const movieSchema = new mongoose.Schema(
       minlength: 1,
       maxlength: 200,
       index: true,
+      validate: {
+        validator: function(value) {
+          // Check for proper format - no leading/trailing spaces
+          if (value !== value.trim()) return false;
+          
+          // Must start with alphanumeric characters
+          if (!/^[a-zA-Z0-9]/.test(value)) {
+            return false;
+          }
+          
+          // Must end with alphanumeric or allowed punctuation: ! ? ) "
+          if (!/[a-zA-Z0-9\!\?\)\"]$/.test(value)) {
+            return false;
+          }
+          
+          // Only allow letters, numbers, spaces, and basic punctuation
+          return /^[a-zA-Z0-9\s\-\.\,\:\!\?\'\"\(\)]+$/.test(value);
+        },
+        message: 'Movie title must start with a letter or number, end with a letter, number, or allowed punctuation (! ? ) "), and can only contain letters, numbers, spaces, and basic punctuation (- . , : ! ? \' " ( ))'
+      }
     },
     description: {
       type: String,
@@ -157,6 +177,54 @@ movieSchema.index({
   title: "text",
   description: "text",
   director: "text",
+});
+
+// Pre-save middleware to check for duplicate titles (case-insensitive)
+movieSchema.pre('save', async function(next) {
+  if (this.isModified('title')) {
+    const titleRegex = new RegExp(`^${this.title.trim()}$`, 'i');
+    const existingMovie = await this.constructor.findOne({
+      title: titleRegex,
+      _id: { $ne: this._id },
+      deletedAt: null
+    });
+    
+    if (existingMovie) {
+      const error = new Error('A movie with this title already exists');
+      error.code = 11000; // Duplicate key error code
+      return next(error);
+    }
+  }
+  next();
+});
+
+// Pre-validate middleware to ensure title format
+movieSchema.pre('validate', function(next) {
+  if (this.title) {
+    // Check for leading/trailing spaces (before trim)
+    if (this.title !== this.title.trim()) {
+      return next(new Error('Movie title cannot have leading or trailing spaces'));
+    }
+    
+    // Trim the title
+    this.title = this.title.trim();
+    
+    // Validate start format
+    if (!/^[a-zA-Z0-9]/.test(this.title)) {
+      return next(new Error('Movie title must start with a letter or number'));
+    }
+    
+    // Validate end format - allow ! ? ) "
+    if (!/[a-zA-Z0-9\!\?\)\"]$/.test(this.title)) {
+      return next(new Error('Movie title must end with a letter, number, or allowed punctuation (! ? ) ")'));
+    }
+    
+    // Validate allowed characters
+    if (!/^[a-zA-Z0-9\s\-\.\,\:\!\?\'\"\(\)]+$/.test(this.title)) {
+      return next(new Error('Movie title can only contain letters, numbers, spaces, and basic punctuation (- . , : ! ? \' " ( ))'));
+    }
+  }
+  next();
 });
 
 // Instance method for soft delete

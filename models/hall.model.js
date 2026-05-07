@@ -11,6 +11,26 @@ const hallSchema = new mongoose.Schema(
       minlength: 1,
       maxlength: 100,
       index: true,
+      validate: {
+        validator: function(value) {
+          // Check for proper format - no leading/trailing spaces
+          if (value !== value.trim()) return false;
+          
+          // Must start with alphanumeric characters
+          if (!/^[a-zA-Z0-9]/.test(value)) {
+            return false;
+          }
+          
+          // Must end with alphanumeric or allowed punctuation: ! ? ) "
+          if (!/[a-zA-Z0-9\!\?\)\"]$/.test(value)) {
+            return false;
+          }
+          
+          // Only allow letters, numbers, spaces, and basic punctuation
+          return /^[a-zA-Z0-9\s\-\.\,\:\!\?\'\"\(\)]+$/.test(value);
+        },
+        message: 'Hall name must start with a letter or number, end with a letter, number, or allowed punctuation (! ? ) "), and can only contain letters, numbers, spaces, and basic punctuation (- . , : ! ? \' " ( ))'
+      }
     },
     total_seats: {
       type: Number,
@@ -124,6 +144,62 @@ hallSchema.index({ createdAt: 1 });
 hallSchema.index({ "capacity.standard": 1 });
 hallSchema.index({ "capacity.premium": 1 });
 hallSchema.index({ "capacity.vip": 1 });
+
+// Pre-save middleware to check for duplicate names (case-insensitive) in the same theater
+hallSchema.pre('save', async function(next) {
+  if (this.isModified('hall_name') || this.isModified('theater_id')) {
+    const nameRegex = new RegExp(`^${this.hall_name.trim()}$`, 'i');
+    
+    const query = {
+      hall_name: nameRegex,
+      _id: { $ne: this._id },
+      deletedAt: null
+    };
+    
+    // Only check theater_id if it exists (some halls might not have theater_id)
+    if (this.theater_id) {
+      query.theater_id = this.theater_id;
+    }
+    
+    const existingHall = await this.constructor.findOne(query);
+    
+    if (existingHall) {
+      const error = new Error('A hall with this name already exists in this theater');
+      error.code = 11000; // Duplicate key error code
+      return next(error);
+    }
+  }
+  next();
+});
+
+// Pre-validate middleware to ensure hall_name format
+hallSchema.pre('validate', function(next) {
+  if (this.hall_name) {
+    // Check for leading/trailing spaces (before trim)
+    if (this.hall_name !== this.hall_name.trim()) {
+      return next(new Error('Hall name cannot have leading or trailing spaces'));
+    }
+    
+    // Trim the name
+    this.hall_name = this.hall_name.trim();
+    
+    // Validate start format
+    if (!/^[a-zA-Z0-9]/.test(this.hall_name)) {
+      return next(new Error('Hall name must start with a letter or number'));
+    }
+    
+    // Validate end format - allow ! ? ) "
+    if (!/[a-zA-Z0-9\!\?\)\"]$/.test(this.hall_name)) {
+      return next(new Error('Hall name must end with a letter, number, or allowed punctuation (! ? ) ")'));
+    }
+    
+    // Validate allowed characters
+    if (!/^[a-zA-Z0-9\s\-\.\,\:\!\?\'\"\(\)]+$/.test(this.hall_name)) {
+      return next(new Error('Hall name can only contain letters, numbers, spaces, and basic punctuation (- . , : ! ? \' " ( ))'));
+    }
+  }
+  next();
+});
 
 // Instance method for soft delete
 hallSchema.methods.softDelete = function (deletedBy = null) {

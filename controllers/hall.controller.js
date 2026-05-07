@@ -216,9 +216,12 @@ class HallController {
         });
       }
 
-      // Check if hall already exists in the same theater
+      // Check if hall already exists in the same theater (case-insensitive)
+      const nameRegex = new RegExp(`^${hallData.hall_name.trim()}$`, 'i');
+      
       const existingQuery = {
-        hall_name: hallData.hall_name.trim(),
+        hall_name: nameRegex,
+        deletedAt: null
       };
 
       if (hallData.theater_id) {
@@ -229,7 +232,7 @@ class HallController {
       if (existingHall) {
         return res.status(409).json({
           success: false,
-          message: "Hall with this name already exists in this theater",
+          message: "A hall with this name already exists in this theater",
         });
       }
 
@@ -305,10 +308,10 @@ class HallController {
         });
       }
 
-      if (error.code === 11000) {
+      if (error.code === 11000 || error.message.includes('already exists')) {
         return res.status(409).json({
           success: false,
-          message: "Hall with this name already exists in this theater",
+          message: "A hall with this name already exists in this theater",
         });
       }
 
@@ -359,19 +362,28 @@ class HallController {
         });
       }
 
-      // Validate unique constraint if hall_name is being updated
-      if (updateData.hall_name) {
+      // Validate unique constraint if hall_name or theater_id is being updated
+      if (updateData.hall_name || updateData.theater_id) {
+        const nameToCheck = updateData.hall_name || currentHall.hall_name;
+        const theaterToCheck = updateData.theater_id || currentHall.theater_id;
+        
+        const nameRegex = new RegExp(`^${nameToCheck.trim()}$`, 'i');
+        
         const checkQuery = {
-          hall_name: updateData.hall_name.trim(),
-          theater_id: updateData.theater_id || currentHall.theater_id,
+          hall_name: nameRegex,
           _id: { $ne: id },
+          deletedAt: null
         };
+        
+        if (theaterToCheck) {
+          checkQuery.theater_id = theaterToCheck;
+        }
 
         const existingHall = await Hall.findOne(checkQuery);
         if (existingHall) {
           return res.status(409).json({
             success: false,
-            message: "Hall with this name already exists in this theater",
+            message: "A hall with this name already exists in this theater",
           });
         }
       }
@@ -452,6 +464,13 @@ class HallController {
           success: false,
           message: "Validation error",
           errors: Object.values(error.errors).map((err) => err.message),
+        });
+      }
+
+      if (error.code === 11000 || error.message.includes('already exists')) {
+        return res.status(409).json({
+          success: false,
+          message: "A hall with this name already exists in this theater",
         });
       }
 
