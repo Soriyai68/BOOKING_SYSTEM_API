@@ -18,20 +18,20 @@ const movieSchema = new mongoose.Schema(
           // Check for proper format - no leading/trailing spaces
           if (value !== value.trim()) return false;
           
-          // Must start with alphanumeric characters
-          if (!/^[a-zA-Z0-9]/.test(value)) {
+          // Must start with alphanumeric or Unicode (Khmer) characters
+          if (!/^[a-zA-Z0-9\u1780-\u17FF]/.test(value)) {
             return false;
           }
           
-          // Must end with alphanumeric or allowed punctuation: ! ? ) "
-          if (!/[a-zA-Z0-9\!\?\)\"]$/.test(value)) {
+          // Must end with alphanumeric, Unicode (Khmer), or allowed punctuation
+          if (!/[a-zA-Z0-9\u1780-\u17FF\!\?\)\"]$/.test(value)) {
             return false;
           }
           
-          // Only allow letters, numbers, spaces, and basic punctuation
-          return /^[a-zA-Z0-9\s\-\.\,\:\!\?\'\"\(\)]+$/.test(value);
+          // Allow letters, numbers, spaces, basic punctuation, and Khmer Unicode
+          return /^[a-zA-Z0-9\u1780-\u17FF\s\-\.\,\:\!\?\'\"\(\)\|]+$/.test(value);
         },
-        message: 'Movie title must start with a letter or number, end with a letter, number, or allowed punctuation (! ? ) "), and can only contain letters, numbers, spaces, and basic punctuation (- . , : ! ? \' " ( ))'
+        message: 'Movie title must start and end with a letter, number, or Khmer character, and can only contain letters, numbers, spaces, and basic punctuation'
       }
     },
     description: {
@@ -209,19 +209,19 @@ movieSchema.pre('validate', function(next) {
     // Trim the title
     this.title = this.title.trim();
     
-    // Validate start format
-    if (!/^[a-zA-Z0-9]/.test(this.title)) {
-      return next(new Error('Movie title must start with a letter or number'));
+    // Validate start format - allow Khmer
+    if (!/^[a-zA-Z0-9\u1780-\u17FF]/.test(this.title)) {
+      return next(new Error('Movie title must start with a letter, number, or Khmer character'));
     }
     
-    // Validate end format - allow ! ? ) "
-    if (!/[a-zA-Z0-9\!\?\)\"]$/.test(this.title)) {
-      return next(new Error('Movie title must end with a letter, number, or allowed punctuation (! ? ) ")'));
+    // Validate end format - allow Khmer and ! ? ) "
+    if (!/[a-zA-Z0-9\u1780-\u17FF\!\?\)\"]$/.test(this.title)) {
+      return next(new Error('Movie title must end with a letter, number, Khmer character, or allowed punctuation'));
     }
     
-    // Validate allowed characters
-    if (!/^[a-zA-Z0-9\s\-\.\,\:\!\?\'\"\(\)]+$/.test(this.title)) {
-      return next(new Error('Movie title can only contain letters, numbers, spaces, and basic punctuation (- . , : ! ? \' " ( ))'));
+    // Validate allowed characters - include Khmer and |
+    if (!/^[a-zA-Z0-9\u1780-\u17FF\s\-\.\,\:\!\?\'\"\(\)\|]+$/.test(this.title)) {
+      return next(new Error('Movie title contains invalid characters'));
     }
   }
   next();

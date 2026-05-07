@@ -7,6 +7,10 @@ const Seat = require("../models/seat.model");
 const Movie = require("../models/movie.model");
 const Showtime = require("../models/showtime.model");
 const SeatBooking = require("../models/seatBooking.model");
+const SeatBookingHistory = require("../models/seatBookingHistory.model");
+const BookingTicket = require("../models/bookingTicket.model");
+const Booking = require("../models/booking.model");
+const Payment = require("../models/payment.model");
 const User = require("../models/user.model");
 const { Role } = require("../data");
 const connectDB = require("../config/db");
@@ -28,26 +32,21 @@ async function seedPresentationData() {
     // =========================
     // 2. CLEAN OLD DATA (IMPORTANT)
     // =========================
-    console.log("Cleaning up existing presentation data...");
+    // =========================
+    // 2. GLOBAL CLEANUP (TOTAL RESET)
+    // =========================
+    console.log("Performing global database cleanup...");
 
-    const existingTheater = await Theater.findOne({
-      name: "Grand Cinema Battambang",
-    });
-
-    if (existingTheater) {
-      const halls = await Hall.find({
-        theater_id: existingTheater._id,
-      });
-
-      const hallIds = halls.map((h) => h._id);
-
-      // Delete child → parent
-      await SeatBooking.deleteMany({});
-      await Showtime.deleteMany({ hall_id: { $in: hallIds } });
-      await Seat.deleteMany({ hall_id: { $in: hallIds } });
-      await Hall.deleteMany({ theater_id: existingTheater._id });
-      await Theater.deleteMany({ _id: existingTheater._id });
-    }
+    // Collections to wipe completely for a fresh start
+    await Promise.all([
+      Booking.deleteMany({}),
+      Payment.deleteMany({}),
+      SeatBooking.deleteMany({}),
+      Showtime.deleteMany({}),
+      Seat.deleteMany({}),
+      Hall.deleteMany({}),
+      Theater.deleteMany({}),
+    ]);
 
     await Movie.deleteMany({
       title: {
@@ -56,17 +55,24 @@ async function seedPresentationData() {
           "Eternal Sunset",
           "Neon Frontier",
           "The Silent Forest",
+          "Midnight Strike | វាយបកកណ្តាលអធ្រាត្រ",
+          "Eternal Sunset | សូរ្យអស្តង្គតអមតៈ",
+          "Neon Frontier | ដែនដីនីអុង",
+          "The Silent Forest | ព្រៃស្ងប់ស្ងាត់",
         ],
       },
     });
 
-    console.log("Old data cleaned.");
+    let theater = null;
+    let hall = null;
+
+    console.log("Database cleaned. Starting fresh seed...");
 
     // =========================
     // 3. CREATE THEATER
     // =========================
     console.log("Creating Theater...");
-    const theater = await Theater.create({
+    theater = await Theater.create({
       name: "Grand Cinema Battambang",
       address: "Street 1, Battambang City",
       city: "Battambang",
@@ -84,14 +90,18 @@ async function seedPresentationData() {
     // 4. CREATE HALL
     // =========================
     console.log("Creating Hall...");
-    const hall = await Hall.create({
+    hall = await Hall.create({
       hall_name: "Theater 01",
       theater_id: theater._id,
       screen_type: "vip",
       features: ["dolby_atmos", "premium_seating", "air_conditioning"],
+      notes: "Main premium hall with Dolby Atmos support",
       createdBy: adminId,
     });
 
+    // =========================
+    // 5. CREATE SEATS
+    // =========================
     // =========================
     // 5. CREATE SEATS
     // =========================
@@ -133,61 +143,65 @@ async function seedPresentationData() {
     console.log("Creating Movies...");
     const movieDocs = await Movie.insertMany([
       {
-        title: "Midnight Strike",
-        description: "Elite forces stop a global catastrophe.",
+        title: "Midnight Strike | វាយបកកណ្តាលអធ្រាត្រ",
+        description: "Elite forces stop a global catastrophe in this high-octane thriller.",
         duration_minutes: 125,
         genres: ["action", "thriller"],
         director: "James Cameron",
+        producers: ["Jon Landau", "James Cameron"],
         release_date: new Date("2026-04-01"),
-        end_date: new Date("2026-05-30"),
-        languages: ["English"],
-        poster_url:
-          "https://images.unsplash.com/photo-1536440136628-849c177e76a1",
+        end_date: new Date("2026-06-30"),
+        languages: ["English", "Khmer"],
+        poster_url: "https://images.unsplash.com/photo-1536440136628-849c177e76a1",
+        trailer_url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
         rating: 8.5,
         status: "now_showing",
         createdBy: adminId,
       },
       {
-        title: "Eternal Sunset",
-        description: "Romantic journey across Europe.",
+        title: "Eternal Sunset | សូរ្យអស្តង្គតអមតៈ",
+        description: "A romantic journey across the scenic landscapes of Europe.",
         duration_minutes: 110,
         genres: ["romance", "drama"],
         director: "Sofia Coppola",
+        producers: ["Roman Coppola"],
         release_date: new Date("2026-04-15"),
-        end_date: new Date("2026-05-30"),
-        languages: ["English"],
-        poster_url:
-          "https://images.unsplash.com/photo-1518709268805-4e9042af9f23",
+        end_date: new Date("2026-06-30"),
+        languages: ["English", "Khmer"],
+        poster_url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23",
+        trailer_url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
         rating: 7.8,
         status: "now_showing",
         createdBy: adminId,
       },
       {
-        title: "Neon Frontier",
-        description: "AI + detective save last city.",
+        title: "Neon Frontier | ដែនដីនីអុង",
+        description: "A hard-boiled detective and an AI partner team up to save the last city on Earth.",
         duration_minutes: 140,
         genres: ["sci-fi", "adventure"],
         director: "Denis Villeneuve",
+        producers: ["Ridley Scott"],
         release_date: new Date("2026-04-20"),
-        end_date: new Date("2026-05-30"),
-        languages: ["English"],
-        poster_url:
-          "https://images.unsplash.com/photo-1478720568477-152d9b164e26",
+        end_date: new Date("2026-06-30"),
+        languages: ["English", "Khmer"],
+        poster_url: "https://images.unsplash.com/photo-1478720568477-152d9b164e26",
+        trailer_url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
         rating: 9.0,
         status: "now_showing",
         createdBy: adminId,
       },
       {
-        title: "The Silent Forest",
-        description: "Horror camping story.",
+        title: "The Silent Forest | ព្រៃស្ងប់ស្ងាត់",
+        description: "What starts as a quiet camping trip turns into a psychological nightmare.",
         duration_minutes: 95,
         genres: ["horror", "mystery"],
         director: "Ari Aster",
+        producers: ["Lars Knudsen"],
         release_date: new Date("2026-04-25"),
-        end_date: new Date("2026-05-30"),
-        languages: ["English"],
-        poster_url:
-          "https://images.unsplash.com/photo-1441974231531-c6227db76b6e",
+        end_date: new Date("2026-06-30"),
+        languages: ["English", "Khmer"],
+        poster_url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e",
+        trailer_url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
         rating: 6.5,
         status: "now_showing",
         createdBy: adminId,
@@ -198,25 +212,33 @@ async function seedPresentationData() {
     // 7. CREATE SHOWTIMES
     // =========================
     console.log("Creating Showtimes...");
-    const startDate = new Date("2026-05-08");
-    const endDate = new Date("2026-05-10");
     const times = ["09:00", "11:30", "14:00", "16:30", "19:00"];
-
     const showtimes = [];
 
-    for (
-      let d = new Date(startDate);
-      d <= endDate;
-      d.setDate(d.getDate() + 1)
-    ) {
+    // Seed for Today, Tomorrow, and Day After
+    for (let dayOffset = 0; dayOffset <= 2; dayOffset++) {
+      const d = new Date();
+      d.setDate(d.getDate() + dayOffset);
+      const showDate = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+
       for (let i = 0; i < times.length; i++) {
         const movie = movieDocs[i % movieDocs.length];
+        const startTime = times[i];
+
+        // Calculate end_time manually
+        const [startHours, startMinutes] = startTime.split(":").map(Number);
+        const duration = movie.duration_minutes || 120;
+        const totalMinutes = startHours * 60 + startMinutes + duration;
+        const endHours = Math.floor(totalMinutes / 60);
+        const endMinutes = totalMinutes % 60;
+        const endTime = `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`;
 
         showtimes.push({
           hall_id: hall._id,
           movie_id: movie._id,
-          show_date: new Date(d),
-          start_time: times[i],
+          show_date: showDate,
+          start_time: startTime,
+          end_time: endTime,
           status: "scheduled",
           createdBy: adminId,
         });
