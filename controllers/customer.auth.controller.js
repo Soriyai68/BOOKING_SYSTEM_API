@@ -669,18 +669,31 @@ class CustomerAuthController {
         data: {
           customer: {
             id: customer._id,
+            name: customer.name,
             phone: customer.phone,
             username: customer.username,
             telegramId: customer.telegramId,
             photoUrl: customer.photoUrl,
             isVerified: customer.isVerified,
             customerType: customer.customerType,
+            createdAt: customer.createdAt,
           },
         },
       });
     } catch (error) {
       logger.error("Update customer profile error:", error);
       console.error("[Auth] Update profile FAILED:", error);
+
+      // Handle duplicate phone error
+      if (error.code === 11000 || error.message?.includes("E11000")) {
+        if (error.message?.includes("phone") || (error.keyPattern && error.keyPattern.phone)) {
+          return res.status(400).json({
+            success: false,
+            message: "client.phoneNumberDialog.phoneTaken",
+          });
+        }
+      }
+
       res.status(500).json({
         success: false,
         message: error.message || "Internal server error",

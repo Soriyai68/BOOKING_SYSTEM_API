@@ -215,8 +215,8 @@ async function seedPresentationData() {
     const times = ["09:00", "11:30", "14:00", "16:30", "19:00"];
     const showtimes = [];
 
-    // Seed for Today, Tomorrow, and Day After
-    for (let dayOffset = 0; dayOffset <= 2; dayOffset++) {
+    // Seed for Today only
+    for (let dayOffset of [0]) {
       const d = new Date();
       d.setDate(d.getDate() + dayOffset);
       const showDate = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
